@@ -21,5 +21,7 @@ void *memoria;
 
 void log_protegido_mem(char* mensaje);
 int conectarKernel(int* socket_kernel);
+int conectarCpu(int* socket_cpu);
+int conectarIO(int* socket_io);
 
 #endif // MAIN_H

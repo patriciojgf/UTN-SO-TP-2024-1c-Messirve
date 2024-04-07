@@ -19,7 +19,9 @@
 typedef enum
 {
 	MENSAJE,
-	KERNEL
+	KERNEL,
+	CPU,
+	IO
     /*agregar el resto*/
 }op_code;
 

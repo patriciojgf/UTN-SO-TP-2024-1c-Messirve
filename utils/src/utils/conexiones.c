@@ -35,7 +35,7 @@ int crear_conexion(char *ip, char* puerto){
 	// Ahora que tenemos el socket, vamos a conectarlo
 	if(connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == -1)
 	{
-		printf("Error en la conexión");
+		printf("Error en la conexión\n");
 		socket_cliente = -1;
 	}
 

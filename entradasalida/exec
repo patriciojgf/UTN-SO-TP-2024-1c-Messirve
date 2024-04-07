@@ -1,0 +1,7 @@
+#!/bin/bash
+FILE=bin/entradasalida
+make clean all
+make
+if test -f "./$FILE"; then
+    ./$FILE ./cfg/entradasalida.config
+fi
