@@ -18,8 +18,8 @@ int main(int argc, char **argv) {
 	// inicializar_estructuras();
 
     pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
-	// pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
-	// pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
+	pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
+	pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
     // pthread_create(&t4, NULL, (void*) conectarFS, NULL);
 	// pthread_create(&t5, NULL, (void*) leer_consola, NULL);
 
@@ -33,13 +33,15 @@ int main(int argc, char **argv) {
 	// log_destroy(logger_kernel);
  	// config_destroy(config_kernel);
 	
-	// liberar_conexion(socket_memoria);
-	// liberar_conexion(socket_dispatch);
-	// liberar_conexion(socket_interrupt);
 	// liberar_conexion(socket_FS);
 
 	//pthread_detach(t1);
 	pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
+	pthread_join(t2, NULL);
+	pthread_join(t3, NULL);
+	liberar_conexion(socket_memoria);
+	liberar_conexion(socket_dispatch);
+	liberar_conexion(socket_interrupt);
 	printf("Hilo 1\n");
 	// pthread_detach(t2);
     // pthread_detach(t3);
@@ -88,35 +90,62 @@ return 0;
 /*Conexiones*/
 /* ------------------------------------Conexion CPU --------------------------------------------------*/
 int conectarCpuDispatch(){
-	char* ip;
-	// char* puerto_dispatch;
+	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
+	char* puerto_dispatch 	= config_get_string_value(config_kernel,"PUERTO_CPU_DISPATCH");
 
-	// ip= config_get_string_value(config_kernel,"IP_CPU");
-	// puerto_dispatch=config_get_string_value(config_kernel,"PUERTO_CPU_DISPATCH");
+    socket_dispatch = crear_conexion(ip, puerto_dispatch);
 
-    // socket_dispatch = crear_conexion(ip, puerto_dispatch);
+    if (socket_dispatch <= 0){
+        printf(" DISPATCH: No se pudo establecer una conexion con la CPU\n");
+    }
+    else{
+		log_protegido(string_from_format("DISPATCH: Conexion con CPU exitosa"));
+    }
 
-    // if (socket_dispatch <= 0){
-    //     printf(" DISPATCH: No se pudo establecer una conexion con la CPU\n");
-    // }
-    // else{
-	// 	log_protegido(string_from_format("DISPATCH: Conexion con CPU exitosa"));
-    // }
+	int handshake_dispatch = KERNEL_DISPATCH;
+	bool confirmacion;
+	send(socket_dispatch, &handshake_dispatch, sizeof(int),0); 
+	recv(socket_dispatch, &confirmacion, sizeof(bool), MSG_WAITALL);
 
-	// int handshake_dispatch = KERNEL_DISPATCH;
-	// bool confirmacion;
-	// send(socket_dispatch, &handshake_dispatch, sizeof(int),0); // MURIO ACA-----------------------------------------------------------------------
-	// recv(socket_dispatch, &confirmacion, sizeof(bool), MSG_WAITALL);
-	
-	// if(confirmacion)
-	// 	log_protegido(string_from_format("Conexion de Modulo Dispatch con CPU exitosa"));
-	// else
-	// 	log_protegido(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
+	if(confirmacion)
+		log_protegido(string_from_format("Conexion de Modulo Dispatch con CPU exitosa"));
+	else
+		log_protegido(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
 
-	// enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
+	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
 	// pthread_mutex_lock(&mconexiones);
-	// conexiones++;
+	conexiones++;
 	// pthread_mutex_unlock(&mconexiones);
 	
 return 0;
+}
+
+int conectarCpuInterrupt(){
+	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
+	char* puerto_interrupt 	= config_get_string_value(config_kernel,"PUERTO_CPU_INTERRUPT");
+
+    socket_interrupt = crear_conexion(ip, puerto_interrupt);
+
+    if (socket_interrupt <= 0){
+        printf(" INTERRUPT: No se pudo establecer una conexion con la CPU\n");
+    }
+    else{
+		log_protegido(string_from_format("INTERRUPT: Conexion con CPU exitosa"));
+    }
+
+	int handshake_interrupt = KERNEL_INTERRUPT;
+	bool confirmacion;
+	send(socket_interrupt, &handshake_interrupt, sizeof(int),0); 
+	recv(socket_interrupt, &confirmacion, sizeof(bool), MSG_WAITALL);
+
+	if(confirmacion)
+		log_protegido(string_from_format("Conexion de Modulo Interrupt con CPU exitosa"));
+	else
+		log_protegido(string_from_format("ERROR: Handshake de Modulo Interrupt con CPU fallido"));
+
+	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
+	// pthread_mutex_lock(&mconexiones);
+	conexiones++;
+	// pthread_mutex_unlock(&mconexiones);
+	return 0;
 }

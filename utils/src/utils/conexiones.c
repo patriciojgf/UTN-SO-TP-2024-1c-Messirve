@@ -138,3 +138,7 @@ void* recibir_buffer(int* size, int socket_cliente){
 
 	return buffer;
 } 
+
+void liberar_conexion(int socket_cliente){
+	close(socket_cliente);
+}
