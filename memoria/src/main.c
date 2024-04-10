@@ -1,54 +1,57 @@
 #include "main.h"
 
+int tamanio_pagina(){
+    return atoi(config_get_string_value(config_memoria,"TAM_PAGINA"));
+}
+
 /* -------------------------------------Iniciar Memoria -----------------------------------------------*/
-int main(int argc, char **argv){
-	config_memoria = iniciar_config(argv[1]);
-	logger_memoria=iniciar_logger("memoria.log","MEMORIA");
+    int main(int argc, char **argv){
+    config_memoria = iniciar_config(argv[1]);
+    logger_memoria=iniciar_logger("memoria.log","MEMORIA");
 
-  int socket_servidor, socket_cliente, socket_kernel, socket_cpu, socket_io;
+    int socket_servidor, socket_cliente, socket_kernel, socket_cpu, socket_io;
 
-  log_protegido_mem(string_from_format("Iniciando Conexiones..."));
-  char *puerto = config_get_string_value(config_memoria, "PUERTO_ESCUCHA");
-  log_protegido_mem(string_from_format("Iniciando servidor..."));
-  socket_servidor = iniciar_servidor(puerto);    
-  if (socket_servidor == -1)
-  {
-      log_error(logger_memoria, "ERROR - No se pudo crear el servidor");
-      return EXIT_FAILURE;
-  }
-  log_protegido_mem(string_from_format("Servidor listo para recibir clientes"));
-  pthread_t hilo_kernel, hilo_cpu, hilo_io;
-  for (int i = 0; i < 3; i++)
-  {
-    log_protegido_mem(string_from_format("Esperando Cliente..."));
-    socket_cliente = esperar_cliente(socket_servidor);
-
-    int cod_op = recibir_operacion(socket_cliente);
-
-    switch (cod_op)
+    log_protegido_mem(string_from_format("Iniciando Conexiones..."));
+    char *puerto = config_get_string_value(config_memoria, "PUERTO_ESCUCHA");
+    log_protegido_mem(string_from_format("Iniciando servidor en puerto: %s", puerto));
+    socket_servidor = iniciar_servidor(puerto);    
+    if (socket_servidor == -1)
     {
-      case KERNEL:
-        log_protegido_mem(string_from_format("Se conecto el KERNEL"));
-        socket_kernel = socket_cliente;
-        pthread_create(&hilo_kernel, NULL, (void *)conectarKernel, &socket_kernel);
-        break;
-      case CPU:
-        log_protegido_mem(string_from_format("Se conecto el CPU"));
-        socket_cpu = socket_cliente;
-        pthread_create(&hilo_cpu, NULL, (void *)conectarCpu, &socket_cpu);
-        break;
-      case IO: 
-        log_protegido_mem(string_from_format("Se conecto el IO"));
-        socket_io = socket_cliente;
-        pthread_create(&hilo_io, NULL, (void *)conectarIO, &socket_io);
-        break; 
-      default:
-        log_protegido_mem(string_from_format("No reconozco ese codigo"));
-        break;
+        log_error(logger_memoria, "ERROR - No se pudo crear el servidor");
+        return EXIT_FAILURE;
     }
-  }
-  pthread_join(hilo_kernel, NULL);
+    log_protegido_mem(string_from_format("Servidor listo para recibir clientes"));
+    pthread_t hilo_kernel, hilo_cpu, hilo_io;
+    for (int i = 0; i < 3; i++)
+    {
+        log_protegido_mem(string_from_format("Esperando Cliente..."));
+        socket_cliente = esperar_cliente(socket_servidor);
 
+        int cod_op = recibir_operacion(socket_cliente);
+
+        switch (cod_op)
+        {
+        case KERNEL:
+            log_protegido_mem(string_from_format("Se conecto el KERNEL"));
+            socket_kernel = socket_cliente;
+            pthread_create(&hilo_kernel, NULL, (void *)conectarKernel, &socket_kernel);
+            break;
+        case CPU:
+            log_protegido_mem(string_from_format("Se conecto el CPU"));
+            socket_cpu = socket_cliente;
+            pthread_create(&hilo_cpu, NULL, (void *)conectarCpu, &socket_cpu);
+            break;
+        case IO: 
+            log_protegido_mem(string_from_format("Se conecto el IO"));
+            socket_io = socket_cliente;
+            pthread_create(&hilo_io, NULL, (void *)conectarIO, &socket_io);
+            break; 
+        default:
+            log_protegido_mem(string_from_format("No reconozco ese codigo"));
+            break;
+        }
+    }
+    pthread_join(hilo_kernel, NULL);
 }
 
 
@@ -140,30 +143,25 @@ int conectarKernel(int* socket_kernel){
 /* ------------------------------------Conexion CPU ----------------------------------------------*/
 int conectarCpu(int* socket_cpu){
     log_protegido_mem(string_from_format("Enviando mensaje de confirmacion..."));
-
-    bool confirmacion = true;
-    send(*socket_cpu, &confirmacion, sizeof(bool), 0);
-    log_protegido_mem(string_from_format("Mensaje enviado"));
-    int size;
-    void *buffer;
+    int tam_pagina = tamanio_pagina();
+    send(*socket_cpu, &tam_pagina, sizeof(int), 0);
+    log_protegido_mem(string_from_format("Tamanio de pagina enviado"));
 
     while (1){
-        //int pid;
+        void *buffer;
         log_protegido_mem(string_from_format("Esperando peticiones de CPU..."));
-        int cod_kernel = recibir_operacion(*socket_cpu);
-
-        switch (cod_kernel){
-        case MENSAJE:
-            recibir_mensaje(*socket_cpu,logger_memoria);
-            break;
-        case -1:
-            log_error(logger_memoria,"El CPU se desconecto");
-            return EXIT_FAILURE;
-        default:
-            log_warning(logger_memoria, "Operacion desconocida.");
-            break;
+        int cod_cpu = recibir_operacion(*socket_cpu);
+        int size=0;
+        int pid=0;
+        switch (cod_cpu)
+        {
+            case MENSAJE:
+                recibir_mensaje(*socket_cpu,logger_memoria);
+                break;
+            default:
+                log_warning(logger_memoria, "Operacion desconocida.");
+                break;
         }
-        free(buffer);
     }
     return 0;
 }

@@ -19,7 +19,11 @@
 typedef enum
 {
 	MENSAJE,
+	PCB,
+	DESALOJAR,
 	KERNEL,
+	KERNEL_INTERRUPT,
+	KERNEL_DISPATCH,
 	CPU,
 	IO
     /*agregar el resto*/
@@ -47,6 +51,7 @@ int iniciar_servidor(char*);
 int esperar_cliente(int);
 void recibir_mensaje(int,t_log*);
 void* recibir_buffer(int*, int);
+void eliminar_paquete(t_paquete*);
 
 int recibir_operacion(int);
 
