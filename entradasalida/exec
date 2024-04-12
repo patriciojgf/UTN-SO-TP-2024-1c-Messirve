@@ -1,7 +1,10 @@
 #!/bin/bash
 FILE=bin/entradasalida
+CONFIG_FILE=${1:-./cfg/entradasalida.config}
+
 make clean all
 make
+
 if test -f "./$FILE"; then
-    ./$FILE ./cfg/entradasalida.config
+    ./$FILE "$CONFIG_FILE"
 fi

@@ -17,7 +17,8 @@ int main(int argc, char* argv[]) {
     }
 
     datos_io = iniciar_config_io(config_io);
-    log_info(logger_io, "Ip Memoria: %s - Puerto Memoria_ %s", datos_io->ip_memoria, datos_io->puerto_memoria);
+    log_info(logger_io, "Ip Memoria: %s - Puerto Memoria: %s", datos_io->ip_memoria, datos_io->puerto_memoria);
+    printf("Tipo de interfaz: %s \n", datos_io->tipo_interfaz); //TODO: remover
 
     pthread_create(&hilo_io, NULL, (void*) conectarMemoria, NULL);
     pthread_join(hilo_io, NULL);
