@@ -1,6 +1,5 @@
 #include "conexiones.h"
 
-
 /*-------------------------------------------CLIENTE----------------------------------------------------*/
 
 void* serializar_paquete(t_paquete* paquete, int bytes){
@@ -122,6 +121,12 @@ int esperar_cliente(int socket_servidor)
 	return socket_cliente;
 }
 
+char* leer_mensaje(int socket_cliente){
+	int size=0;
+	char* buffer = recibir_buffer(&size, socket_cliente);
+	return buffer;
+}
+
 void recibir_mensaje(int socket_cliente, t_log* logger){
 	int size=0;
 	char* buffer = recibir_buffer(&size, socket_cliente);
@@ -141,4 +146,58 @@ void* recibir_buffer(int* size, int socket_cliente){
 
 void liberar_conexion(int socket_cliente){
 	close(socket_cliente);
+}
+
+
+void agregar_socket_a_lista(t_list* lista, t_socket_interfaz* socket){
+	list_add(lista, socket);
+}
+
+t_socket_interfaz* buscar_socket_por_nombre(t_list* lista, char* nombre){
+	t_socket_interfaz* socket = list_find(lista, (void*)nombre);
+	return socket;
+}
+
+void quitar_socket_por_nombre(t_list* lista, char* nombre){
+	list_remove_by_condition(lista, (void*)nombre);
+}
+
+int texto_to_cod_op(char* texto){
+	// MENSAJE,
+	// PCB,
+	// DESALOJAR,
+	// KERNEL,
+	// KERNEL_INTERRUPT,
+	// KERNEL_DISPATCH,
+	// CPU,
+	// IO,
+	// IO_GENERICA,
+	// IO_STDIN,
+	// IO_STDOUT,
+	// IO_DIALFS
+	if(strcmp(texto, "MENSAJE") == 0)
+		return MENSAJE;
+	if(strcmp(texto, "PCB") == 0)
+		return PCB;
+	if(strcmp(texto, "DESALOJAR") == 0)
+		return DESALOJAR;
+	if(strcmp(texto, "KERNEL") == 0)
+		return KERNEL;
+	if(strcmp(texto, "KERNEL_INTERRUPT") == 0)
+		return KERNEL_INTERRUPT;
+	if(strcmp(texto, "KERNEL_DISPATCH") == 0)
+		return KERNEL_DISPATCH;
+	if(strcmp(texto, "CPU") == 0)
+		return CPU;
+	if(strcmp(texto, "IO") == 0)
+		return IO;
+	if(strcmp(texto, "GENERICA") == 0)
+		return GENERICA;
+	if(strcmp(texto, "STDIN") == 0)
+		return STDIN;
+	if(strcmp(texto, "STDOUT") == 0)
+		return STDOUT;
+	if(strcmp(texto, "DIALFS") == 0)
+		return DIALFS;
+	return -1;
 }

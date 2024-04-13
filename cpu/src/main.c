@@ -7,8 +7,6 @@ void log_protegido_cpu(char* mensaje){
 	free(mensaje);
 }
 
-
-
 int main(int argc, char* argv[]) {
 	sem_init(&mlog,0,1);
 	logger_cpu = iniciar_logger(LOG_NAME, PROCESS_NAME);
@@ -178,7 +176,6 @@ void conectarMemoria(){
 		recv(socket_memoria, &tam_pag, sizeof(int), MSG_WAITALL);
         
 		log_protegido_cpu(string_from_format("Conexion con memoria exitosa"));
-        sleep(3000);
 		log_protegido_cpu(string_from_format("TAMANIO PAGINA MEMORIA: %d",tam_pag));
     }
 }

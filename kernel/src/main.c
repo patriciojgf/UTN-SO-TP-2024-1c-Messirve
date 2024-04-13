@@ -8,19 +8,26 @@ int id_counter = 1;//PID DE LOS PROCESOS
 
 /* -------------------------------------Iniciar Kernel -----------------------------------------------*/
 int main(int argc, char **argv) {
+
+	/*---------Inicio semaforos--------*/
+	sem_init(&sem_sockets_interfaces,0,1);
 	// sem_init(&planificadores,0,0);
+
+	/*--------- Cargo configuraciones y log--------*/
 	config_kernel = iniciar_config(argv[1]);
 	logger_kernel=iniciar_logger("kernel.log","KERNEL");
 	// pthread_mutex_init(&mconexiones,NULL);
 	conexiones=0;
 
+	/*--------- Inicio conexiones y estructuras--------*/
 	pthread_t t1,t2,t3,t4,t5;
 	// inicializar_estructuras();
+	lista_interfaz_socket = list_create();
 
     pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
 	pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
 	pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
-    // pthread_create(&t4, NULL, (void*) conectarFS, NULL);
+    pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
 	// pthread_create(&t5, NULL, (void*) leer_consola, NULL);
 
 
@@ -39,6 +46,7 @@ int main(int argc, char **argv) {
 	pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
 	pthread_join(t2, NULL);
 	pthread_join(t3, NULL);
+	pthread_join(t4, NULL);
 	liberar_conexion(socket_memoria);
 	liberar_conexion(socket_dispatch);
 	liberar_conexion(socket_interrupt);
@@ -51,7 +59,108 @@ int main(int argc, char **argv) {
 }
 
 
-/* ------------------------------------Conexion Mermoria --------------------------------------------*/
+/*-------------------------------------Servidor para Interfaces------------------------------*/
+int conectarInterfaz(){
+	char* puerto_escucha = config_get_string_value(config_kernel, "PUERTO_ESCUCHA");
+	int socket_servidor = iniciar_servidor(puerto_escucha);
+	if (socket_servidor == -1){
+		log_error(logger_kernel, "ERROR - No se pudo crear el servidor");
+		return EXIT_FAILURE;
+	}
+	log_protegido(string_from_format("Servidor listo para recibir clientes"));
+
+	while(esperar_interfaz(socket_servidor) != -1){
+		log_protegido(string_from_format("Esperando Cliente..."));
+	}
+	return 0;
+}
+
+int esperar_interfaz(int socket_servidor){
+	int socket_cliente = esperar_cliente(socket_servidor);
+	if(socket_cliente == -1){
+		log_error(logger_kernel, "ERROR - No se pudo aceptar al cliente");
+		return EXIT_FAILURE;
+	}
+	// int cod_op = recibir_operacion(socket_cliente);
+	// printf("cod_op: %d\n", cod_op);
+	//nuevo hilo
+	pthread_t hilo_interfaz;
+	pthread_create(&hilo_interfaz, NULL, (void *)nuevaInterfaz, (void*) socket_cliente);
+	printf("Hilo Interfaz creado\n");
+	pthread_detach(hilo_interfaz);
+	printf("Hilo Interfaz detach\n");
+	return 0;
+}
+
+void nuevaInterfaz(int socket_cliente){
+
+	t_socket_interfaz* nueva_interfaz_socket = malloc(sizeof(t_socket_interfaz));
+	nueva_interfaz_socket->socket = socket_cliente;
+	//1. Recibo el tipo de interfaz
+	nueva_interfaz_socket->tipo_interfaz = recibir_operacion(socket_cliente);
+	if(nueva_interfaz_socket->tipo_interfaz == -1){
+		free(nueva_interfaz_socket);
+		log_error(logger_kernel, "ERROR - No se pudo recibir el codigo de operacion");
+		log_warning(logger_kernel, "Ver si hay que modificar este return para que falle");
+		return;
+	}
+
+	//2. Recibo el nombre de la interfaz	
+	nueva_interfaz_socket->nombre_interfaz = malloc(sizeof(char*));
+	char* nombre_interfaz = leer_mensaje(socket_cliente);
+	log_warning(logger_kernel, "ACA HAY QUE VER PORQUE TENGO QUE LEER DOS VECES");
+	log_warning(logger_kernel, "EN LA PRIMERA LECTURA LEE NULO");
+	nueva_interfaz_socket->nombre_interfaz  = leer_mensaje(socket_cliente);
+
+	if(nombre_interfaz == NULL){
+		free(nueva_interfaz_socket->nombre_interfaz);
+		free(nueva_interfaz_socket);
+		log_error(logger_kernel, "ERROR - No se pudo recibir el nombre de la interfaz");
+		return;
+	}
+
+	printf("Nombre de interfaz: %s\n", nueva_interfaz_socket->nombre_interfaz );
+
+	switch (nueva_interfaz_socket->tipo_interfaz){
+		case GENERICA:
+			log_protegido(string_from_format("Se conecto la interfaz GENERICA %s", nueva_interfaz_socket->nombre_interfaz));
+			sem_wait(&sem_sockets_interfaces);
+			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
+			sem_post(&sem_sockets_interfaces);
+			//conectar con IO_GENERICA
+			break;
+		case DIALFS:
+			log_protegido(string_from_format("Se conecto la interfaz DIALFS %s", nueva_interfaz_socket->nombre_interfaz));
+			sem_wait(&sem_sockets_interfaces);
+			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
+			sem_post(&sem_sockets_interfaces);
+			//conectar con IO_DIALFS
+			break;
+		case STDIN:
+			log_protegido(string_from_format("Se conecto la interfaz STDIN %s", nueva_interfaz_socket->nombre_interfaz));
+			sem_wait(&sem_sockets_interfaces);
+			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
+			sem_post(&sem_sockets_interfaces);
+			//conectar con IO_STDIN
+			break;
+		case STDOUT:
+			printf("STDOUT\n");
+			log_protegido(string_from_format("Se conecto la interfaz STDOUT %s", nueva_interfaz_socket->nombre_interfaz));
+			sem_wait(&sem_sockets_interfaces);
+			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
+			sem_post(&sem_sockets_interfaces);
+			//conectar con IO_STDOUT
+			break;
+		default:
+			free(nueva_interfaz_socket->nombre_interfaz);
+			free(nueva_interfaz_socket);
+			log_error(logger_kernel, "ERROR - No se pudo reconocer el codigo de operacion");
+			break;
+	}
+
+}
+
+/* ------------------------------------Conexiones--------------------------------------------*/
 int conectarMemoria(){
 	socket_memoria = -1;
 	char* ip;
@@ -86,9 +195,6 @@ return 0;
 
 }
 
-
-/*Conexiones*/
-/* ------------------------------------Conexion CPU --------------------------------------------------*/
 int conectarCpuDispatch(){
 	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
 	char* puerto_dispatch 	= config_get_string_value(config_kernel,"PUERTO_CPU_DISPATCH");
