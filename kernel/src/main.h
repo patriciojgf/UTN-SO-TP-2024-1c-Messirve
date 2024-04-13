@@ -29,6 +29,7 @@ int socket_IO;
 int socket_memoria;
 int socket_dispatch;
 int socket_interrupt;
+int socket_servidor;
 int id_counter;
 int grado_multiprogramacion;
 bool ejecucion_pausada, volvio_pcb_cpu;

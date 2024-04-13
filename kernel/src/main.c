@@ -24,9 +24,9 @@ int main(int argc, char **argv) {
 	// inicializar_estructuras();
 	lista_interfaz_socket = list_create();
 
-    // pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
-	// pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
-	// pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
+    pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
+	pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
+	pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
     pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
 	// pthread_create(&t5, NULL, (void*) leer_consola, NULL);
 
@@ -43,13 +43,14 @@ int main(int argc, char **argv) {
 	// liberar_conexion(socket_FS);
 
 	//pthread_detach(t1);
-	// pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
-	// pthread_join(t2, NULL);
-	// pthread_join(t3, NULL);
+	pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
+	pthread_join(t2, NULL);
+	pthread_join(t3, NULL);
 	pthread_join(t4, NULL);
 	liberar_conexion(socket_memoria);
 	liberar_conexion(socket_dispatch);
 	liberar_conexion(socket_interrupt);
+	// liberar_conexion(socket_FS);
 	printf("Hilo 1\n");
 	// pthread_detach(t2);
     // pthread_detach(t3);
@@ -62,7 +63,7 @@ int main(int argc, char **argv) {
 /*-------------------------------------Servidor para Interfaces------------------------------*/
 int conectarInterfaz(){
 	char* puerto_escucha = config_get_string_value(config_kernel, "PUERTO_ESCUCHA");
-	int socket_servidor = iniciar_servidor(puerto_escucha);
+	socket_servidor = iniciar_servidor(puerto_escucha);
 	if (socket_servidor == -1){
 		log_error(logger_kernel, "ERROR - No se pudo crear el servidor");
 		return EXIT_FAILURE;
