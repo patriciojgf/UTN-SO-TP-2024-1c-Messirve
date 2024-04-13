@@ -24,9 +24,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    //nombre de inter
     nombre_interfaz = argv[2];
-    printf("Nombre de interfaz: %s \n", argv[2]); //TODO: remover
     if(nombre_interfaz == NULL){
         sem_wait(&mlog);
         log_error(logger_io, "No se ha ingresado el nombre de la interfaz");
@@ -40,14 +38,14 @@ int main(int argc, char* argv[]) {
     // log_info(logger_io, "Ip Memoria: %s - Puerto Memoria: %s", datos_io->ip_memoria, datos_io->puerto_memoria);
     // printf("Tipo de interfaz: %s \n", datos_io->tipo_interfaz); //TODO: remover
 
-    //pthread_create(&hilo_memoria, NULL, (void*) conectarMemoria, NULL);
+    pthread_create(&hilo_memoria, NULL, (void*) conectarMemoria, NULL);
     pthread_create(&hilo_kernel, NULL, (void*) conectarKernel, NULL);
-    //pthread_join(hilo_memoria, NULL);
+    pthread_join(hilo_memoria, NULL);
     pthread_join(hilo_kernel, NULL);
     sleep(30000);
 
     finalizar_log(logger_io);
-    finalizar_config_io(datos_io);
+    // finalizar_config_io(datos_io);
     finalizar_config(config_io);
 
     return EXIT_SUCCESS;
@@ -78,24 +76,23 @@ void conectarKernel(){
 
 void conectarMemoria(){
     socket_memoria = -1;
+    char* ip_memoria = config_get_string_value(config_io, "IP_MEMORIA");
+    char* puerto_memoria = config_get_string_value(config_io, "PUERTO_MEMORIA");
+    int identificador = texto_to_cod_op(config_get_string_value(config_io, "TIPO_INTERFAZ"));
 
-    log_warning(logger_io, "EN LA CONEXION A MEMORIA HAY QUE HCER LO MISMO QUE EN KERNEL");
 
-    if((socket_memoria = crear_conexion(datos_io->ip_memoria, datos_io->puerto_memoria)) <= 0){
+    if((socket_memoria = crear_conexion(ip_memoria, puerto_memoria)) <= 0){
+        sem_wait(&mlog);
         log_error(logger_io, "No se ha podido conectar con la MEMORIA");
+        sem_post(&mlog);
         return;
     }
-    
-    int identificador = IO;
-    bool confirmacion;
 
+    //1. Envio tipo de interfaz
     send(socket_memoria, &identificador, sizeof(int), 0);
-    recv(socket_memoria, &confirmacion, sizeof(bool), MSG_WAITALL);
+    log_protegido_io(string_from_format("Tipo de interfaz enviado a MEMORIA"));
 
-    if(!confirmacion){
-        log_error(logger_io, "ERROR: Handshake con memoria fallido");
-        return;
-    }
-
-    log_info(logger_io, "Conexion con memoria exitosa");
+    //2. Envio el nombre de la interfaz
+    enviar_mensaje(nombre_interfaz, socket_memoria);
+    log_protegido_io(string_from_format("Nombre de interfaz enviado a MEMORIA"));
 }

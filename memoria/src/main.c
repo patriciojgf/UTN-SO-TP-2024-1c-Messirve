@@ -46,6 +46,18 @@ int tamanio_pagina(){
             socket_io = socket_cliente;
             pthread_create(&hilo_io, NULL, (void *)conectarIO, &socket_io);
             break; 
+        case STDIN:
+            log_protegido_mem(string_from_format("Se conecto el STDIN"));
+            break;
+        case STDOUT:
+            log_protegido_mem(string_from_format("Se conecto el STDOUT"));
+            break;
+        case GENERICA:
+            log_protegido_mem(string_from_format("Se conecto una interfaz generica"));
+            break;
+        case DIALFS:
+            log_protegido_mem(string_from_format("Se conecto el DIALFS"));
+            break;            
         default:
             log_protegido_mem(string_from_format("No reconozco ese codigo"));
             break;

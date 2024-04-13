@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 	liberar_conexion(socket_memoria);
 	liberar_conexion(socket_dispatch);
 	liberar_conexion(socket_interrupt);
-	// liberar_conexion(socket_FS);
+	liberar_conexion(socket_servidor);
 	printf("Hilo 1\n");
 	// pthread_detach(t2);
     // pthread_detach(t3);
