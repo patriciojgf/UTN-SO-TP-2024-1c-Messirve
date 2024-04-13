@@ -24,9 +24,9 @@ int main(int argc, char **argv) {
 	// inicializar_estructuras();
 	lista_interfaz_socket = list_create();
 
-    pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
-	pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
-	pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
+    // pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
+	// pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
+	// pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
     pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
 	// pthread_create(&t5, NULL, (void*) leer_consola, NULL);
 
@@ -43,9 +43,9 @@ int main(int argc, char **argv) {
 	// liberar_conexion(socket_FS);
 
 	//pthread_detach(t1);
-	pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
-	pthread_join(t2, NULL);
-	pthread_join(t3, NULL);
+	// pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
+	// pthread_join(t2, NULL);
+	// pthread_join(t3, NULL);
 	pthread_join(t4, NULL);
 	liberar_conexion(socket_memoria);
 	liberar_conexion(socket_dispatch);
@@ -92,31 +92,32 @@ int esperar_interfaz(int socket_servidor){
 	return 0;
 }
 
-void nuevaInterfaz(int socket_cliente){
+int nuevaInterfaz(int socket_cliente){
 
 	t_socket_interfaz* nueva_interfaz_socket = malloc(sizeof(t_socket_interfaz));
+	nueva_interfaz_socket->nombre_interfaz = malloc(sizeof(char*));
 	nueva_interfaz_socket->socket = socket_cliente;
+
 	//1. Recibo el tipo de interfaz
 	nueva_interfaz_socket->tipo_interfaz = recibir_operacion(socket_cliente);
 	if(nueva_interfaz_socket->tipo_interfaz == -1){
 		free(nueva_interfaz_socket);
 		log_error(logger_kernel, "ERROR - No se pudo recibir el codigo de operacion");
 		log_warning(logger_kernel, "Ver si hay que modificar este return para que falle");
-		return;
+		return EXIT_FAILURE;
 	}
 
 	//2. Recibo el nombre de la interfaz	
-	nueva_interfaz_socket->nombre_interfaz = malloc(sizeof(char*));
-	char* nombre_interfaz = leer_mensaje(socket_cliente);
-	log_warning(logger_kernel, "ACA HAY QUE VER PORQUE TENGO QUE LEER DOS VECES");
-	log_warning(logger_kernel, "EN LA PRIMERA LECTURA LEE NULO");
+	int cod_op = recibir_operacion(socket_cliente);
+	if(!(cod_op == MENSAJE))
+		return EXIT_FAILURE;
 	nueva_interfaz_socket->nombre_interfaz  = leer_mensaje(socket_cliente);
 
-	if(nombre_interfaz == NULL){
+	if(nueva_interfaz_socket->nombre_interfaz == NULL){
 		free(nueva_interfaz_socket->nombre_interfaz);
 		free(nueva_interfaz_socket);
 		log_error(logger_kernel, "ERROR - No se pudo recibir el nombre de la interfaz");
-		return;
+		return EXIT_FAILURE;
 	}
 
 	printf("Nombre de interfaz: %s\n", nueva_interfaz_socket->nombre_interfaz );

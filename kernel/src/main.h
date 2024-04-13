@@ -38,7 +38,7 @@ int conectarCpuDispatch();
 int conectarCpuInterrupt();
 int conectarMemoria();
 int conectarIO();
-void nuevaInterfaz(int socket_cliente);
+int nuevaInterfaz(int socket_cliente);
 int esperar_interfaz(int socket_servidor);
 int conectarInterfaz();
 
