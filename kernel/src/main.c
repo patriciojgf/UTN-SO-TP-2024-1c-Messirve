@@ -3,62 +3,72 @@
 
 // pthread_mutex_t mlog, mconexiones;
 
-int conexiones;
+// int conexiones;
 int id_counter = 1;//PID DE LOS PROCESOS
+//semaforos
+sem_t sem_sockets_interfaces;
 
 /* -------------------------------------Iniciar Kernel -----------------------------------------------*/
 int main(int argc, char **argv) {
-
-	/*---------Inicio semaforos--------*/
-	sem_init(&sem_sockets_interfaces,0,1);
-	// sem_init(&planificadores,0,0);
 
 	/*--------- Cargo configuraciones y log--------*/
 	config_kernel = iniciar_config(argv[1]);
 	logger_kernel=iniciar_logger("kernel.log","KERNEL");
 	// pthread_mutex_init(&mconexiones,NULL);
-	conexiones=0;
+	// conexiones=0;
 
 	/*--------- Inicio conexiones y estructuras--------*/
 	pthread_t t1,t2,t3,t4,t5;
+
+	/*---------- Hilos para planificadores --------------*/
 	// inicializar_estructuras();
 	lista_interfaz_socket = list_create();
 
     pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
+	pthread_detach(t1); //ver si es correcto el detach aca
 	pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
+	pthread_detach(t2);
 	pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
+	pthread_detach(t3);
     pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
-	// pthread_create(&t5, NULL, (void*) leer_consola, NULL);
+	pthread_detach(t4);
+	pthread_create(&t5, NULL, (void*) leer_consola, NULL);
 
 
-
+	/*------- Inicio los planificadores ----------------*/
 	// iniciar_hilos_estructuras();
-	// pthread_join(t5, NULL);
 
+	
+	/*------- Limpio listas, semaforos, etc ------------*/
 	// free_estructuras();
 
 	// log_destroy(logger_kernel);
  	// config_destroy(config_kernel);
 	
 	// liberar_conexion(socket_FS);
+	pthread_join(t5, NULL);
 
-	//pthread_detach(t1);
-	pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
-	pthread_join(t2, NULL);
-	pthread_join(t3, NULL);
-	pthread_join(t4, NULL);
 	liberar_conexion(socket_memoria);
 	liberar_conexion(socket_dispatch);
 	liberar_conexion(socket_interrupt);
 	liberar_conexion(socket_servidor);
-	printf("Hilo 1\n");
-	// pthread_detach(t2);
-    // pthread_detach(t3);
-	// pthread_detach(t4);
-	// sem_destroy(&planificadores);
+	sem_destroy(&planificadores);
+	free_estructuras();
     return 0;
 }
 
+/*-------------------------------------Consola----------------------------------*/
+int leer_consola(){
+	char* linea;
+	while(1){
+		linea = readline(">");
+		if(linea){
+			printf("Linea ingresada: %s\n", linea);
+			free(linea);
+		}
+	}
+	return 0;
+}
 
 /*-------------------------------------Servidor para Interfaces------------------------------*/
 int conectarInterfaz(){
@@ -126,31 +136,31 @@ int nuevaInterfaz(int socket_cliente){
 	switch (nueva_interfaz_socket->tipo_interfaz){
 		case GENERICA:
 			log_protegido(string_from_format("Se conecto la interfaz GENERICA %s", nueva_interfaz_socket->nombre_interfaz));
-			sem_wait(&sem_sockets_interfaces);
+			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
-			sem_post(&sem_sockets_interfaces);
+			// sem_post(&sem_sockets_interfaces);
 			//conectar con IO_GENERICA
 			break;
 		case DIALFS:
 			log_protegido(string_from_format("Se conecto la interfaz DIALFS %s", nueva_interfaz_socket->nombre_interfaz));
-			sem_wait(&sem_sockets_interfaces);
+			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
-			sem_post(&sem_sockets_interfaces);
+			// sem_post(&sem_sockets_interfaces);
 			//conectar con IO_DIALFS
 			break;
 		case STDIN:
 			log_protegido(string_from_format("Se conecto la interfaz STDIN %s", nueva_interfaz_socket->nombre_interfaz));
-			sem_wait(&sem_sockets_interfaces);
+			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
-			sem_post(&sem_sockets_interfaces);
+			// sem_post(&sem_sockets_interfaces);
 			//conectar con IO_STDIN
 			break;
 		case STDOUT:
 			printf("STDOUT\n");
 			log_protegido(string_from_format("Se conecto la interfaz STDOUT %s", nueva_interfaz_socket->nombre_interfaz));
-			sem_wait(&sem_sockets_interfaces);
+			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
-			sem_post(&sem_sockets_interfaces);
+			// sem_post(&sem_sockets_interfaces);
 			//conectar con IO_STDOUT
 			break;
 		default:
@@ -190,7 +200,7 @@ int conectarMemoria(){
 		log_protegido(string_from_format("ERROR: Handshake con memoria fallido"));
 
 	// pthread_mutex_lock(&mconexiones);
-	conexiones++;
+	// conexiones++;
 	// pthread_mutex_unlock(&mconexiones);
 
 return 0;
@@ -222,7 +232,7 @@ int conectarCpuDispatch(){
 
 	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
 	// pthread_mutex_lock(&mconexiones);
-	conexiones++;
+	// conexiones++;
 	// pthread_mutex_unlock(&mconexiones);
 	
 return 0;
@@ -253,7 +263,21 @@ int conectarCpuInterrupt(){
 
 	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
 	// pthread_mutex_lock(&mconexiones);
-	conexiones++;
+	// conexiones++;
 	// pthread_mutex_unlock(&mconexiones);
 	return 0;
+}
+
+
+void inicializar_estructuras(){
+    
+    //Semaforos
+	sem_init(&sem_sockets_interfaces,0,1);    
+}
+
+void free_estructuras(){
+    
+    //Semaforos
+    sem_destroy(&sem_sockets_interfaces);
+    
 }

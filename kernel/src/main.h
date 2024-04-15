@@ -20,11 +20,6 @@ sem_t planificadores;
 //armo estructura lista de tipo t_socket_interfaz para guardar todas las que llegan
 t_list* lista_interfaz_socket;
 
-
-//semaforos
-sem_t sem_sockets_interfaces;
-
-
 int socket_IO;
 int socket_memoria;
 int socket_dispatch;
@@ -42,5 +37,9 @@ int conectarIO();
 int nuevaInterfaz(int socket_cliente);
 int esperar_interfaz(int socket_servidor);
 int conectarInterfaz();
+int leer_consola();
+void inicializar_estructuras();
+void free_estructuras();
+
 
 #endif
