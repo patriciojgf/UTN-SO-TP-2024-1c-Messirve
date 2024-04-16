@@ -1,6 +1,6 @@
 # Enunciado
 
-[c-comentas](https://docs.google.com/document/d/1-AqFTroovEMcA1BfC2rriB5jsLE6SUa4mbcAox1rPec/edit)
+[c-comenta](https://docs.google.com/document/d/1-AqFTroovEMcA1BfC2rriB5jsLE6SUa4mbcAox1rPec/edit)
 
 # tp-scaffold
 

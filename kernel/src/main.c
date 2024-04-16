@@ -1,9 +1,9 @@
 #include "main.h"
 
 
-// pthread_mutex_t mlog, mconexiones;
+pthread_mutex_t /*mlog,*/ mconexiones;
 
-// int conexiones;
+int conexiones;
 int id_counter = 1;//PID DE LOS PROCESOS
 //semaforos
 sem_t sem_sockets_interfaces;
@@ -14,8 +14,8 @@ int main(int argc, char **argv) {
 	/*--------- Cargo configuraciones y log--------*/
 	config_kernel = iniciar_config(argv[1]);
 	logger_kernel=iniciar_logger("kernel.log","KERNEL");
-	// pthread_mutex_init(&mconexiones,NULL);
-	// conexiones=0;
+	pthread_mutex_init(&mconexiones,NULL);
+	conexiones=0;
 
 	/*--------- Inicio conexiones y estructuras--------*/
 	pthread_t t1,t2,t3,t4,t5;
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 	pthread_detach(t3);
     pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
 	pthread_detach(t4);
-	pthread_create(&t5, NULL, (void*) leer_consola, NULL);
+	pthread_create(&t5, NULL, (void*) leerConsola, NULL);
 
 
 	/*------- Inicio los planificadores ----------------*/
@@ -48,27 +48,34 @@ int main(int argc, char **argv) {
 	// liberar_conexion(socket_FS);
 	pthread_join(t5, NULL);
 
+	//pthread_detach(t1);
+	pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
+	pthread_join(t2, NULL);
+	pthread_join(t3, NULL);
+	pthread_join(t4, NULL);
+	pthread_join(t5, NULL);
+
 	liberar_conexion(socket_memoria);
 	liberar_conexion(socket_dispatch);
 	liberar_conexion(socket_interrupt);
 	liberar_conexion(socket_servidor);
 	sem_destroy(&planificadores);
-	free_estructuras();
+	// free_estructuras();
     return 0;
 }
 
 /*-------------------------------------Consola----------------------------------*/
-int leer_consola(){
-	char* linea;
-	while(1){
-		linea = readline(">");
-		if(linea){
-			printf("Linea ingresada: %s\n", linea);
-			free(linea);
-		}
-	}
-	return 0;
-}
+// int leer_consola(){
+// 	char* linea;
+// 	while(1){
+// 		linea = readline(">");
+// 		if(linea){
+// 			printf("Linea ingresada: %s\n", linea);
+// 			free(linea);
+// 		}
+// 	}
+// 	return 0;
+// }
 
 /*-------------------------------------Servidor para Interfaces------------------------------*/
 int conectarInterfaz(){
@@ -83,6 +90,11 @@ int conectarInterfaz(){
 	while(esperar_interfaz(socket_servidor) != -1){
 		log_protegido(string_from_format("Esperando Cliente..."));
 	}
+
+	// pthread_mutex_lock(&mconexiones);
+	// conexiones++;
+	// pthread_mutex_unlock(&mconexiones);
+
 	return 0;
 }
 
@@ -199,9 +211,9 @@ int conectarMemoria(){
 	else
 		log_protegido(string_from_format("ERROR: Handshake con memoria fallido"));
 
-	// pthread_mutex_lock(&mconexiones);
-	// conexiones++;
-	// pthread_mutex_unlock(&mconexiones);
+	pthread_mutex_lock(&mconexiones);
+	conexiones++;
+	pthread_mutex_unlock(&mconexiones);
 
 return 0;
 
@@ -231,9 +243,9 @@ int conectarCpuDispatch(){
 		log_protegido(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
 
 	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
-	// pthread_mutex_lock(&mconexiones);
-	// conexiones++;
-	// pthread_mutex_unlock(&mconexiones);
+	pthread_mutex_lock(&mconexiones);
+	conexiones++;
+	pthread_mutex_unlock(&mconexiones);
 	
 return 0;
 }
@@ -262,22 +274,17 @@ int conectarCpuInterrupt(){
 		log_protegido(string_from_format("ERROR: Handshake de Modulo Interrupt con CPU fallido"));
 
 	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
-	// pthread_mutex_lock(&mconexiones);
-	// conexiones++;
-	// pthread_mutex_unlock(&mconexiones);
+	pthread_mutex_lock(&mconexiones);
+	conexiones++;
+	pthread_mutex_unlock(&mconexiones);
 	return 0;
 }
 
-
-void inicializar_estructuras(){
-    
-    //Semaforos
-	sem_init(&sem_sockets_interfaces,0,1);    
-}
-
-void free_estructuras(){
-    
-    //Semaforos
-    sem_destroy(&sem_sockets_interfaces);
-    
+void leerConsola() {
+	printf("conexiones: %d \n", conexiones);
+	printf("Arranca leer consona, esperando...\n");
+    while(conexiones < 3){/*ESPERA*/}
+	grado_multiprogramacion = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
+	leer_consola(logger_kernel, grado_multiprogramacion, conexiones);
+	printf("Finaliza consola...\n");
 }

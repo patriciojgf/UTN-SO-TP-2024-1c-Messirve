@@ -11,7 +11,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <utils/queues.h>
-
+#include "consola.h"
 
 t_log* logger_kernel;
 t_config* config_kernel;
@@ -37,9 +37,12 @@ int conectarIO();
 int nuevaInterfaz(int socket_cliente);
 int esperar_interfaz(int socket_servidor);
 int conectarInterfaz();
-int leer_consola();
+// int leer_consola();
 void inicializar_estructuras();
 void free_estructuras();
 
+
+/*----------------CONSOLA----------------*/
+void leerConsola();
 
 #endif

@@ -64,6 +64,7 @@ int tamanio_pagina(){
         }
     }
     pthread_join(hilo_kernel, NULL);
+    return 0;
 }
 
 
@@ -142,10 +143,12 @@ int conectarKernel(int* socket_kernel){
         //     break;
         case -1:
             log_error(logger_memoria,"El KERNEL se desconecto");
+            // break;
             return EXIT_FAILURE;
         default:
             log_warning(logger_memoria, "Operacion desconocida.");
-            break;
+            // break;
+            return EXIT_FAILURE;
         }
         free(buffer);
     }
@@ -169,10 +172,12 @@ int conectarCpu(int* socket_cpu){
         {
             case MENSAJE:
                 recibir_mensaje(*socket_cpu,logger_memoria);
-                break;
+                // break;
+                return EXIT_FAILURE;
             default:
                 log_warning(logger_memoria, "Operacion desconocida.");
-                break;
+                // break;
+                return EXIT_FAILURE;
         }
     }
     return 0;
@@ -198,7 +203,7 @@ int conectarIO(int* socket_io){
             break;
         case -1:
             log_error(logger_memoria,"El IO se desconecto");
-            return EXIT_FAILURE;
+            break;
         default:
             log_warning(logger_memoria, "Operacion desconocida.");
             break;
