@@ -64,18 +64,6 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-/*-------------------------------------Consola----------------------------------*/
-// int leer_consola(){
-// 	char* linea;
-// 	while(1){
-// 		linea = readline(">");
-// 		if(linea){
-// 			printf("Linea ingresada: %s\n", linea);
-// 			free(linea);
-// 		}
-// 	}
-// 	return 0;
-// }
 
 /*-------------------------------------Servidor para Interfaces------------------------------*/
 int conectarInterfaz(){
@@ -182,6 +170,10 @@ int nuevaInterfaz(int socket_cliente){
 			break;
 	}
 
+	pthread_mutex_lock(&mconexiones);
+	conexiones++;
+	pthread_mutex_unlock(&mconexiones);
+
 }
 
 /* ------------------------------------Conexiones--------------------------------------------*/
@@ -243,6 +235,7 @@ int conectarCpuDispatch(){
 		log_protegido(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
 
 	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
+
 	pthread_mutex_lock(&mconexiones);
 	conexiones++;
 	pthread_mutex_unlock(&mconexiones);
@@ -274,16 +267,31 @@ int conectarCpuInterrupt(){
 		log_protegido(string_from_format("ERROR: Handshake de Modulo Interrupt con CPU fallido"));
 
 	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
+
 	pthread_mutex_lock(&mconexiones);
 	conexiones++;
 	pthread_mutex_unlock(&mconexiones);
+
 	return 0;
 }
+
+/*-------------------------------------Consola----------------------------------*/
+// int leer_consola(){
+// 	char* linea;
+// 	while(1){
+// 		linea = readline(">");
+// 		if(linea){
+// 			printf("Linea ingresada: %s\n", linea);
+// 			free(linea);
+// 		}
+// 	}
+// 	return 0;
+// }
 
 void leerConsola() {
 	printf("conexiones: %d \n", conexiones);
 	printf("Arranca leer consona, esperando...\n");
-    while(conexiones < 3){/*ESPERA*/}
+    while(conexiones < 4){/*ESPERA*/}
 	grado_multiprogramacion = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
 	leer_consola(logger_kernel, grado_multiprogramacion, conexiones);
 	printf("Finaliza consola...\n");
