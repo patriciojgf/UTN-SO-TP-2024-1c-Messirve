@@ -13,10 +13,6 @@ t_config_cpu* iniciar_config_cpu(t_config* config_cpu){
     return datos_cpu;
 }
 
-void finalizar_config_cpu(t_config_cpu* config_cpu){
-    free(config_cpu);
-}
-
 // int inicializar_configuracion(t_log* logger_cpu, t_config* config_cpu, t_config_cpu* datos_cpu, char* config_name){
 //     logger_cpu = iniciar_logger(LOG_NAME, PROCESS_NAME);
 

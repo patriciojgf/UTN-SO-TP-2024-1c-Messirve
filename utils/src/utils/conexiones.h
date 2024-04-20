@@ -36,7 +36,30 @@ typedef enum
 	INICIAR_PROCESO,
 	FINALIZAR_PROCESO,
 	PROCESO_ESTADO,
-	EJECUTAR_SCRIPT
+	EJECUTAR_SCRIPT,
+	FETCH_INSTRUCCION,
+/*INSTRUCCIONES - INICIO*/
+	NO_RECONOCIDO,
+	SET,
+	MOV_IN,
+	MOV_OUT,
+	SUM,
+	SUB,
+	JNZ,
+	RESIZE,
+	COPY_STRING,
+	WAIT,
+	SIGNAL,
+	IO_GEN_SLEEP,
+	IO_STDIN_READ,
+	IO_STDOUT_WRITE,
+	IO_FS_CREATE,
+	IO_FS_DELETE,
+	IO_FS_TRUNCATE,
+	IO_FS_WRITE,
+	IO_FS_READ,
+	EXIT
+/*INSTRUCCIONES - FIN*/
     /*agregar el resto*/
 }op_code;
 
@@ -67,12 +90,10 @@ void liberar_conexion(int socket_cliente);
 
 int texto_to_cod_op(char* texto);
 
-
 int iniciar_servidor(char*);
 int esperar_cliente(int);
 void recibir_mensaje(int,t_log*);
 void* recibir_buffer(int*, int);
-void eliminar_paquete(t_paquete*);
 char* leer_mensaje(int socket_cliente);
 int recibir_operacion(int);
 
@@ -80,5 +101,11 @@ void agregar_socket_a_lista(t_list* lista, t_socket_interfaz* socket);
 void quitar_socket_por_nombre(t_list* lista, char* nombre);
 t_socket_interfaz* buscar_socket_por_nombre(t_list* lista, char* nombre);
 
+
+/*Paquetes*/
+void agregar_datos_sin_tamaño_a_paquete(t_paquete* paquete, void* datos, int size);
+void eliminar_paquete(t_paquete*);
+t_paquete *crear_paquete(int codigo_operacion);
+void enviar_paquete(t_paquete* paquete, int socket_cliente);
 
 #endif /* CONEXIONES_H_ */

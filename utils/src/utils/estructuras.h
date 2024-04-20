@@ -35,4 +35,11 @@ typedef struct t_pcb
     t_registros_cpu registros_cpu;
 }t_pcb;
 
+typedef struct
+{
+    int identificador; //identificador de la instruccion
+    int cantidad_parametros; //cantidad de parametros que tiene la instruccion
+    t_list* parametros; //lista de parametros sin contar el identificador
+}t_instruccion;
+
 #endif // ESTRUCTURAS_H
