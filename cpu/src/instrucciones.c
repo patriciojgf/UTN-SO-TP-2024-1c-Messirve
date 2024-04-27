@@ -379,8 +379,10 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
     free(nombre_instruccion);
 }
 
-// void desalojar_pcb(int motivo, t_instruccion* instruccion){
-// 	t_paquete* paquete = crear_paquete(PCB);
-
-// }
+void devolver_contexto(int motivo, t_instruccion* instruccion){
+	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
+	empaquetar_contexto_cpu(paquete, instruccion, pid,registros_cpu);
+	enviar_paquete(paquete, socket_servidor_dispatch);
+	eliminar_paquete(paquete);
+}
 

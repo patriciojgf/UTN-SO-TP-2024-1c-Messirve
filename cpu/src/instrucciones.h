@@ -11,7 +11,6 @@
 #include <commons/collections/dictionary.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <utils/estructuras.h>
 #include <utils/conexiones.h>
 
 extern int pid;
@@ -26,7 +25,7 @@ extern sem_t mlog;
 char* fetch_instruccion();
 t_instruccion* decodificar_instruccion(char* instruccion);
 t_instruccion* execute_instruccion(t_instruccion* instruccion);
-void desalojar_pcb(int motivo, t_instruccion* instruccion);
+void devolver_contexto(int motivo, t_instruccion* instruccion);
 
 
 #endif // INSTRUCCIONES_H

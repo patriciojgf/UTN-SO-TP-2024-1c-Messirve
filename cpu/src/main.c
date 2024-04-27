@@ -208,7 +208,7 @@ static void _recibir_pcb(int socket){
 
 static void _check_interrupt(t_instruccion* instruccion){
     if(flag_interrupt && flag_ejecucion){
-        // desalojar_pcb(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
+        // devolver_contexto(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
         flag_ejecucion = false;
     }
     flag_interrupt = false;

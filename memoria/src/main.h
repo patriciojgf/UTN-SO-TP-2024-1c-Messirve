@@ -10,7 +10,6 @@
 #include <semaphore.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <utils/queues.h>
 
 t_log* logger_memoria;
 t_config* config_memoria;

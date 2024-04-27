@@ -14,12 +14,14 @@
 #include<assert.h>
 #include<signal.h>
 #include<string.h>
+#include"estructuras.h"
 
 typedef enum
 {
 	//si agregan mas tipos de mensajes, agregarlos a la funcion texto_to_cod_op
 	MENSAJE,
 	PCB,
+	CONTEXTO_EJECUCION,
 	DESALOJAR,
 	KERNEL,
 	KERNEL_INTERRUPT,
@@ -107,5 +109,14 @@ void agregar_datos_sin_tamaño_a_paquete(t_paquete* paquete, void* datos, int si
 void eliminar_paquete(t_paquete*);
 t_paquete *crear_paquete(int codigo_operacion);
 void enviar_paquete(t_paquete* paquete, int socket_cliente);
+
+
+/*Conexion con CPU + Paquetes - INICIO*/
+
+void empaquetar_registros_cpu(t_paquete* paquete_contexto, t_registros_cpu registros_cpu);
+void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion);
+void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid, t_registros_cpu registros_cpu);
+void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int* pid, t_registros_cpu* registros_cpu);
+
 
 #endif /* CONEXIONES_H_ */

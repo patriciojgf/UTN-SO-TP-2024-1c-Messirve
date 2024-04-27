@@ -1,5 +1,11 @@
 #include <consola.h>
 
+void log_protegido_kernel(char* mensaje){
+	sem_wait(&mlog);
+	log_info(logger_kernel, "%s", mensaje);
+	sem_post(&mlog);
+}
+
 void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
     printf("Leyendo consola...\n");
     char* leido;
@@ -27,7 +33,7 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
             case MULTIPROGRAMACION:
                 int nuevo_grado_mult = atoi(list_get(comando->parametros,0));
 				int grado_multiprogramacion_viejo=grado_multiprogramacion;
-                log_protegido(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo,nuevo_grado_mult));
+                log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo,nuevo_grado_mult));
                 log_info(logger, "Proximamente hace su magia...");
                 break;
 

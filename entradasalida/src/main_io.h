@@ -3,7 +3,6 @@
 
     #include <configuracion_io.h>
     #include <utils/conexiones.h>
-    #include <utils/estructuras.h>
     #include "semaphore.h"
 
     sem_t mlog;

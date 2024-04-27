@@ -8,6 +8,9 @@
 #include <commons/log.h>
 #include <assert.h>
 #include <string.h>
+#include <commons/collections/queue.h>
+#include <commons/collections/list.h>
+
 
 typedef struct{
 	// uint32_t AX,BX,CX,DX; 
@@ -24,16 +27,16 @@ typedef struct{
     uint32_t DI;
 } t_registros_cpu;
 
-typedef struct t_pcb 
-{
-    int id;
-    int prioridad;
-    int program_counter;
-    t_temporal* tiempo_llegada;
-    t_list* recursos_asignados;
-    t_list* archivos_abiertos;
-    t_registros_cpu registros_cpu;
-}t_pcb;
+// typedef struct 
+// {
+//     int id;
+//     int prioridad;
+//     int program_counter;
+//     t_temporal* tiempo_llegada;
+//     t_list* recursos_asignados;
+//     t_list* archivos_abiertos;
+//     t_registros_cpu registros_cpu;
+// }t_pcb;
 
 typedef struct
 {
@@ -41,5 +44,34 @@ typedef struct
     int cantidad_parametros; //cantidad de parametros que tiene la instruccion
     t_list* parametros; //lista de parametros sin contar el identificador
 }t_instruccion;
+
+
+
+//PCB.h
+
+typedef enum estado {
+    NEW,
+    READY,
+    EXEC,
+    BLOCKED,
+    estado_EXIT,
+} t_estado;
+
+typedef struct {
+    char* nombre;
+    int instancias;
+    t_queue* bloqueados; //esta lista la vamos a usar para saber que procesos estan bloqueados por este recurso
+}t_recurso;
+
+typedef struct{
+    int pid; //Número de la próxima instrucción a ejecutar.
+    int program_counter; //Número de la próxima instrucción a ejecutar.
+    int quantum; //Unidad de tiempo utilizada por el algoritmo de planificación VRR.
+    t_registros_cpu* registros_cpu; //Registros de la CPU.
+    t_list* recursos_asignados; // va a ser una lista de t_recurso
+    t_list* archivos_abiertos; // va a ser una lista de t_archivo
+    t_estado estado_actual; //ref 20222c
+    t_estado estado_anterior;   
+} t_pcb;
 
 #endif // ESTRUCTURAS_H

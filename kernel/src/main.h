@@ -10,7 +10,7 @@
 #include <semaphore.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <utils/queues.h>
+// #include <utils/queues.h>
 #include "consola.h"
 
 t_log* logger_kernel;
@@ -19,6 +19,7 @@ t_pcb* proceso_exec;
 sem_t planificadores;
 //armo estructura lista de tipo t_socket_interfaz para guardar todas las que llegan
 t_list* lista_interfaz_socket;
+sem_t mlog;
 
 int socket_IO;
 int socket_memoria;

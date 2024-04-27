@@ -8,12 +8,19 @@ int id_counter = 1;//PID DE LOS PROCESOS
 //semaforos
 sem_t sem_sockets_interfaces;
 
+// void log_protegido_kernel(char* mensaje){
+// 	sem_wait(&mlog);
+// 	log_info(logger_kernel, "%s", mensaje);
+// 	sem_post(&mlog);
+// }
+
 /* -------------------------------------Iniciar Kernel -----------------------------------------------*/
 int main(int argc, char **argv) {
 
 	/*--------- Cargo configuraciones y log--------*/
 	config_kernel = iniciar_config(argv[1]);
 	logger_kernel=iniciar_logger("kernel.log","KERNEL");
+	sem_init(&mlog,0,1);
 	pthread_mutex_init(&mconexiones,NULL);
 	conexiones=0;
 
@@ -49,11 +56,11 @@ int main(int argc, char **argv) {
 	pthread_join(t5, NULL);
 
 	//pthread_detach(t1);
-	pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
-	pthread_join(t2, NULL);
-	pthread_join(t3, NULL);
-	pthread_join(t4, NULL);
-	pthread_join(t5, NULL);
+	// pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
+	// pthread_join(t2, NULL);
+	// pthread_join(t3, NULL);
+	// pthread_join(t4, NULL);
+	// pthread_join(t5, NULL);
 
 	liberar_conexion(socket_memoria);
 	liberar_conexion(socket_dispatch);
@@ -73,10 +80,10 @@ int conectarInterfaz(){
 		log_error(logger_kernel, "ERROR - No se pudo crear el servidor");
 		return EXIT_FAILURE;
 	}
-	log_protegido(string_from_format("Servidor listo para recibir clientes"));
+	log_protegido_kernel(string_from_format("Servidor listo para recibir clientes"));
 
 	while(esperar_interfaz(socket_servidor) != -1){
-		log_protegido(string_from_format("Esperando Cliente..."));
+		log_protegido_kernel(string_from_format("Esperando Cliente..."));
 	}
 
 	// pthread_mutex_lock(&mconexiones);
@@ -135,21 +142,21 @@ int nuevaInterfaz(int socket_cliente){
 
 	switch (nueva_interfaz_socket->tipo_interfaz){
 		case GENERICA:
-			log_protegido(string_from_format("Se conecto la interfaz GENERICA %s", nueva_interfaz_socket->nombre_interfaz));
+			log_protegido_kernel(string_from_format("Se conecto la interfaz GENERICA %s", nueva_interfaz_socket->nombre_interfaz));
 			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
 			// sem_post(&sem_sockets_interfaces);
 			//conectar con IO_GENERICA
 			break;
 		case DIALFS:
-			log_protegido(string_from_format("Se conecto la interfaz DIALFS %s", nueva_interfaz_socket->nombre_interfaz));
+			log_protegido_kernel(string_from_format("Se conecto la interfaz DIALFS %s", nueva_interfaz_socket->nombre_interfaz));
 			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
 			// sem_post(&sem_sockets_interfaces);
 			//conectar con IO_DIALFS
 			break;
 		case STDIN:
-			log_protegido(string_from_format("Se conecto la interfaz STDIN %s", nueva_interfaz_socket->nombre_interfaz));
+			log_protegido_kernel(string_from_format("Se conecto la interfaz STDIN %s", nueva_interfaz_socket->nombre_interfaz));
 			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
 			// sem_post(&sem_sockets_interfaces);
@@ -157,7 +164,7 @@ int nuevaInterfaz(int socket_cliente){
 			break;
 		case STDOUT:
 			printf("STDOUT\n");
-			log_protegido(string_from_format("Se conecto la interfaz STDOUT %s", nueva_interfaz_socket->nombre_interfaz));
+			log_protegido_kernel(string_from_format("Se conecto la interfaz STDOUT %s", nueva_interfaz_socket->nombre_interfaz));
 			// sem_wait(&sem_sockets_interfaces);
 			agregar_socket_a_lista(lista_interfaz_socket, nueva_interfaz_socket);
 			// sem_post(&sem_sockets_interfaces);
@@ -184,10 +191,10 @@ int conectarMemoria(){
 
     ip= config_get_string_value(config_kernel,"IP_MEMORIA");
 	puerto=config_get_string_value(config_kernel,"PUERTO_MEMORIA");
-	log_protegido(string_from_format("MEMORIA:Conectando a memoria..."));
+	log_protegido_kernel(string_from_format("MEMORIA:Conectando a memoria..."));
 
 	while((socket_memoria = crear_conexion(ip, puerto)) <= 0){
-		log_protegido(string_from_format("No se pudo establecer una conexion con la Memoria"));
+		log_protegido_kernel(string_from_format("No se pudo establecer una conexion con la Memoria"));
         sleep(60);
 	}
 
@@ -199,9 +206,9 @@ int conectarMemoria(){
 
 	
 	if(confirmacion)
-		log_protegido(string_from_format("Conexion con memoria exitosa"));
+		log_protegido_kernel(string_from_format("Conexion con memoria exitosa"));
 	else
-		log_protegido(string_from_format("ERROR: Handshake con memoria fallido"));
+		log_protegido_kernel(string_from_format("ERROR: Handshake con memoria fallido"));
 
 	pthread_mutex_lock(&mconexiones);
 	conexiones++;
@@ -221,7 +228,7 @@ int conectarCpuDispatch(){
         printf(" DISPATCH: No se pudo establecer una conexion con la CPU\n");
     }
     else{
-		log_protegido(string_from_format("DISPATCH: Conexion con CPU exitosa"));
+		log_protegido_kernel(string_from_format("DISPATCH: Conexion con CPU exitosa"));
     }
 
 	int handshake_dispatch = KERNEL_DISPATCH;
@@ -230,10 +237,9 @@ int conectarCpuDispatch(){
 	recv(socket_dispatch, &confirmacion, sizeof(bool), MSG_WAITALL);
 
 	if(confirmacion)
-		log_protegido(string_from_format("Conexion de Modulo Dispatch con CPU exitosa"));
+		log_protegido_kernel(string_from_format("Conexion de Modulo Dispatch con CPU exitosa"));
 	else
-		log_protegido(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
-
+		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
 	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
 
 	pthread_mutex_lock(&mconexiones);
@@ -253,7 +259,7 @@ int conectarCpuInterrupt(){
         printf(" INTERRUPT: No se pudo establecer una conexion con la CPU\n");
     }
     else{
-		log_protegido(string_from_format("INTERRUPT: Conexion con CPU exitosa"));
+		log_protegido_kernel(string_from_format("INTERRUPT: Conexion con CPU exitosa"));
     }
 
 	int handshake_interrupt = KERNEL_INTERRUPT;
@@ -262,9 +268,9 @@ int conectarCpuInterrupt(){
 	recv(socket_interrupt, &confirmacion, sizeof(bool), MSG_WAITALL);
 
 	if(confirmacion)
-		log_protegido(string_from_format("Conexion de Modulo Interrupt con CPU exitosa"));
+		log_protegido_kernel(string_from_format("Conexion de Modulo Interrupt con CPU exitosa"));
 	else
-		log_protegido(string_from_format("ERROR: Handshake de Modulo Interrupt con CPU fallido"));
+		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Interrupt con CPU fallido"));
 
 	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
 

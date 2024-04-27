@@ -210,18 +210,6 @@ void quitar_socket_por_nombre(t_list* lista, char* nombre){
 }
 
 int texto_to_cod_op(char* texto){
-	// MENSAJE,
-	// PCB,
-	// DESALOJAR,
-	// KERNEL,
-	// KERNEL_INTERRUPT,
-	// KERNEL_DISPATCH,
-	// CPU,
-	// IO,
-	// IO_GENERICA,
-	// IO_STDIN,
-	// IO_STDOUT,
-	// IO_DIALFS
 	if(strcmp(texto, "MENSAJE") == 0)
 		return MENSAJE;
 	if(strcmp(texto, "PCB") == 0)
@@ -248,3 +236,75 @@ int texto_to_cod_op(char* texto){
 		return DIALFS;
 	return -1;
 }
+
+
+
+/*Conexion con CPU + Paquetes - INICIO*/
+
+void empaquetar_registros_cpu(t_paquete* paquete_contexto, t_registros_cpu registros_cpu){
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.AX), sizeof(uint8_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.BX), sizeof(uint8_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.CX), sizeof(uint8_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.DX), sizeof(uint8_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.EAX), sizeof(uint32_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.EBX), sizeof(uint32_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.ECX), sizeof(uint32_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.PC), sizeof(uint32_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.SI), sizeof(uint32_t));
+}
+
+void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion){
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(instruccion->identificador), sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(instruccion->cantidad_parametros), sizeof(int));
+	for(int i = 0; i < instruccion->cantidad_parametros; i++){
+		char* parametro = list_get(instruccion->parametros, i);
+		agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(parametro), strlen(parametro) + 1);
+	}
+}
+
+void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid,t_registros_cpu registros_cpu){
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(pid), sizeof(int));
+	empaquetar_registros_cpu(paquete_contexto, registros_cpu);
+	empaquetar_instruccion_cpu(paquete_contexto, instruccion);
+} 
+
+
+void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int* pid, t_registros_cpu* registros_cpu){
+	int desplazamiento = 0;
+	memcpy(pid, paquete_contexto->buffer->stream + desplazamiento, sizeof(int));
+	desplazamiento += sizeof(int);
+
+	//Registros CPU
+	memcpy(&(registros_cpu->AX), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(registros_cpu->BX), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(registros_cpu->CX), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(registros_cpu->DX), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(registros_cpu->EAX), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(registros_cpu->EBX), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(registros_cpu->ECX), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(registros_cpu->PC), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(registros_cpu->SI), paquete_contexto->buffer->stream + desplazamiento, sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	
+	//Instruccion
+	memcpy(&(instruccion->identificador), paquete_contexto->buffer->stream + desplazamiento, sizeof(int));
+	desplazamiento += sizeof(int);
+	memcpy(&(instruccion->cantidad_parametros), paquete_contexto->buffer->stream + desplazamiento, sizeof(int));
+	desplazamiento += sizeof(int);
+	for(int i = 0; i < instruccion->cantidad_parametros; i++){
+		char* parametro;
+		memcpy(&(parametro), paquete_contexto->buffer->stream + desplazamiento, sizeof(char*));
+		desplazamiento += sizeof(char*);
+		list_add(instruccion->parametros, parametro);
+	}
+	
+}
+/*Conexion con CPU + Paquetes - FIN*/
