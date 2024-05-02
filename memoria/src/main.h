@@ -10,13 +10,25 @@
 #include <semaphore.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include "mem_estructuras.h"
+#include "atender_kernel.h"
+#include "atender_cpu.h"
+#include "proceso.h"
 
+/*-----LOGS y CONFIG-----*/
 t_log* logger_memoria;
 t_config* config_memoria;
+
+/*----CONEXIONES---------*/
 int socket_peticion_FS;
-t_list* procesos_memoria;
-void *memoria;
-// t_queue* cola_paginas;
+int socket_servidor, socket_cliente, socket_kernel, socket_cpu, socket_io;
+
+/*----PROCESOS e INSTRUCCIOENS----*/
+t_list* lista_procesos_en_memoria;
+t_list* lista_instrucciones;
+
+/*----MEMORIA USUARIO-------------*/
+void *memoria_espacio_usuario;
 
 void log_protegido_mem(char* mensaje);
 int conectarKernel(int* socket_kernel);

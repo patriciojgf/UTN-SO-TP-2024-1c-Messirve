@@ -142,7 +142,7 @@ int conectarKernelInterrupt(){
                 void* buffer = recibir_buffer(&size, socket_cliente_interrupt);
                 memcpy(&(motivo_interrupt), buffer, sizeof(int));
                 memcpy(&(pid_interrupt), buffer + sizeof(int), sizeof(int));
-                log_protegido_cpu(string_from_format("Motivo de desalojo: %d", motivo_interrupt));
+                // log_protegido_cpu(string_from_format("Motivo de desalojo: %d", motivo_interrupt));
                 if(pid_interrupt == pid){
                     flag_interrupt = true;
                 }
@@ -164,8 +164,6 @@ int conectarKernelInterrupt(){
     }
     return 0;
 }
-
-
 
 static void _desempaquetar_pcb(void *buffer){
     int desplazamiento = 0;
@@ -208,7 +206,7 @@ static void _recibir_pcb(int socket){
 
 static void _check_interrupt(t_instruccion* instruccion){
     if(flag_interrupt && flag_ejecucion){
-        // devolver_contexto(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
+        devolver_contexto(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
         flag_ejecucion = false;
     }
     flag_interrupt = false;
@@ -225,5 +223,4 @@ static void _ejecutar_proceso(){
     while (flag_ejecucion){
         _check_interrupt(execute_instruccion(decodificar_instruccion(fetch_instruccion())));
     }
-    return;
 }

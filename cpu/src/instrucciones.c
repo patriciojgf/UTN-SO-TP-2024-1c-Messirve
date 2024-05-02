@@ -23,6 +23,7 @@ char* fetch_instruccion(){
 	agregar_datos_sin_tamaño_a_paquete(paquete, &program_counter, sizeof(int));
 	enviar_paquete(paquete, socket_memoria);
 	char* instruccion = _recibir_instruccion(socket_memoria);
+	printf("Instruccion: %s\n", instruccion);
 	program_counter++;
 	eliminar_paquete(paquete);
 	return instruccion;
@@ -39,6 +40,7 @@ t_instruccion* decodificar_instruccion(char* instruccion){
 		free(instruccion_separada[i]);
 	}
 	free(instruccion_separada);
+	printf("Identificador: %d\n", identificador);
 
 	inst_decodificada->identificador = identificador;
 	inst_decodificada->cantidad_parametros = _cantidad_parametros(identificador);
@@ -374,9 +376,7 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
     // Loggea el mensaje
     log_protegido_cpu(mensaje_log);
     
-    // Libera la memoria
-    free(mensaje_log);
-    free(nombre_instruccion);
+	log_warning(logger_cpu, "Necesito hacer un free aca?");
 }
 
 void devolver_contexto(int motivo, t_instruccion* instruccion){
