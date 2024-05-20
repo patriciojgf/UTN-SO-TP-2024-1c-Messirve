@@ -109,9 +109,21 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
 // Listar procesos por estado: Se encargará de mostrar por consola el listado de los estados con los procesos que se encuentran dentro de cada uno de ellos.
 // Nomenclatura: PROCESO_ESTADO
 
+void _setup_parametros(t_comando* comando, char** leido_separado, int cod_op){
+    if(string_array_size(leido_separado) != 2)
+    {
+        error_show("Parametros incorrectos."); 
+        return;
+    }
+    comando->cod_op = cod_op;
+    char* parametro = malloc(strlen(leido_separado[1])+1);
+    strcpy(parametro, leido_separado[1]);
+    list_add(comando->parametros, parametro);
+}
 
 void interpretar(t_comando* comando, char* leido){
 	char**leido_separado = string_split(leido, " ");
+
 	comando->cod_op = 500;
 
 	if(string_equals_ignore_case(leido_separado[0],"INICIAR_PLANIFICACION")){ // Nomenclatura: INICIAR_PLANIFICACION
@@ -125,27 +137,17 @@ void interpretar(t_comando* comando, char* leido){
 
 	if(string_equals_ignore_case(leido_separado[0],"MULTIPROGRAMACION")) // Nomenclatura: MULTIPROGRAMACION [VALOR]
 	{
-		comando->cod_op = MULTIPROGRAMACION;
-		char* parametro = malloc(strlen(leido_separado[1])+1);
-		strcpy(parametro, leido_separado[1]);
-		list_add(comando->parametros, parametro);
+        _setup_parametros(comando, leido_separado, MULTIPROGRAMACION);
 	}
 
 	if(string_equals_ignore_case(leido_separado[0],"INICIAR_PROCESO")) // Nomenclatura: INICIAR_PROCESO [PATH]
 	{
-		comando->cod_op = INICIAR_PROCESO;
-		char* parametro = malloc(strlen(leido_separado[1])+1);
-		strcpy(parametro, leido_separado[1]);
-		list_add(comando->parametros, parametro);
-
+        _setup_parametros(comando, leido_separado, INICIAR_PROCESO);
 	}
 
 	if(string_equals_ignore_case(leido_separado[0],"FINALIZAR_PROCESO")) // Nomenclatura: FINALIZAR_PROCESO [PID]
 	{
-		comando->cod_op = FINALIZAR_PROCESO;
-		char* parametro = malloc(strlen(leido_separado[1])+1);
-		strcpy(parametro, leido_separado[1]);
-		list_add(comando->parametros, parametro);
+        _setup_parametros(comando, leido_separado, FINALIZAR_PROCESO);
 	}
 
 	if(string_equals_ignore_case(leido_separado[0],"PROCESO_ESTADO")) // Nomenclatura: PROCESO_ESTADO
@@ -155,10 +157,7 @@ void interpretar(t_comando* comando, char* leido){
 
     if (string_equals_ignore_case(leido_separado[0], "EJECUTAR_SCRIPT")) // Nomenclatura: EJECUTAR_SCRIPT [PATH]
     {
-        comando->cod_op = EJECUTAR_SCRIPT; 
-        char* parametro = malloc(strlen(leido_separado[1])+1);
-		strcpy(parametro, leido_separado[1]);
-		list_add(comando->parametros, parametro);
+        _setup_parametros(comando, leido_separado, EJECUTAR_SCRIPT);
     }
     
 
