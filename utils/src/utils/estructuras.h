@@ -57,11 +57,6 @@ typedef enum estado {
     estado_EXIT,
 } t_estado;
 
-typedef struct {
-    char* nombre;
-    int instancias;
-    t_queue* bloqueados; //esta lista la vamos a usar para saber que procesos estan bloqueados por este recurso
-}t_recurso;
 
 typedef struct{
     int pid; //Número de la próxima instrucción a ejecutar.
@@ -73,5 +68,14 @@ typedef struct{
     t_estado estado_actual; //ref 20222c
     t_estado estado_anterior;   
 } t_pcb;
+
+
+typedef struct {
+    char* nombre;
+    int instancias;
+    t_list* l_bloqueados; //esta lista la vamos a usar para saber que procesos estan bloqueados por este recurso
+    t_pcb* pcb_asignado; //instancias asignadas
+    pthread_mutex_t mutex_bloqueados;
+}t_recurso;
 
 #endif // ESTRUCTURAS_H

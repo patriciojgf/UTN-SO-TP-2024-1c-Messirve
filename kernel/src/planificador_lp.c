@@ -20,7 +20,7 @@ void planificador_lp_new_ready(){
 
     pthread_mutex_lock(&mutex_procesos_planificados); //cantidad de procesos en el circuito
     pthread_mutex_lock(&mutex_plan_new); //mutex para lista NEW
-    if(grado_multiprogramacion > cantidad_procesos_planificados && !list_is_empty(lista_plan_new)){        
+    if(GRADO_MULTIPROGRAMACION > cantidad_procesos_planificados && !list_is_empty(lista_plan_new)){        
         pcb_en_new = list_remove(lista_plan_new, 0); //Busco el primer proceso en NEW por FIFO
 
         if(pcb_en_new != NULL){

@@ -1,8 +1,5 @@
 #include "main.h"
 
-
-pthread_mutex_t /*mlog,*/ mconexiones;
-
 int conexiones;
 int id_counter = 1;//PID DE LOS PROCESOS
 //semaforos
@@ -18,11 +15,15 @@ sem_t sem_sockets_interfaces;
 int main(int argc, char **argv) {
 
 	/*--------- Cargo configuraciones y log--------*/
-	config_kernel = iniciar_config(argv[1]);
-	logger_kernel=iniciar_logger("kernel.log","KERNEL");
-	sem_init(&mlog,0,1);
-	pthread_mutex_init(&mconexiones,NULL);
+	
+	//se mueve a init_estructuras - inicio
+	init_kernel(argv[1]);
+	// config_kernel = iniciar_config(argv[1]);
+	// logger_kernel=iniciar_logger("kernel.log","KERNEL");
+	// sem_init(&mlog,0,1);
+	// pthread_mutex_init(&mutex_conexiones,NULL);
 	conexiones=0;
+	//se mueve a init_estructuras - fin
 
 	/*--------- Inicio conexiones y estructuras--------*/
 	pthread_t t1,t2,t3,t4,t5;
@@ -177,9 +178,9 @@ int nuevaInterfaz(int socket_cliente){
 			break;
 	}
 
-	pthread_mutex_lock(&mconexiones);
+	pthread_mutex_lock(&mutex_conexiones);
 	conexiones++;
-	pthread_mutex_unlock(&mconexiones);
+	pthread_mutex_unlock(&mutex_conexiones);
 
 }
 
@@ -210,9 +211,9 @@ int conectarMemoria(){
 	else
 		log_protegido_kernel(string_from_format("ERROR: Handshake con memoria fallido"));
 
-	pthread_mutex_lock(&mconexiones);
+	pthread_mutex_lock(&mutex_conexiones);
 	conexiones++;
-	pthread_mutex_unlock(&mconexiones);
+	pthread_mutex_unlock(&mutex_conexiones);
 
 return 0;
 
@@ -242,9 +243,9 @@ int conectarCpuDispatch(){
 		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
 	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
 
-	pthread_mutex_lock(&mconexiones);
+	pthread_mutex_lock(&mutex_conexiones);
 	conexiones++;
-	pthread_mutex_unlock(&mconexiones);
+	pthread_mutex_unlock(&mutex_conexiones);
 	
 return 0;
 }
@@ -274,9 +275,9 @@ int conectarCpuInterrupt(){
 
 	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
 
-	pthread_mutex_lock(&mconexiones);
+	pthread_mutex_lock(&mutex_conexiones);
 	conexiones++;
-	pthread_mutex_unlock(&mconexiones);
+	pthread_mutex_unlock(&mutex_conexiones);
 
 	return 0;
 }
@@ -298,7 +299,7 @@ void leerConsola() {
 	printf("conexiones: %d \n", conexiones);
 	printf("Arranca leer consona, esperando...\n");
     while(conexiones < 4){/*ESPERA*/}
-	grado_multiprogramacion = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
-	leer_consola(logger_kernel, grado_multiprogramacion, conexiones);
+	//grado_multiprogramacion = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
+	leer_consola(logger_kernel, GRADO_MULTIPROGRAMACION, conexiones);
 	printf("Finaliza consola...\n");
 }

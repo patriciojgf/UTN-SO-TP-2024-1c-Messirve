@@ -1,10 +1,9 @@
 #ifndef PLANIFICADOR_CP_H_  
 #define PLANIFICADOR_CP_H_
 
-#include <utils/logconfig.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <utils/estructuras.h>
+#include "configuracion_kernel.h"
 
 // ------ PTHREAD_MUTEX ------
 extern pthread_mutex_t mutex_plan_new;
