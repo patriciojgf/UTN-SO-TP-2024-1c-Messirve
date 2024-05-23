@@ -1,8 +1,8 @@
-#include "main.h"
+#include <main.h>
 
 int conexiones;
 //semaforos
-sem_t sem_sockets_interfaces;
+// sem_t sem_sockets_interfaces;
 
 // void log_protegido_kernel(char* mensaje){
 // 	sem_wait(&mlog);
@@ -287,6 +287,6 @@ void leerConsola() {
 	printf("conexiones: %d \n", conexiones);
 	printf("Arranca leer consona, esperando...\n");
     while(conexiones < 4){/*ESPERA*/}
-	leer_consola(logger_kernel, GRADO_MULTIPROGRAMACION, m_multiprogramacion);
+	leer_consola(m_multiprogramacion);
 	printf("Finaliza consola...\n");
 }

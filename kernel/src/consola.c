@@ -7,7 +7,7 @@ void log_protegido_kernel(char* mensaje)
 	sem_post(&mlog);
 }
 
-void leer_consola(t_log* logger, int grado_multiprogramacion, sem_t m_multiprogramacion)
+void leer_consola(sem_t m_multiprogramacion)
 {
     printf("Leyendo consola...\n");
     char* leido;
@@ -38,10 +38,10 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, sem_t m_multiprogr
 
             case MULTIPROGRAMACION:
                 int nuevo_grado_mult = atoi(list_get(comando->parametros,0));
-				int grado_multiprogramacion_viejo = grado_multiprogramacion;
-                cambiar_multiprogramacion(nuevo_grado_mult, grado_multiprogramacion, m_multiprogramacion);
+				int grado_multiprogramacion_viejo = GRADO_MULTIPROGRAMACION;
+                cambiar_multiprogramacion(nuevo_grado_mult, m_multiprogramacion);
                 log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo, nuevo_grado_mult));
-                log_info(logger, "Proximamente hace su magia...");
+                // log_info(logger_kernel, "Proximamente hace su magia...");
                 break;
 
             case INICIAR_PROCESO:
@@ -56,19 +56,19 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, sem_t m_multiprogr
                 break;
 
             case FINALIZAR_PROCESO:
-                log_info(logger, "Proximamente Finalizando proceso...");
+                log_info(logger_kernel, "Proximamente Finalizando proceso...");
                 break;
 
             case PROCESO_ESTADO:
-                log_info(logger, "Proximamente Estado del proceso...");
+                log_info(logger_kernel, "Proximamente Estado del proceso...");
                 break;
 
             case EJECUTAR_SCRIPT:
-                log_info(logger, "Proximamente Ejecutando script...");
+                log_info(logger_kernel, "Proximamente Ejecutando script...");
                 break;
 
             default:
-                log_error(logger, "No se pudo ejecutar: %s", leido);
+                log_error(logger_kernel, "No se pudo ejecutar: %s", leido);
                 break;
         }
 
@@ -202,22 +202,22 @@ void interpretar(t_comando* comando, char* leido)
 	free(leido_separado);
 }
 
-void cambiar_multiprogramacion(int nuevo_grado_mult, int grado_multiprogramacion, sem_t m_multiprogramacion)
+void cambiar_multiprogramacion(int nuevo_grado_mult, sem_t m_multiprogramacion)
 {
-    if(nuevo_grado_mult < grado_multiprogramacion)
+    if(nuevo_grado_mult < GRADO_MULTIPROGRAMACION)
     {
-        for(int i = nuevo_grado_mult; i < grado_multiprogramacion; i++)
+        for(int i = nuevo_grado_mult; i < GRADO_MULTIPROGRAMACION; i++)
         {
             sem_wait(&m_multiprogramacion); 
         }
     }
     else
     {
-        for(int i = nuevo_grado_mult; i > grado_multiprogramacion; i++)
+        for(int i = nuevo_grado_mult; i > GRADO_MULTIPROGRAMACION; i++)
         {
             sem_post(&m_multiprogramacion); 
         }
     }
 
-    grado_multiprogramacion = nuevo_grado_mult;
+    GRADO_MULTIPROGRAMACION = nuevo_grado_mult;
 }

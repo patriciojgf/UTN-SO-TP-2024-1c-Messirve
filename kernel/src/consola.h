@@ -24,8 +24,8 @@
         t_list* parametros; 
     }t_comando;
 
-    void cambiar_multiprogramacion(int nuevo_grado_mult, int grado_multiprogramacion, sem_t m_multiprogramacion);
-    void leer_consola(t_log* logger, int grado_multiprogramacion, sem_t m_multiprogramacion);
+    void cambiar_multiprogramacion(int nuevo_grado_mult, sem_t m_multiprogramacion);
+    void leer_consola(sem_t m_multiprogramacion);
     void imprimir_comandos_permitidos();
     void interpretar(t_comando* comando, char* leido);
     void log_protegido_kernel(char* mensaje);

@@ -9,9 +9,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 // #include <utils/queues.h>
-#include "consola.h"
-#include "init_estructuras.h"
-#include "configuracion_kernel.h"
+#include <consola.h>
+#include <init_estructuras.h>
+#include <configuracion_kernel.h>
 
 t_log* logger_kernel;
 t_config* config_kernel;
