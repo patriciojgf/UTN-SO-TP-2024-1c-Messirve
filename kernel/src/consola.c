@@ -1,12 +1,14 @@
 #include <consola.h>
 
-void log_protegido_kernel(char* mensaje){
+void log_protegido_kernel(char* mensaje)
+{
 	sem_wait(&mlog);
 	log_info(logger_kernel, "%s", mensaje);
 	sem_post(&mlog);
 }
 
-void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
+void leer_consola(t_log* logger, int grado_multiprogramacion, sem_t m_multiprogramacion)
+{
     printf("Leyendo consola...\n");
     char* leido;
     leido = readline(">");
@@ -22,6 +24,10 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
         printf("el codigo es: %d\n", comando->cod_op);
         switch (comando->cod_op)
         {
+            case HELPER: 
+                imprimir_comandos_permitidos();
+                break;
+
             case INICIAR_PLANIFICACION:
                 log_info(logger_kernel, "Proximamente Iniciando planificación...");
                 break;
@@ -32,9 +38,10 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
 
             case MULTIPROGRAMACION:
                 int nuevo_grado_mult = atoi(list_get(comando->parametros,0));
-				int grado_multiprogramacion_viejo=grado_multiprogramacion;
-                log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo,nuevo_grado_mult));
-                log_info(logger_kernel, "Proximamente hace su magia...");
+				int grado_multiprogramacion_viejo = grado_multiprogramacion;
+                cambiar_multiprogramacion(nuevo_grado_mult, grado_multiprogramacion, m_multiprogramacion);
+                log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo, nuevo_grado_mult));
+                log_info(logger, "Proximamente hace su magia...");
                 break;
 
             case INICIAR_PROCESO:
@@ -116,7 +123,8 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
 // Listar procesos por estado: Se encargará de mostrar por consola el listado de los estados con los procesos que se encuentran dentro de cada uno de ellos.
 // Nomenclatura: PROCESO_ESTADO
 
-void _setup_parametros(t_comando* comando, char** leido_separado, int cod_op){
+void _setup_parametros(t_comando* comando, char** leido_separado, int cod_op)
+{
     if(string_array_size(leido_separado) != 2)
     {
         error_show("Parametros incorrectos."); 
@@ -128,10 +136,28 @@ void _setup_parametros(t_comando* comando, char** leido_separado, int cod_op){
     list_add(comando->parametros, parametro);
 }
 
-void interpretar(t_comando* comando, char* leido){
+void imprimir_comandos_permitidos()
+{
+	printf("============= COMANDOS AUTORIZADOS ============\n");
+	printf("EJECUTAR_SCRIPT [PATH]\n");
+	printf("INICIAR_PROCESO [PATH]\n");
+	printf("FINALIZAR_PROCESO [PID]\n");
+	printf("DETENER_PLANIFICACION\n");
+	printf("INICIAR_PLANIFICACION\n");
+	printf("MULTIPROGRAMACION [VALOR]\n");
+	printf("PROCESO_ESTADO\n");
+	printf("===============================================\n");
+}
+
+void interpretar(t_comando* comando, char* leido)
+{
 	char**leido_separado = string_split(leido, " ");
 
 	comando->cod_op = 500;
+
+    if(string_equals_ignore_case(leido_separado[0], "HELPER")){
+        comando->cod_op = HELPER;
+    }
 
 	if(string_equals_ignore_case(leido_separado[0],"INICIAR_PLANIFICACION")){ // Nomenclatura: INICIAR_PLANIFICACION
 		comando->cod_op = INICIAR_PLANIFICACION;
@@ -174,4 +200,24 @@ void interpretar(t_comando* comando, char* leido){
     }
     
 	free(leido_separado);
+}
+
+void cambiar_multiprogramacion(int nuevo_grado_mult, int grado_multiprogramacion, sem_t m_multiprogramacion)
+{
+    if(nuevo_grado_mult < grado_multiprogramacion)
+    {
+        for(int i = nuevo_grado_mult; i < grado_multiprogramacion; i++)
+        {
+            sem_wait(&m_multiprogramacion); 
+        }
+    }
+    else
+    {
+        for(int i = nuevo_grado_mult; i > grado_multiprogramacion; i++)
+        {
+            sem_post(&m_multiprogramacion); 
+        }
+    }
+
+    grado_multiprogramacion = nuevo_grado_mult;
 }

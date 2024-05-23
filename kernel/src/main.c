@@ -14,8 +14,12 @@ sem_t sem_sockets_interfaces;
 int main(int argc, char **argv) {
 
 	/*--------- Cargo configuraciones y log--------*/
-	
-	init_kernel(argv[1]);
+	config_kernel = iniciar_config(argv[1]);
+	logger_kernel=iniciar_logger("kernel.log","KERNEL");
+	GRADO_MULTIPROGRAMACION = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
+	sem_init(&mlog,0,1);
+	sem_init(&m_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
+	pthread_mutex_init(&mutex_conexiones,NULL);
 	conexiones=0;
 
 	/*--------- Inicio conexiones y estructuras--------*/
@@ -175,6 +179,8 @@ int nuevaInterfaz(int socket_cliente){
 	conexiones++;
 	pthread_mutex_unlock(&mutex_conexiones);
 
+	// se agraga para que no siga tirando el warning
+	return EXIT_SUCCESS;
 }
 
 /* ------------------------------------Conexiones--------------------------------------------*/
@@ -276,23 +282,11 @@ int conectarCpuInterrupt(){
 }
 
 /*-------------------------------------Consola----------------------------------*/
-// int leer_consola(){
-// 	char* linea;
-// 	while(1){
-// 		linea = readline(">");
-// 		if(linea){
-// 			printf("Linea ingresada: %s\n", linea);
-// 			free(linea);
-// 		}
-// 	}
-// 	return 0;
-// }
 
 void leerConsola() {
 	printf("conexiones: %d \n", conexiones);
 	printf("Arranca leer consona, esperando...\n");
     while(conexiones < 4){/*ESPERA*/}
-	//grado_multiprogramacion = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
-	leer_consola(logger_kernel, GRADO_MULTIPROGRAMACION, conexiones);
+	leer_consola(logger_kernel, GRADO_MULTIPROGRAMACION, m_multiprogramacion);
 	printf("Finaliza consola...\n");
 }

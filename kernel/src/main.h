@@ -38,9 +38,7 @@ char** INSTANCIAS_RECURSOS;
 
 //armo estructura lista de tipo t_socket_interfaz para guardar todas las que llegan
 t_list* lista_interfaz_socket;
-
-// ------ Semaforos ------
-sem_t mlog;
+sem_t mlog, m_multiprogramacion;
 
 // ------ PTHREAD_MUTEX ------
 //mutex
