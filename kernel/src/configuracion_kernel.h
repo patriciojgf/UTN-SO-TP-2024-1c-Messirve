@@ -31,9 +31,15 @@ extern pthread_mutex_t mutex_plan_exec;
 extern pthread_mutex_t mutex_plan_blocked;
 extern pthread_mutex_t mutex_plan_exit;
 extern pthread_mutex_t mutex_procesos_planificados; 
+//pcb
+extern pthread_mutex_t mutex_pid_proceso;
+
+//pcb
+extern int pid_proceso;
 
 //planificacion
 extern int GRADO_MULTIPROGRAMACION;
+extern int cantidad_procesos_planificados;
 extern t_planificacion ALGORITMO_PLANIFICACION; //main.h
 extern t_list* lista_plan_new; //main.h
 extern t_list* lista_plan_ready; //main.h

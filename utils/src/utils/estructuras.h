@@ -50,10 +50,10 @@ typedef struct
 //PCB.h
 
 typedef enum estado {
-    NEW,
-    READY,
-    EXEC,
-    BLOCKED,
+    estado_NEW,
+    estado_READY,
+    estado_EXEC,
+    estado_BLOCKED,
     estado_EXIT,
 } t_estado;
 
@@ -77,5 +77,7 @@ typedef struct {
     t_pcb* pcb_asignado; //instancias asignadas
     pthread_mutex_t mutex_bloqueados;
 }t_recurso;
+
+void inicializar_registros(t_registros_cpu* registros);
 
 #endif // ESTRUCTURAS_H

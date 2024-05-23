@@ -7,11 +7,13 @@ void planificador_cp(){
     pthread_mutex_lock(&mutex_plan_ready);
     if(!list_is_empty(lista_plan_ready)){
         log_warning(logger_kernel, "Falta setear ALGORITMO_PLANIFICACION al inciar el kernel");
+        pthread_mutex_unlock(&mutex_plan_ready);
         //switch (ALGORITMO_PLANIFICACION)
         _FIFO();
-
     }
-    pthread_mutex_unlock(&mutex_plan_ready);
+    else {
+        pthread_mutex_unlock(&mutex_plan_ready);
+    }
 }
 
 static void _FIFO(){

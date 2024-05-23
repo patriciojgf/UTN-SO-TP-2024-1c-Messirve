@@ -51,16 +51,21 @@ pthread_mutex_t mutex_plan_ready;
 pthread_mutex_t mutex_plan_exec;
 pthread_mutex_t mutex_plan_blocked;
 pthread_mutex_t mutex_plan_exit;
-pthread_mutex_t mutex_procesos_planificados; 
+pthread_mutex_t mutex_procesos_planificados;
+//pcb
+pthread_mutex_t mutex_pid_proceso;
+
+//pcb
+int pid_proceso = 0;
 
 int socket_IO;
 int socket_memoria;
 int socket_dispatch;
 int socket_interrupt;
 int socket_servidor;
-int id_counter;
 bool ejecucion_pausada, volvio_pcb_cpu;
 int tam_pag;
+int cantidad_procesos_planificados = 0;
 
 int conectarCpuDispatch();
 int conectarCpuInterrupt();

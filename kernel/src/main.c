@@ -1,7 +1,6 @@
 #include "main.h"
 
 int conexiones;
-int id_counter = 1;//PID DE LOS PROCESOS
 //semaforos
 sem_t sem_sockets_interfaces;
 
@@ -16,14 +15,8 @@ int main(int argc, char **argv) {
 
 	/*--------- Cargo configuraciones y log--------*/
 	
-	//se mueve a init_estructuras - inicio
 	init_kernel(argv[1]);
-	// config_kernel = iniciar_config(argv[1]);
-	// logger_kernel=iniciar_logger("kernel.log","KERNEL");
-	// sem_init(&mlog,0,1);
-	// pthread_mutex_init(&mutex_conexiones,NULL);
 	conexiones=0;
-	//se mueve a init_estructuras - fin
 
 	/*--------- Inicio conexiones y estructuras--------*/
 	pthread_t t1,t2,t3,t4,t5;

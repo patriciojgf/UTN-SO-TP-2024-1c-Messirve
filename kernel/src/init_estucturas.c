@@ -63,6 +63,9 @@ static void init_pthread_mutex(){
     pthread_mutex_init(&mutex_plan_blocked,NULL);
     pthread_mutex_init(&mutex_plan_exit,NULL);
     pthread_mutex_init(&mutex_procesos_planificados,NULL);
+
+    pthread_mutex_init(&mutex_pid_proceso,NULL);
+    
 }
 
 static void init_recursos(){

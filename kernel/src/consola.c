@@ -23,22 +23,29 @@ void leer_consola(t_log* logger, int grado_multiprogramacion, int conexiones){
         switch (comando->cod_op)
         {
             case INICIAR_PLANIFICACION:
-                log_info(logger, "Proximamente Iniciando planificación...");
+                log_info(logger_kernel, "Proximamente Iniciando planificación...");
                 break;
 
             case DETENER_PLANIFICACION:
-                log_info(logger, "Proximamente Se detiene la planificación...");
+                log_info(logger_kernel, "Proximamente Se detiene la planificación...");
                 break;
 
             case MULTIPROGRAMACION:
                 int nuevo_grado_mult = atoi(list_get(comando->parametros,0));
 				int grado_multiprogramacion_viejo=grado_multiprogramacion;
                 log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo,nuevo_grado_mult));
-                log_info(logger, "Proximamente hace su magia...");
+                log_info(logger_kernel, "Proximamente hace su magia...");
                 break;
 
             case INICIAR_PROCESO:
-                log_info(logger, "Proximamente Iniciando proceso...");
+                t_pcb* pcb_inicializado = crear_pcb();
+                //muestro el id del pcb
+                log_info(logger_kernel, "El id del pcb es: %d", pcb_inicializado->pid);
+                pthread_t hilo_iniciar_proceso;
+                pthread_create(&hilo_iniciar_proceso, NULL, (void*)planificador_lp_nuevo_proceso, pcb_inicializado);
+                pthread_detach(hilo_iniciar_proceso);
+
+                log_info(logger_kernel, "Proximamente Iniciando proceso...");
                 break;
 
             case FINALIZAR_PROCESO:

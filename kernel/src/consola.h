@@ -5,14 +5,15 @@
     #include <commons/error.h>
     #include <commons/log.h>
     #include <commons/string.h>
-    #include <utils/conexiones.h>
-    // #include <utils/queues.h>
     #include <readline/history.h>
     #include <readline/readline.h>
     #include <signal.h>
     #include <stdlib.h>
     #include <pthread.h>
     #include <semaphore.h>
+    #include "configuracion_kernel.h"
+    #include "kernel_pcb.h"
+    #include "planificador_lp.h"
     
     extern sem_t mlog;
     extern t_log* logger_kernel;
