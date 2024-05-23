@@ -1,12 +1,19 @@
 #include "planificador_lp.h"
 
 void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb){
+    log_warning(logger_kernel, "planificador_lp_nuevo_proceso");
     if(nuevo_pcb != NULL){
+        log_warning(logger_kernel, "(nuevo_pcb != NULL)");
         //Agrego PCB a NEW
 		pthread_mutex_lock(&mutex_plan_new);
-		list_add(lista_plan_new, nuevo_pcb);
+        log_warning(logger_kernel, "mutex_plan_new");
+        log_warning(logger_kernel, "la cantidad de elemenos en lista_plan_new es %d", list_size(lista_plan_new));
+        list_add(lista_plan_new, nuevo_pcb);
+        log_warning(logger_kernel, "lista_plan_new");
 		nuevo_pcb->estado_actual = estado_NEW;
+        log_warning(logger_kernel, "estado_actual");
 		pthread_mutex_unlock(&mutex_plan_new);
+        log_warning(logger_kernel, "mutex_plan_new");
 		
         log_info(logger_kernel, "Se crea el proceso %d en NEW", nuevo_pcb->pid);
     }
@@ -16,6 +23,7 @@ void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb){
 }
 
 void planificador_lp_new_ready(){
+    log_warning(logger_kernel, "planificador_lp_new_ready");
     t_pcb* pcb_en_new = NULL;
 
     pthread_mutex_lock(&mutex_procesos_planificados); //cantidad de procesos en el circuito

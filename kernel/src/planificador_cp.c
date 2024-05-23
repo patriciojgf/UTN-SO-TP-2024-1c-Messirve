@@ -4,6 +4,7 @@
 static void _FIFO();
 
 void planificador_cp(){
+    log_warning(logger_kernel, "planificador_cp");
     pthread_mutex_lock(&mutex_plan_ready);
     if(!list_is_empty(lista_plan_ready)){
         log_warning(logger_kernel, "Falta setear ALGORITMO_PLANIFICACION al inciar el kernel");
@@ -37,9 +38,11 @@ static void _FIFO(){
             pcb_ready->estado_actual = estado_EXEC;
             list_add(lista_plan_execute, pcb_ready);
             //log_info(logger_kernel, "Se mueve el proceso %d de READY a EXEC", pcb_ready->pid);
+            enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
             log_warning(logger_kernel, "list_add(lista_plan_execute, pcb_ready)");
-            enviar_pcb_sin_listas_sin_estados(pcb_ready, CPU); //envio el pcb a CPU
+            enviar_contexto_dispatch(pcb_ready); //envio el pcb a CPU
             log_warning(logger_kernel, "Agregar envio por dispatcher a CPU");
+            enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
             //
         }
         else{

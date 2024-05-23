@@ -25,6 +25,7 @@ extern t_config* config_kernel; //main.h
 
 //semaforos
 extern sem_t mlog; //main.h
+extern sem_t m_multiprogramacion;
 
 //mutex
 extern pthread_mutex_t mutex_conexiones; //main.h

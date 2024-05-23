@@ -11,7 +11,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include "mem_estructuras.h"
-#include "atender_kernel.h"
 #include "atender_cpu.h"
 #include "proceso.h"
 

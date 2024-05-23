@@ -73,14 +73,22 @@ int conectarKernelDispatch(){
 
     while (1)
     {
+        log_protegido_cpu(string_from_format("esperando conexion dispatch"));
         int cod_op = recibir_operacion(socket_dispatch);
+        log_warning(logger_cpu, "Operacion recibida en socket_dispatch");
         switch (cod_op)
         {
             case MENSAJE:
                 recibir_mensaje(socket_dispatch, logger_cpu);
                 break;
             case PCB:
-                _recibir_pcb(socket_dispatch);
+                log_warning(logger_cpu, "PCB");
+                int size=0;
+                void *buffer = recibir_buffer(&size, socket_dispatch);
+                log_warning(logger_cpu, "recibir_buffer");
+                _recibir_nuevo_contexto(buffer);
+                log_warning(logger_cpu, "_recibir_nuevo_contexto");
+                log_info(logger_cpu, "PCB recibido con pid %d", contexto_cpu->pid);
                 flag_ejecucion = true;
                 _ejecutar_proceso();
                 break;
@@ -165,44 +173,44 @@ int conectarKernelInterrupt(){
     return 0;
 }
 
-static void _desempaquetar_pcb(void *buffer){
-    int desplazamiento = 0;
+// static void _desempaquetar_pcb(void *buffer){
+//     int desplazamiento = 0;
 
-	memcpy(&(pid), buffer + desplazamiento, sizeof(int));
-	desplazamiento += sizeof(int);
-	// memcpy(&(program_counter), buffer + desplazamiento, sizeof(int));
-	// desplazamiento += sizeof(int);
-    memcpy(&(registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
-	memcpy(&(registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
-	desplazamiento += sizeof(uint8_t);
-    memcpy(&(registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));
-    desplazamiento += sizeof(uint8_t);
-    memcpy(&(registros_cpu.CX), buffer + desplazamiento, sizeof(uint8_t));
-    desplazamiento += sizeof(uint8_t);
-    memcpy(&(registros_cpu.DX), buffer + desplazamiento, sizeof(uint8_t));
-    desplazamiento += sizeof(uint8_t);
-    memcpy(&(registros_cpu.EAX), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
-    memcpy(&(registros_cpu.EBX), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
-    memcpy(&(registros_cpu.ECX), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
-    memcpy(&(registros_cpu.EDX), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
-    memcpy(&(registros_cpu.SI), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
-    memcpy(&(registros_cpu.DI), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
-}
+// 	memcpy(&(pid), buffer + desplazamiento, sizeof(int));
+// 	desplazamiento += sizeof(int);
+// 	// memcpy(&(program_counter), buffer + desplazamiento, sizeof(int));
+// 	// desplazamiento += sizeof(int);
+//     memcpy(&(registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
+//     desplazamiento += sizeof(uint32_t);
+// 	memcpy(&(registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
+// 	desplazamiento += sizeof(uint8_t);
+//     memcpy(&(registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));
+//     desplazamiento += sizeof(uint8_t);
+//     memcpy(&(registros_cpu.CX), buffer + desplazamiento, sizeof(uint8_t));
+//     desplazamiento += sizeof(uint8_t);
+//     memcpy(&(registros_cpu.DX), buffer + desplazamiento, sizeof(uint8_t));
+//     desplazamiento += sizeof(uint8_t);
+//     memcpy(&(registros_cpu.EAX), buffer + desplazamiento, sizeof(uint32_t));
+//     desplazamiento += sizeof(uint32_t);
+//     memcpy(&(registros_cpu.EBX), buffer + desplazamiento, sizeof(uint32_t));
+//     desplazamiento += sizeof(uint32_t);
+//     memcpy(&(registros_cpu.ECX), buffer + desplazamiento, sizeof(uint32_t));
+//     desplazamiento += sizeof(uint32_t);
+//     memcpy(&(registros_cpu.EDX), buffer + desplazamiento, sizeof(uint32_t));
+//     desplazamiento += sizeof(uint32_t);
+//     memcpy(&(registros_cpu.SI), buffer + desplazamiento, sizeof(uint32_t));
+//     desplazamiento += sizeof(uint32_t);
+//     memcpy(&(registros_cpu.DI), buffer + desplazamiento, sizeof(uint32_t));
+//     desplazamiento += sizeof(uint32_t);
+// }
 
-static void _recibir_pcb(int socket){
-    int size=0;
-    void* buffer = recibir_buffer(&size, socket);
+// static void _recibir_pcb(int socket){
+//     int size=0;
+//     void* buffer = recibir_buffer(&size, socket);
 
-    _desempaquetar_pcb(buffer);
-    free(buffer);
-}
+//     _desempaquetar_pcb(buffer);
+//     free(buffer);
+// }
 
 static void _check_interrupt(t_instruccion* instruccion){
     if(flag_interrupt && flag_ejecucion){
@@ -223,4 +231,37 @@ static void _ejecutar_proceso(){
     while (flag_ejecucion){
         _check_interrupt(execute_instruccion(decodificar_instruccion(fetch_instruccion())));
     }
+}
+
+
+static void _recibir_nuevo_contexto(void* buffer){
+    contexto_cpu= malloc(sizeof(t_contexto));
+    int desplazamiento = 0;
+    memcpy(&(contexto_cpu->pid), buffer + desplazamiento, sizeof(int));
+    desplazamiento += sizeof(int);
+    memcpy(&(contexto_cpu->program_counter), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
+    desplazamiento += sizeof(uint8_t);
+    memcpy(&(contexto_cpu->registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));
+    desplazamiento += sizeof(uint8_t);
+    memcpy(&(contexto_cpu->registros_cpu.CX), buffer + desplazamiento, sizeof(uint8_t));
+    desplazamiento += sizeof(uint8_t);
+    memcpy(&(contexto_cpu->registros_cpu.DX), buffer + desplazamiento, sizeof(uint8_t));
+    desplazamiento += sizeof(uint8_t);
+    memcpy(&(contexto_cpu->registros_cpu.EAX), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.EBX), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.ECX), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.EDX), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.SI), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.DI), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    free(buffer);
 }

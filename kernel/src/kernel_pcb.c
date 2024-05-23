@@ -19,8 +19,18 @@ t_pcb* crear_pcb(){
     return pcb;
 }
 
-void enviar_pcb_cpu_dispatch(t_pcb* pcb){
-    log_info(logger_kernel, "enviar_pcb_cpu_dispatch");
-    enviar_pcb_sin_listas_sin_estados(pcb, socket_dispatch);
-    log_info(logger_kernel, "Se envio el PCB a dispatch con PID: %d a la CPU", pcb->pid);
+/*Funciones PCB - INICIO*/ 
+static t_paquete* _empaquetar_contexto_cpu(t_pcb* pcb){
+	t_paquete* paquete = crear_paquete(PCB);
+	agregar_datos_sin_tamaño_a_paquete(paquete,&(pcb->pid),sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete,&(pcb->program_counter),sizeof(int));
+	empaquetar_registros_cpu(paquete, pcb->registros_cpu);
+	return paquete;
 }
+
+void enviar_contexto_dispatch(t_pcb* pcb){
+	t_paquete* paquete_a_enviar = _empaquetar_contexto_cpu(pcb);
+	enviar_paquete(paquete_a_enviar, socket_dispatch);
+	eliminar_paquete(paquete_a_enviar);
+}
+/*Funciones PCB - FIN*/

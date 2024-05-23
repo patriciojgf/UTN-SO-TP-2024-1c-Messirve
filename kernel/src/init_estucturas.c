@@ -41,6 +41,7 @@ static void iniciar_configuracion(char* config_path){
 }
 
 static void init_listas_planificacion(){
+    log_warning(logger_kernel,"creando las listas");
     lista_plan_new = list_create();
     lista_plan_ready = list_create();
     lista_plan_execute = list_create();
@@ -53,6 +54,7 @@ static void init_listas_planificacion(){
 
 static void init_semaforos(){
     sem_init(&mlog,0,1);
+    sem_init(&m_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
 }
 
 static void init_pthread_mutex(){

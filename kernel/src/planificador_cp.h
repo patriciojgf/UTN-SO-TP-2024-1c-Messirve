@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <semaphore.h>
+#include "kernel_pcb.h"
 #include "configuracion_kernel.h"
 
 // ------ PTHREAD_MUTEX ------

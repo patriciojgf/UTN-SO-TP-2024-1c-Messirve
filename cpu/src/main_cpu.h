@@ -1,9 +1,18 @@
 #ifndef STATIC_MAIN_CPU_H_
 #define STATIC_MAIN_CPU_H_
     
-#include <configuracion_cpu.h>
+// #include <configuracion_cpu.h>
 #include <instrucciones.h>
+#include "configuracion_cpu.h"
 #include "semaphore.h"
+
+typedef struct{
+    int pid; //Número de la próxima instrucción a ejecutar.
+    int program_counter; //Número de la próxima instrucción a ejecutar.
+    t_registros_cpu registros_cpu; //Registros de la CPU.
+} t_contexto;
+
+t_contexto* contexto_cpu;
 
 sem_t mlog;
 
@@ -31,9 +40,10 @@ int conectarMemoria();
 int conectarKernelDispatch();
 int conectarKernelInterrupt();
 void log_protegido_cpu(char* mensaje);
-static void _recibir_pcb(int socket);
-static void _desempaquetar_pcb(void *buffer);
+// static void _recibir_pcb(int socket);
+// static void _desempaquetar_pcb(void *buffer);
 static void _check_interrupt(t_instruccion* instruccion);
 static void _ejecutar_proceso();
+static void _recibir_nuevo_contexto(void* buffer);
     
 #endif

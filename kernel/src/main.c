@@ -14,12 +14,13 @@ int conexiones;
 int main(int argc, char **argv) {
 
 	/*--------- Cargo configuraciones y log--------*/
-	config_kernel = iniciar_config(argv[1]);
-	logger_kernel=iniciar_logger("kernel.log","KERNEL");
-	GRADO_MULTIPROGRAMACION = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
-	sem_init(&mlog,0,1);
-	sem_init(&m_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
-	pthread_mutex_init(&mutex_conexiones,NULL);
+	init_kernel(argv[1]);
+	//config_kernel = iniciar_config(argv[1]);
+	//logger_kernel=iniciar_logger("kernel.log","KERNEL");
+	//GRADO_MULTIPROGRAMACION = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
+	//sem_init(&mlog,0,1);
+	//sem_init(&m_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
+	//pthread_mutex_init(&mutex_conexiones,NULL);
 	conexiones=0;
 
 	/*--------- Inicio conexiones y estructuras--------*/
