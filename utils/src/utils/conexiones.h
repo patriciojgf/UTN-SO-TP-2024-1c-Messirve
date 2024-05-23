@@ -124,5 +124,7 @@ void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid, t_registros_cpu registros_cpu);
 void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int* pid, t_registros_cpu* registros_cpu);
 
+void enviar_pcb_sin_listas_sin_estados(t_pcb* pcb, int socket_destino);
+t_pcb* _desempaquetar_pcb_sin_listas_sin_estados(t_paquete* paquete);
 
 #endif /* CONEXIONES_H_ */

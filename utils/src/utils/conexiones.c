@@ -308,3 +308,56 @@ void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 	
 }
 /*Conexion con CPU + Paquetes - FIN*/
+
+
+/*Funciones PCB - INICIO*/ 
+static t_paquete* _empaquetar_pcb_sin_listas_sin_estados(t_pcb* pcb){
+	t_paquete* paquete = crear_paquete(PCB);
+	agregar_datos_sin_tamaño_a_paquete(paquete,&(pcb->pid),sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete,&(pcb->program_counter),sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete,&(pcb->quantum),sizeof(int));
+	empaquetar_registros_cpu(paquete, pcb->registros_cpu);
+	return paquete;
+}
+
+t_pcb* _desempaquetar_pcb_sin_listas_sin_estados(t_paquete* paquete){
+	t_pcb* pcb = malloc(sizeof(t_pcb));
+	int desplazamiento = 0;
+	memcpy(&(pcb->pid),paquete->buffer->stream + desplazamiento,sizeof(int));
+	desplazamiento += sizeof(int);
+	memcpy(&(pcb->program_counter),paquete->buffer->stream + desplazamiento,sizeof(int));
+	desplazamiento += sizeof(int);
+	memcpy(&(pcb->quantum),paquete->buffer->stream + desplazamiento,sizeof(int));
+	desplazamiento += sizeof(int);
+
+	//Registros CPU
+	memcpy(&(pcb->registros_cpu.AX),paquete->buffer->stream + desplazamiento,sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(pcb->registros_cpu.BX),paquete->buffer->stream + desplazamiento,sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(pcb->registros_cpu.CX),paquete->buffer->stream + desplazamiento,sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(pcb->registros_cpu.DX),paquete->buffer->stream + desplazamiento,sizeof(uint8_t));
+	desplazamiento += sizeof(uint8_t);
+	memcpy(&(pcb->registros_cpu.EAX),paquete->buffer->stream + desplazamiento,sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(pcb->registros_cpu.EBX),paquete->buffer->stream + desplazamiento,sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(pcb->registros_cpu.ECX),paquete->buffer->stream + desplazamiento,sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(pcb->registros_cpu.PC),paquete->buffer->stream + desplazamiento,sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	memcpy(&(pcb->registros_cpu.SI),paquete->buffer->stream + desplazamiento,sizeof(uint32_t));
+	desplazamiento += sizeof(uint32_t);
+	return pcb;
+}
+
+void enviar_pcb_sin_listas_sin_estados(t_pcb* pcb, int socket_destino){
+
+	t_paquete* paquete_a_enviar = _empaquetar_pcb_sin_listas_sin_estados(pcb);
+	enviar_paquete(paquete_a_enviar, socket_destino);
+	eliminar_paquete(paquete_a_enviar);
+}
+
+
+/*Funciones PCB - FIN*/

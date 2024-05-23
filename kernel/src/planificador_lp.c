@@ -5,10 +5,10 @@ void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb){
         //Agrego PCB a NEW
 		pthread_mutex_lock(&mutex_plan_new);
 		list_add(lista_plan_new, nuevo_pcb);
-		//nuevo_pcb->estado = NEW; //falta agregar estado a t_pcb
+		nuevo_pcb->estado_actual = estado_NEW;
 		pthread_mutex_unlock(&mutex_plan_new);
 		
-        //log_info(logger_kernel, "Se crea el proceso %d en NEW", nuevo_pcb->pid);
+        log_info(logger_kernel, "Se crea el proceso %d en NEW", nuevo_pcb->pid);
     }
     pthread_t hilo_planificador; //ver si esta bien aca
     pthread_create(&hilo_planificador, NULL, (void*)planificador_lp_new_ready, NULL);
@@ -32,12 +32,18 @@ void planificador_lp_new_ready(){
             //cambio estado a READY
             //pcb_en_new->estado = READY;
             list_add(lista_plan_ready, pcb_en_new);
-            //log_info(logger_kernel, "Se mueve el proceso %d de NEW a READY", pcb_en_new->pid);
+            log_info(logger_kernel, "Se mueve el proceso %d de NEW a READY", pcb_en_new->pid);
             cantidad_procesos_planificados++; //Aumento la cantidad de procesos en el circuito
             pthread_mutex_unlock(&mutex_plan_ready);
         }
     }
     pthread_mutex_unlock(&mutex_plan_new);
     pthread_mutex_unlock(&mutex_procesos_planificados);
+
+    pthread_t hilo_planificador_cp; //ver si esta bien aca
+    pthread_create(&hilo_planificador_cp, NULL, (void*)planificador_cp, NULL);
+    pthread_detach(hilo_planificador_cp);
+
+
 
 }

@@ -16,6 +16,10 @@ typedef enum{
     VRR
 } t_planificacion;
 
+//conexiones
+extern int socket_dispatch;
+
+//config
 extern t_log* logger_kernel; //main.h
 extern t_config* config_kernel; //main.h
 

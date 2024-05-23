@@ -58,11 +58,11 @@ typedef enum estado {
 } t_estado;
 
 
-typedef struct{
+typedef struct t_pcb{
     int pid; //Número de la próxima instrucción a ejecutar.
     int program_counter; //Número de la próxima instrucción a ejecutar.
     int quantum; //Unidad de tiempo utilizada por el algoritmo de planificación VRR.
-    t_registros_cpu* registros_cpu; //Registros de la CPU.
+    t_registros_cpu registros_cpu; //Registros de la CPU.
     t_list* recursos_asignados; // va a ser una lista de t_recurso
     t_list* archivos_abiertos; // va a ser una lista de t_archivo
     t_estado estado_actual; //ref 20222c

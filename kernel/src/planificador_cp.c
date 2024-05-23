@@ -17,6 +17,7 @@ void planificador_cp(){
 }
 
 static void _FIFO(){
+    log_warning(logger_kernel, "_FIFO");
     pthread_mutex_lock(&mutex_plan_exec); //bloqueo la lista de exec para poder vaidar
     if(list_is_empty(lista_plan_execute)){
         t_pcb* pcb_ready = list_remove(lista_plan_ready, 0); //saco el primer pcb de ready
@@ -30,11 +31,14 @@ static void _FIFO(){
         pthread_mutex_unlock(&mutex_plan_ready);
 
         if(pcb_ready != NULL){
+            log_warning(logger_kernel, "pcb_ready != NULL");
             //cambio estado a EXEC
-            //pcb_ready->estado = EXEC;
+            pcb_ready->estado_anterior = pcb_ready->estado_actual;
+            pcb_ready->estado_actual = estado_EXEC;
             list_add(lista_plan_execute, pcb_ready);
             //log_info(logger_kernel, "Se mueve el proceso %d de READY a EXEC", pcb_ready->pid);
-
+            log_warning(logger_kernel, "list_add(lista_plan_execute, pcb_ready)");
+            enviar_pcb_sin_listas_sin_estados(pcb_ready, CPU); //envio el pcb a CPU
             log_warning(logger_kernel, "Agregar envio por dispatcher a CPU");
             //
         }
