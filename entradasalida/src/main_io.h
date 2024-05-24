@@ -19,7 +19,7 @@
     pthread_t hilo_kernel;
     pthread_t hilo_memoria;
 
-    void conectarMemoria();
-    void conectarKernel();
+    int conectarMemoria();
+    int conectarKernel();
 
 #endif

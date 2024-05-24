@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     pthread_create(&hilo_kernel, NULL, (void*) conectarKernel, NULL);
     pthread_join(hilo_memoria, NULL);
     pthread_join(hilo_kernel, NULL);
-    sleep(30000);
+    // sleep(30000);
 
     finalizar_log(logger_io);
     // finalizar_config_io(datos_io);
@@ -51,7 +51,8 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-void conectarKernel(){
+int conectarKernel()
+{
     socket_servidor_kernel = -1;
     char* ip_kernel = config_get_string_value(config_io, "IP_KERNEL");
     char* puerto_kernel = config_get_string_value(config_io, "PUERTO_KERNEL");
@@ -72,9 +73,30 @@ void conectarKernel(){
     enviar_mensaje(nombre_interfaz, socket_servidor_kernel);
     log_protegido_io(string_from_format("Nombre de interfaz enviado a KERNEL"));
 
+    while(1)
+    {
+        log_protegido_io(string_from_format("Esperando peticiones de KERNEL..."));
+        int cod_kernel = recibir_operacion(socket_servidor_kernel);
+
+        switch (cod_kernel){
+            case MENSAJE:
+                recibir_mensaje(socket_servidor_kernel, logger_io);
+                break;
+            case -1:
+                log_error(logger_io,"El KERNEL se desconecto");
+                // break;
+                return EXIT_FAILURE;
+            default:
+                log_warning(logger_io, "Operacion desconocida.");
+                // break;
+                return EXIT_FAILURE;
+        }
+    }
+    return 0;
 }
 
-void conectarMemoria(){
+int conectarMemoria()
+{
     socket_memoria = -1;
     char* ip_memoria = config_get_string_value(config_io, "IP_MEMORIA");
     char* puerto_memoria = config_get_string_value(config_io, "PUERTO_MEMORIA");
@@ -95,4 +117,25 @@ void conectarMemoria(){
     //2. Envio el nombre de la interfaz
     enviar_mensaje(nombre_interfaz, socket_memoria);
     log_protegido_io(string_from_format("Nombre de interfaz enviado a MEMORIA"));
+
+    while(1)
+    {
+        log_protegido_io(string_from_format("Esperando peticiones de MEMORIA..."));
+        int cod_kernel = recibir_operacion(socket_memoria);
+
+        switch (cod_kernel){
+            case MENSAJE:
+                recibir_mensaje(socket_memoria, logger_io);
+                break;
+            case -1:
+                log_error(logger_io,"El MEMORIA se desconecto");
+                // break;
+                return EXIT_FAILURE;
+            default:
+                log_warning(logger_io, "Operacion desconocida.");
+                // break;
+                return EXIT_FAILURE;
+        }
+    }
+    return 0;
 }
