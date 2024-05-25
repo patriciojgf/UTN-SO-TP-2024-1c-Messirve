@@ -98,9 +98,20 @@ static void _sub(t_instruccion* instruccion){
     *registro_des = aux;
 }
 
+static void _jnz(t_instruccion* instruccion){
+	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
+	if(*dir_registro != 0){
+		contexto_cpu->program_counter = atoi(list_get(instruccion->parametros, 1));
+	}
+}
+
 t_instruccion* execute_instruccion(t_instruccion* instruccion){
 	log_info(logger_cpu, "identificador de instruccion: %d", instruccion->identificador);
 	switch (instruccion->identificador){
+		case EXIT:
+			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			f_exit(instruccion);
+			break;
 		case SET:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
@@ -109,14 +120,6 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
 			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
-		// case MOV_IN:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// mov_in(instruccion);
-		// 	break;
-		// case MOV_OUT:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// mov_out(instruccion);
-		// 	break;
 		case SUM:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
@@ -134,61 +137,68 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case JNZ:
+			log_info(logger_cpu, "Valor de CX: %d", contexto_cpu->registros_cpu.CX);
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// jnz(instruccion);
+			log_info(logger_cpu, "Valor de program_counter: %d", contexto_cpu->program_counter);
+			_jnz(instruccion);
+			log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
 			break;
 		case RESIZE:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			// resize(instruccion);
 			break;
-		case COPY_STRING:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// copy_string(instruccion);
-			break;
-		case WAIT:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// wait(instruccion);
-			break;
-		case SIGNAL:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// signal(instruccion);
-			break;
+		// case MOV_IN:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// mov_in(instruccion);
+		// 	break;
+		// case MOV_OUT:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// mov_out(instruccion);
+		// 	break;
+		// case COPY_STRING:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// copy_string(instruccion);
+		// 	break;
+		// case WAIT:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// wait(instruccion);
+		// 	break;
+		// case SIGNAL:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// signal(instruccion);
+		// 	break;
 		case IO_GEN_SLEEP:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			//f_io_gen_sleep(instruccion);
 			break;
-		case IO_STDIN_READ:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_stdin_read(instruccion);
-			break;
-		case IO_STDOUT_WRITE:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_stdout_write(instruccion);
-			break;
-		case IO_FS_CREATE:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_fs_create(instruccion);
-			break;
-		case IO_FS_DELETE:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_fs_delete(instruccion);
-			break;
-		case IO_FS_TRUNCATE:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_fs_truncate(instruccion);
-			break;
-		case IO_FS_WRITE:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_fs_write(instruccion);
-			break;
-		case IO_FS_READ:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_fs_read(instruccion);
-			break;
-		case EXIT:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			f_exit(instruccion);
-			break;
+		// case IO_STDIN_READ:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// io_stdin_read(instruccion);
+		// 	break;
+		// case IO_STDOUT_WRITE:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// io_stdout_write(instruccion);
+		// 	break;
+		// case IO_FS_CREATE:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// io_fs_create(instruccion);
+		// 	break;
+		// case IO_FS_DELETE:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// io_fs_delete(instruccion);
+		// 	break;
+		// case IO_FS_TRUNCATE:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// io_fs_truncate(instruccion);
+		// 	break;
+		// case IO_FS_WRITE:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// io_fs_write(instruccion);
+		// 	break;
+		// case IO_FS_READ:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// io_fs_read(instruccion);
+		// 	break;
 		default:
 			log_protegido_cpu("Instruccion desconocida. ");
 			break;
