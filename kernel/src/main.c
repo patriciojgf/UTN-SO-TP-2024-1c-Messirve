@@ -288,23 +288,35 @@ void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
 		desplazamiento += sizeof(int);
 }
 
+// void _finalizar_proceso(t_pcb *pcb, int motivo)
+// {
+// 	int pid_proceso = pcb->id;
+// 	pthread_mutex_lock(&mexit);
+// 	queue_push(exit_queue, pcb);
+// 	pthread_mutex_unlock(&mexit);
+// 	sem_post(&procesos_en_exit);
+// 	log_protegido(string_from_format("Finaliza el proceso <%d>- Motivo: <%s>", pid_proceso, get_motivo(motivo)));
+// 	sem_post(&nivel_multiprogramacion);
+// 	grado_multiprogramacion++;
+// }
+
 void _gestionar_peticiones_de_cpu_dispatch(){
 	while(1){
 		log_protegido_kernel(string_from_format("_gestionar_peticiones_de_cpu_dispatch"));
 		int cod_op = recibir_operacion(socket_dispatch);
 		log_protegido_kernel(string_from_format("Recibi operacion desde CPU DISPATCH"));
 		switch (cod_op) {
-			log_protegido_kernel(string_from_format("cod_op"));
 			case CONTEXTO_EJECUCION:
-				log_protegido_kernel(string_from_format("CONTEXTO_EJECUCION"));
+				log_protegido_kernel(string_from_format("_gestionar_peticiones_de_cpu_dispatch: CONTEXTO_EJECUCION"));
 				int motivo;
-				log_protegido_kernel(string_from_format("motivo"));
 				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
-				log_protegido_kernel(string_from_format("instrucciones"));
 				instrucciones->parametros =list_create();
-				log_protegido_kernel(string_from_format("instrucciones->parametros =list_create();"));
 				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
-				log_protegido_kernel(string_from_format("_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);"));
+				switch(motivo){
+					case EXIT:
+						log_protegido_kernel(string_from_format("PID: <%d> - EXIT", proceso_exec->pid));
+				}
+				sleep(80);
 				break;
 		}
 	}

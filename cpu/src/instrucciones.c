@@ -50,12 +50,43 @@ t_instruccion* decodificar_instruccion(char* instruccion){
 	return inst_decodificada;
 }
 
+uint8_t* _get_direccion_registro(char* string_registro){
+    uint8_t* registro;
+    
+    if (!strcmp(string_registro, "AX"))
+    {
+        registro = &(contexto_cpu->registros_cpu.AX);
+    }
+    if (!strcmp(string_registro, "BX"))
+    {
+        registro = &(contexto_cpu->registros_cpu.BX);
+    }
+    if (!strcmp(string_registro, "CX"))
+    {
+        registro = &(contexto_cpu->registros_cpu.CX);
+    }
+    if (!strcmp(string_registro, "DX"))
+    {
+        registro = &(contexto_cpu->registros_cpu.DX);
+    }
+    return registro;
+}
+
+void _set(t_instruccion* instruccion){
+	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
+	*dir_registro = atoi(list_get(instruccion->parametros, 1));
+}
+
 t_instruccion* execute_instruccion(t_instruccion* instruccion){
 	log_info(logger_cpu, "identificador de instruccion: %d", instruccion->identificador);
 	switch (instruccion->identificador){
 		case SET:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// set(instruccion);
+			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			_set(instruccion);
+			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case MOV_IN:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
