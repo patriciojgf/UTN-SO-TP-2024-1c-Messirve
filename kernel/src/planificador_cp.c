@@ -11,6 +11,7 @@ void planificador_cp(){
         pthread_mutex_unlock(&mutex_plan_ready);
         //switch (ALGORITMO_PLANIFICACION)
         _FIFO();
+        log_warning(logger_kernel, "_FIFO: ya planifique");
     }
     else {
         pthread_mutex_unlock(&mutex_plan_ready);
@@ -35,6 +36,7 @@ static void _FIFO(){
             log_warning(logger_kernel, "pcb_ready != NULL");
             pcb_ready->estado_anterior = pcb_ready->estado_actual;
             pcb_ready->estado_actual = estado_EXEC;
+            proceso_exec = pcb_ready;
             list_add(lista_plan_execute, pcb_ready);
             enviar_contexto_dispatch(pcb_ready); //envio el pcb a CPU
             //

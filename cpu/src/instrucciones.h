@@ -16,7 +16,7 @@
 extern int pid;
 extern int tam_pag;
 extern int program_counter;
-extern int socket_memoria, socket_servidor_dispatch;
+extern int socket_memoria, socket_servidor_dispatch,socket_dispatch;
 extern t_registros_cpu registros_cpu;
 extern bool flag_ejecucion, flag_interrupt;
 extern t_log* logger_cpu;
@@ -24,7 +24,7 @@ extern sem_t mlog;
 extern t_contexto* contexto_cpu;
 
 void f_io_gen_sleep(t_instruccion* instruccion);
-void f_exit();
+void f_exit(t_instruccion *inst);
 char* fetch_instruccion();
 t_instruccion* decodificar_instruccion(char* instruccion);
 t_instruccion* execute_instruccion(t_instruccion* instruccion);

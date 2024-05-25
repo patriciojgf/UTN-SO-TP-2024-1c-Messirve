@@ -117,13 +117,13 @@ void eliminar_paquete(t_paquete*);
 t_paquete *crear_paquete(int codigo_operacion);
 void enviar_paquete(t_paquete* paquete, int socket_cliente);
 void agregar_a_paquete(t_paquete* paquete, void* valor, int tamanio);
-
+void* serializar_paquete(t_paquete* paquete, int bytes);
 
 /*Conexion con CPU + Paquetes - INICIO*/
 
 void empaquetar_registros_cpu(t_paquete* paquete_contexto, t_registros_cpu registros_cpu);
 void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion);
-void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid, t_registros_cpu registros_cpu);
+void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid,t_registros_cpu registros_cpu, int motivo);
 void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int* pid, t_registros_cpu* registros_cpu);
 
 

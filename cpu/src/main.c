@@ -90,6 +90,9 @@ int conectarKernelDispatch(){
                 log_warning(logger_cpu, "_recibir_nuevo_contexto");
                 log_info(logger_cpu, "PCB recibido con pid %d", contexto_cpu->pid);
                 flag_ejecucion = true;
+                // pthread_t thread;
+                // pthread_create(&thread, NULL, (void*)_ejecutar_proceso, NULL);
+                // pthread_detach(thread);                
                 _ejecutar_proceso();
                 break;
             case -1:
@@ -214,6 +217,7 @@ int conectarKernelInterrupt(){
 
 static void _check_interrupt(t_instruccion* instruccion){
     if(flag_interrupt && flag_ejecucion){
+        log_warning(logger_cpu, "hay interrupcion");
         devolver_contexto(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
         flag_ejecucion = false;
     }

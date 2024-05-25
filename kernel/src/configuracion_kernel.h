@@ -19,6 +19,7 @@ typedef enum{
 //conexiones
 extern int socket_dispatch;
 extern int socket_memoria;
+extern t_pcb* proceso_exec;
 
 
 //config

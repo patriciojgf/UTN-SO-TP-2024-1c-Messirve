@@ -110,7 +110,8 @@ int conectarKernel(int* socket_kernel){
             // break;
             return EXIT_FAILURE;
         default:
-            log_warning(logger_memoria, "Operacion desconocida.");
+            log_warning(logger_memoria, "Operacion desconocida:");
+            log_warning(logger_memoria, "%d",cod_kernel);
             // break;
             return EXIT_FAILURE;
         }

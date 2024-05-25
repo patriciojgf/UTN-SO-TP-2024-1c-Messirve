@@ -224,6 +224,98 @@ return 0;
 
 }
 
+void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+
+		int size;
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		void* buffer = recibir_buffer(&size, socket_dispatch);
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		int desplazamiento = 0;		
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		//saco el pid y lo copio aproceso_en_exec->pid
+		memcpy(&(pcb->pid), buffer + desplazamiento, sizeof(int));
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		desplazamiento += sizeof(int);
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+
+		//Registros CPU
+		memcpy(&(pcb->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		desplazamiento += sizeof(uint8_t);
+		memcpy(&(pcb->registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));
+		desplazamiento += sizeof(uint8_t);
+		memcpy(&(pcb->registros_cpu.CX), buffer + desplazamiento, sizeof(uint8_t));
+		desplazamiento += sizeof(uint8_t);
+		memcpy(&(pcb->registros_cpu.DX), buffer + desplazamiento, sizeof(uint8_t));
+		desplazamiento += sizeof(uint8_t);	
+		memcpy(&(pcb->registros_cpu.EAX), buffer + desplazamiento, sizeof(uint32_t));
+		desplazamiento += sizeof(uint32_t);
+		memcpy(&(pcb->registros_cpu.EBX), buffer + desplazamiento, sizeof(uint32_t));
+		desplazamiento += sizeof(uint32_t);
+		memcpy(&(pcb->registros_cpu.ECX), buffer + desplazamiento, sizeof(uint32_t));
+		desplazamiento += sizeof(uint32_t);
+		memcpy(&(pcb->registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
+		desplazamiento += sizeof(uint32_t);
+		memcpy(&(pcb->registros_cpu.SI), buffer + desplazamiento, sizeof(uint32_t));
+		desplazamiento += sizeof(uint32_t);
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		
+		memcpy(&(instruccion->identificador ),buffer + desplazamiento, sizeof(int));
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		desplazamiento += sizeof(int);			
+		memcpy(&(instruccion->cantidad_parametros),buffer + desplazamiento, sizeof(int));
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		desplazamiento += sizeof(int);		
+		for (int i=0; i < instruccion->cantidad_parametros; i++){
+			char* parametro;
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+			int size_parametro;
+			memcpy(&(size_parametro), buffer + desplazamiento, sizeof(int));
+			desplazamiento += sizeof(int);
+			parametro=malloc(size_parametro);
+			memcpy(parametro, buffer + desplazamiento, size_parametro);
+			desplazamiento += size_parametro;
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+			list_add(instruccion->parametros, parametro);
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		}		
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		free(buffer);	
+		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
+		//saco el motivo
+		memcpy(&motivo, buffer + desplazamiento, sizeof(int));
+		desplazamiento += sizeof(int);
+}
+
+void _gestionar_peticiones_de_cpu_dispatch(){
+	while(1){
+		log_protegido_kernel(string_from_format("_gestionar_peticiones_de_cpu_dispatch"));
+		int cod_op = recibir_operacion(socket_dispatch);
+		log_protegido_kernel(string_from_format("Recibi operacion desde CPU DISPATCH"));
+		switch (cod_op) {
+			log_protegido_kernel(string_from_format("cod_op"));
+			case CONTEXTO_EJECUCION:
+				log_protegido_kernel(string_from_format("CONTEXTO_EJECUCION"));
+				int motivo;
+				log_protegido_kernel(string_from_format("motivo"));
+				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
+				log_protegido_kernel(string_from_format("instrucciones"));
+				instrucciones->parametros =list_create();
+				log_protegido_kernel(string_from_format("instrucciones->parametros =list_create();"));
+				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
+				log_protegido_kernel(string_from_format("_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);"));
+				break;
+		}
+	}
+	
+}
+
+void _atender_cpu_dispatch(){
+	pthread_create(&hilo_cpu_dispatch, NULL, (void*)_gestionar_peticiones_de_cpu_dispatch, NULL);
+	pthread_detach(hilo_cpu_dispatch);
+}
+
 int conectarCpuDispatch(){
 	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
 	char* puerto_dispatch 	= config_get_string_value(config_kernel,"PUERTO_CPU_DISPATCH");
@@ -247,6 +339,8 @@ int conectarCpuDispatch(){
 	else
 		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
 	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
+	
+	_atender_cpu_dispatch();
 
 	pthread_mutex_lock(&mutex_conexiones);
 	conexiones++;

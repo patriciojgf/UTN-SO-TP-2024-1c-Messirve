@@ -7,6 +7,7 @@ static u_int8_t _cantidad_parametros(u_int8_t identificador);
 static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_parametros);
 static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros);
 
+
 extern t_registros_cpu registros_cpu;
 
 void log_protegido_cpu(char* mensaje){
@@ -94,7 +95,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			break;
 		case IO_GEN_SLEEP:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			f_io_gen_sleep(instruccion);
+			//f_io_gen_sleep(instruccion);
 			break;
 		case IO_STDIN_READ:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
@@ -126,7 +127,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			break;
 		case EXIT:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			f_exit();
+			f_exit(instruccion);
 			break;
 		default:
 			log_protegido_cpu("Instruccion desconocida. ");
@@ -381,23 +382,26 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 }
 
 void devolver_contexto(int motivo, t_instruccion* instruccion){
+	log_warning(logger_cpu, "devolver_contexto");
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
-	empaquetar_contexto_cpu(paquete, instruccion, pid,registros_cpu);
-	enviar_paquete(paquete, socket_servidor_dispatch);
+	empaquetar_contexto_cpu(paquete, instruccion, contexto_cpu->pid,contexto_cpu->registros_cpu, motivo);
+	log_warning(logger_cpu, "empaquetar_contexto_cpu");
+	enviar_paquete(paquete, socket_dispatch);
+	log_warning(logger_cpu, "enviar_paquete(paquete, socket_dispatch)");
 	eliminar_paquete(paquete);
 }
 
-void f_exit(){ 
+void f_exit(t_instruccion *inst){ 
     flag_ejecucion = false;
     log_warning(logger_cpu, "Falta implementar devolver_contexto");
-	//devolver_contexto(EXIT, inst);
+	devolver_contexto(EXIT, inst);
 }
 
 void f_io_gen_sleep(t_instruccion* instruccion)
 {
 	log_protegido_cpu("Proximamente hace su magia"); 
 	
-	log_warning(logger_cpu, "cantidad de parametros: %d", list_size(instruccion->parametros));
-	log_warning(logger_cpu, "parametro 1: %p", list_get(instruccion->parametros, 0));
-	log_warning(logger_cpu, "parametro 2: %p", list_get(instruccion->parametros, 1));
+	// log_warning(logger_cpu, "cantidad de parametros: %d", list_size(instruccion->parametros));
+	// log_warning(logger_cpu, "parametro 1: %p", list_get(instruccion->parametros, 0));
+	// log_warning(logger_cpu, "parametro 2: %p", list_get(instruccion->parametros, 1));
 }

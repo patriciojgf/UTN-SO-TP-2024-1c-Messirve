@@ -262,10 +262,11 @@ void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 	}
 }
 
-void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid,t_registros_cpu registros_cpu){
+void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid,t_registros_cpu registros_cpu, int motivo){
 	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(pid), sizeof(int));
 	empaquetar_registros_cpu(paquete_contexto, registros_cpu);
 	empaquetar_instruccion_cpu(paquete_contexto, instruccion);
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &motivo, sizeof(int));
 } 
 
 

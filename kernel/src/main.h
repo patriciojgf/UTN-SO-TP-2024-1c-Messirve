@@ -16,10 +16,16 @@
 t_log* logger_kernel;
 t_config* config_kernel;
 
+t_pcb* proceso_en_exec;
+
 //-----Planificacion---
 sem_t planificadores;
 int GRADO_MULTIPROGRAMACION;
 t_planificacion ALGORITMO_PLANIFICACION;
+
+//-----HILOS CONEXIONES ------//
+pthread_t hilo_cpu_dispatch;
+
 // ------ Listas ------
 t_list* lista_plan_new;
 t_list* lista_plan_ready;
