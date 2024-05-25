@@ -1,6 +1,6 @@
 #include "kernel_pcb.h"
 
-t_pcb* crear_pcb(){
+t_pcb* crear_pcb(char* path){
     t_pcb* pcb = malloc(sizeof(t_pcb));
 
     pthread_mutex_lock(&mutex_pid_proceso);
@@ -12,6 +12,7 @@ t_pcb* crear_pcb(){
     pcb->program_counter = 0;
     pcb->archivos_abiertos = list_create();
     pcb->recursos_asignados = list_create();
+    pcb->path = string_duplicate(path);
 
     //TODO: validar si esto esta bien
     //pcb->registros_cpu = malloc(sizeof(t_registros_cpu));

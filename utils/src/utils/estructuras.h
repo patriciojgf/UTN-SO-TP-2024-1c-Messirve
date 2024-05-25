@@ -67,6 +67,7 @@ typedef struct t_pcb{
     t_list* archivos_abiertos; // va a ser una lista de t_archivo
     t_estado estado_actual; //ref 20222c
     t_estado estado_anterior;   
+    char* path;
 } t_pcb;
 
 

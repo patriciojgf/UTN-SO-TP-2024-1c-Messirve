@@ -34,6 +34,8 @@ void planificador_lp_new_ready(){
         if(pcb_en_new != NULL){
             //Agregar el pedido de inicializar, y esperar respuesta de memoria
             log_warning(logger_kernel, "Agregar envio de proceso a memoria para inicializar estructuras");
+            enviar_proceso_a_memoria(pcb_en_new, pcb_en_new->path);
+            sem_wait(&s_init_proceso_a_memoria);
 
             //Agrego PCB a READY
             pthread_mutex_lock(&mutex_plan_ready);
@@ -51,7 +53,29 @@ void planificador_lp_new_ready(){
     pthread_t hilo_planificador_cp; //ver si esta bien aca
     pthread_create(&hilo_planificador_cp, NULL, (void*)planificador_cp, NULL);
     pthread_detach(hilo_planificador_cp);
+}
+
+static t_paquete* _empaquetar_proceso_path(t_pcb* pcb, char* path){
+    t_paquete* paquete = crear_paquete(INICIAR_PROCESO_MEMORIA);
+    // agregar_datos_sin_tamaño_a_paquete(paquete,&(pcb->pid),sizeof(int));
+    // //agregar_datos_sin_tamaño_a_paquete(paquete,&(pcb->program_counter),sizeof(int));
+    // int tamanio_path = strlen(path)+1;
+    // log_warning(logger_kernel, "path: %s", path);
+    // log_warning(logger_kernel, "tamanio_path: %d", tamanio_path);
+    // agregar_datos_sin_tamaño_a_paquete(paquete,&tamanio_path,sizeof(int));
+    // agregar_datos_sin_tamaño_a_paquete(paquete,path,tamanio_path);
+
+    return paquete;
+}
+
+void enviar_proceso_a_memoria(t_pcb* pcb, char* path){
+    //t_paquete* paquete_a_enviar = _empaquetar_proceso_path(pcb, path);
 
 
-
+    t_paquete* paquete_a_enviar = crear_paquete(INICIAR_PROCESO_MEMORIA);
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(pcb->pid),sizeof(int));
+    agregar_a_paquete(paquete_a_enviar,path,strlen(path)+1);
+    //
+    enviar_paquete(paquete_a_enviar, socket_memoria);
+    eliminar_paquete(paquete_a_enviar);
 }

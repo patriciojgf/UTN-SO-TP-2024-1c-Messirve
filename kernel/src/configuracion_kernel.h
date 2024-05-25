@@ -18,6 +18,8 @@ typedef enum{
 
 //conexiones
 extern int socket_dispatch;
+extern int socket_memoria;
+
 
 //config
 extern t_log* logger_kernel; //main.h
@@ -26,6 +28,7 @@ extern t_config* config_kernel; //main.h
 //semaforos
 extern sem_t mlog; //main.h
 extern sem_t m_multiprogramacion;
+extern sem_t s_init_proceso_a_memoria;
 
 //mutex
 extern pthread_mutex_t mutex_conexiones; //main.h

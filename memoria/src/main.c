@@ -10,7 +10,7 @@ int tamanio_pagina(){
     int main(int argc, char **argv){
     config_memoria = iniciar_config(argv[1]);
     logger_memoria=iniciar_logger("memoria.log","MEMORIA");
-
+    lista_procesos_en_memoria = list_create();
     
 
     log_protegido_mem(string_from_format("Iniciando Conexiones..."));
@@ -85,15 +85,26 @@ int conectarKernel(int* socket_kernel){
         //int pid;
         log_protegido_mem(string_from_format("Esperando peticiones de KERNEL..."));
         int cod_kernel = recibir_operacion(*socket_kernel);
-
+        log_protegido_mem(string_from_format("recibir_operacion"));
         switch (cod_kernel){
         case MENSAJE:
             recibir_mensaje(*socket_kernel,logger_memoria);
             break;
         case INICIAR_PROCESO_MEMORIA:
-        //     //int size=0;
-            buffer = recibir_buffer(&size, *socket_kernel);
-            iniciar_estructura_proceso(buffer);
+            log_protegido_mem(string_from_format("INICIAR_PROCESO_MEMORIA"));
+            buffer = recibir_buffer(&size, *socket_kernel);            
+            //iniciar_estructura_proceso(
+            int pid, size_path, desplazamiento = 0;
+            char* path;
+            memcpy(&pid, buffer +desplazamiento, sizeof(int));
+            desplazamiento+=sizeof(int);
+            memcpy(&size_path,buffer +desplazamiento, sizeof(int));
+            desplazamiento+=sizeof(int);
+            path=malloc(size_path);
+            memcpy(path, buffer +desplazamiento, size_path);
+            t_proceso* proceso = crear_proceso(pid,path);
+            list_add(lista_procesos_en_memoria, proceso);
+            confirmar_proceso_creado(); 
             break;
         case -1:
             log_error(logger_memoria,"El KERNEL se desconecto");

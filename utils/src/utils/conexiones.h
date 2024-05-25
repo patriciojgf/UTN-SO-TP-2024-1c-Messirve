@@ -116,6 +116,7 @@ void agregar_datos_sin_tamaño_a_paquete(t_paquete* paquete, void* datos, int si
 void eliminar_paquete(t_paquete*);
 t_paquete *crear_paquete(int codigo_operacion);
 void enviar_paquete(t_paquete* paquete, int socket_cliente);
+void agregar_a_paquete(t_paquete* paquete, void* valor, int tamanio);
 
 
 /*Conexion con CPU + Paquetes - INICIO*/

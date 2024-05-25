@@ -291,3 +291,22 @@ void leerConsola() {
 	leer_consola(m_multiprogramacion);
 	printf("Finaliza consola...\n");
 }
+
+
+
+/*----------------------Memoria---------------------------------------------------*/
+void  _atender_peticiones_memoria(){
+	while(1){
+		int cod_op = recibir_operacion(socket_memoria);
+		void* buffer_recibido;
+		log_protegido_kernel(string_from_format("Recibi operacion desde memoria"));
+		switch(cod_op){
+			case INICIAR_PROCESO_MEMORIA_OK:
+                int size=0;
+                buffer_recibido = recibir_buffer(&size, socket_memoria);
+				free(buffer_recibido);
+				log_protegido_kernel(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
+				break;			
+		}
+	}
+}

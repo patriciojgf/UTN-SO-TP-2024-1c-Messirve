@@ -45,8 +45,7 @@ void leer_consola(sem_t m_multiprogramacion)
                 break;
 
             case INICIAR_PROCESO:
-                t_pcb* pcb_inicializado = crear_pcb();
-                //muestro el id del pcb
+                t_pcb* pcb_inicializado = crear_pcb(list_get(comando->parametros, 0));
                 log_info(logger_kernel, "El id del pcb es: %d", pcb_inicializado->pid);
                 pthread_t hilo_iniciar_proceso;
                 pthread_create(&hilo_iniciar_proceso, NULL, (void*)planificador_lp_nuevo_proceso, pcb_inicializado);
