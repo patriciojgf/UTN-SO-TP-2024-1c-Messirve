@@ -72,9 +72,30 @@ uint8_t* _get_direccion_registro(char* string_registro){
     return registro;
 }
 
-void _set(t_instruccion* instruccion){
+static void _set(t_instruccion* instruccion){
 	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
 	*dir_registro = atoi(list_get(instruccion->parametros, 1));
+}
+
+static void _sum(t_instruccion* instruccion){
+    char *registro_destino = list_get(instruccion->parametros, 0);
+    char *registro_origen = list_get(instruccion->parametros, 1);
+
+    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
+    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // dreccion del registro origen
+    
+    uint8_t aux = *registro_des + *registro_ori;
+    
+    *registro_des = aux;	
+}
+
+static void _sub(t_instruccion* instruccion){
+    char *registro_destino = list_get(instruccion->parametros, 0);
+    char *registro_origen = list_get(instruccion->parametros, 1);    
+    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
+    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // direccion del registro origen    
+    uint8_t aux = *registro_des - *registro_ori;    
+    *registro_des = aux;
 }
 
 t_instruccion* execute_instruccion(t_instruccion* instruccion){
@@ -88,21 +109,29 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
 			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
-		case MOV_IN:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// mov_in(instruccion);
-			break;
-		case MOV_OUT:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// mov_out(instruccion);
-			break;
+		// case MOV_IN:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// mov_in(instruccion);
+		// 	break;
+		// case MOV_OUT:
+		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+		// 	// mov_out(instruccion);
+		// 	break;
 		case SUM:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// sum(instruccion);
+			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			_sum(instruccion);
+			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case SUB:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// sub(instruccion);
+			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			_sub(instruccion);
+			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case JNZ:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
