@@ -36,7 +36,7 @@ void planificador_lp_new_ready(){
             log_warning(logger_kernel, "Agregar envio de proceso a memoria para inicializar estructuras");
             enviar_proceso_a_memoria(pcb_en_new, pcb_en_new->path);
             sem_wait(&s_init_proceso_a_memoria);
-
+            log_warning(logger_kernel, "Me llego el semaforo s_init_proceso_a_memoria");
             //Agrego PCB a READY
             pthread_mutex_lock(&mutex_plan_ready);
             //cambio estado a READY

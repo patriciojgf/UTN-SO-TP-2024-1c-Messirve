@@ -88,7 +88,10 @@ void confirmar_proceso_creado(){
     log_warning(logger_memoria, "VER SI ES NECESARIO UN RETARDO");
     t_paquete* paquete = crear_paquete(INICIAR_PROCESO_MEMORIA_OK);    
     log_protegido_mem(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
-    //agrego texto "OK" al paquete?    
+    //agrego texto "OK" al paquete
+    char* mensajeOK = "OK";
+
+    agregar_a_paquete(paquete,mensajeOK,strlen(mensajeOK)+1);
     enviar_paquete(paquete,socket_kernel);
     eliminar_paquete(paquete);
 }

@@ -41,12 +41,6 @@ int main(int argc, char **argv) {
 	pthread_detach(t4);
 	pthread_create(&t5, NULL, (void*) leerConsola, NULL);
 
-	/*---------- Hilos para atender conexiones --------------*/
-	pthread_t t6;
-    pthread_create(&t6, NULL, (void*) atender_peticiones_memoria, NULL);
-	pthread_detach(t6);
-
-
 	/*------- Inicio los planificadores ----------------*/
 	// iniciar_hilos_estructuras();
 
@@ -215,7 +209,12 @@ int conectarMemoria(){
 	if(confirmacion)
 		log_protegido_kernel(string_from_format("Conexion con memoria exitosa"));
 	else
-		log_protegido_kernel(string_from_format("ERROR: Handshake con memoria fallido"));
+		log_protegido_kernel(string_from_format("ERROR: Handshake con memoria fallido"));	
+
+	/*---------- Hilos para atender conexiones --------------*/
+	pthread_t hilo_atender_memoria;
+    pthread_create(&hilo_atender_memoria, NULL, (void*) atender_peticiones_memoria, NULL);
+	pthread_detach(hilo_atender_memoria);
 
 	pthread_mutex_lock(&mutex_conexiones);
 	conexiones++;
@@ -315,6 +314,7 @@ void  atender_peticiones_memoria(){
 				log_protegido_kernel(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
 				break;	
 			default:
+				exit(EXIT_FAILURE);
 				log_warning(logger_kernel, "Operacion no reconocida");
 				log_warning(logger_kernel, "el valor de cod_op es: %d", cod_op);
 		}

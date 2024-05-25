@@ -228,9 +228,10 @@ static void _check_interrupt(t_instruccion* instruccion){
 }
 
 static void _ejecutar_proceso(){
-    while (flag_ejecucion){
-        _check_interrupt(execute_instruccion(decodificar_instruccion(fetch_instruccion())));
-    }
+    log_warning(logger_cpu, "falta implementar ejecutar proceso");
+    // while (flag_ejecucion){
+    //     _check_interrupt(execute_instruccion(decodificar_instruccion(fetch_instruccion())));
+    // }
 }
 
 
