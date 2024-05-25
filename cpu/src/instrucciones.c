@@ -125,7 +125,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			break;
 		case EXIT:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// exit(instruccion);
+			f_exit();
 			break;
 		default:
 			log_protegido_cpu("Operacion desconocida");
@@ -386,3 +386,8 @@ void devolver_contexto(int motivo, t_instruccion* instruccion){
 	eliminar_paquete(paquete);
 }
 
+void f_exit(){ 
+    flag_ejecucion = false;
+    log_warning(logger_cpu, "Falta implementar devolver_contexto");
+	//devolver_contexto(EXIT, inst);
+}
