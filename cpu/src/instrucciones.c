@@ -17,14 +17,14 @@ void log_protegido_cpu(char* mensaje){
 }
 
 char* fetch_instruccion(){
-	//log_protegido_cpu("PID: <%d> - FETCH - Program Counter: <%d>",pid,program_counter);
+	log_protegido_cpu(string_from_format("PID: <%d> - FETCH - Program Counter: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
 	t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
-	agregar_datos_sin_tamaño_a_paquete(paquete, &pid, sizeof(int));
-	agregar_datos_sin_tamaño_a_paquete(paquete, &program_counter, sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
 	enviar_paquete(paquete, socket_memoria);
 	char* instruccion = _recibir_instruccion(socket_memoria);
 	printf("Instruccion: %s\n", instruccion);
-	program_counter++;
+	contexto_cpu->program_counter++;
 	eliminar_paquete(paquete);
 	return instruccion;
 }

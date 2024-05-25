@@ -19,7 +19,11 @@ typedef struct config_cpu
     char* algoritmo_tlb;
 }t_config_cpu;
 
-
+typedef struct{
+    int pid; // Identificador del proceso.
+    int program_counter; // Número de la próxima instrucción a ejecutar.
+    t_registros_cpu registros_cpu; // Registros de la CPU.
+} t_contexto;
 
 t_config_cpu* iniciar_config_cpu(t_config* config_cpu);
 void finalizar_config_cpu(t_config_cpu* config_cpu);

@@ -6,12 +6,6 @@
 #include "configuracion_cpu.h"
 #include "semaphore.h"
 
-typedef struct{
-    int pid; //Número de la próxima instrucción a ejecutar.
-    int program_counter; //Número de la próxima instrucción a ejecutar.
-    t_registros_cpu registros_cpu; //Registros de la CPU.
-} t_contexto;
-
 t_contexto* contexto_cpu;
 
 sem_t mlog;

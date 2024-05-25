@@ -11,7 +11,7 @@
 #include <commons/collections/dictionary.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <utils/conexiones.h>
+#include "configuracion_cpu.h"
 
 extern int pid;
 extern int tam_pag;
@@ -21,6 +21,8 @@ extern t_registros_cpu registros_cpu;
 extern bool flag_ejecucion, flag_interrupt;
 extern t_log* logger_cpu;
 extern sem_t mlog;
+extern t_contexto* contexto_cpu;
+
 
 char* fetch_instruccion();
 t_instruccion* decodificar_instruccion(char* instruccion);
