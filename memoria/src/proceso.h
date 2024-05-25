@@ -9,8 +9,6 @@ void eliminar_proceso(t_proceso* proceso);
 char* get_instruccion_proceso(t_proceso* proceso, int PC);
 t_proceso* get_proceso_memoria(int pid);
 
-
-void iniciar_estructura_proceso(t_buffer* buffer);
 void eliminar_proceso_estructuras(t_buffer* buffer);
 
 

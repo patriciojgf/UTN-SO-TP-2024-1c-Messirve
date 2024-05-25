@@ -10,6 +10,7 @@ int conexiones;
 // 	sem_post(&mlog);
 // }
 
+
 /* -------------------------------------Iniciar Kernel -----------------------------------------------*/
 int main(int argc, char **argv) {
 
@@ -39,6 +40,11 @@ int main(int argc, char **argv) {
     pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
 	pthread_detach(t4);
 	pthread_create(&t5, NULL, (void*) leerConsola, NULL);
+
+	/*---------- Hilos para atender conexiones --------------*/
+	pthread_t t6;
+    pthread_create(&t6, NULL, (void*) atender_peticiones_memoria, NULL);
+	pthread_detach(t6);
 
 
 	/*------- Inicio los planificadores ----------------*/
@@ -293,9 +299,8 @@ void leerConsola() {
 }
 
 
-
 /*----------------------Memoria---------------------------------------------------*/
-void  _atender_peticiones_memoria(){
+void  atender_peticiones_memoria(){
 	while(1){
 		int cod_op = recibir_operacion(socket_memoria);
 		void* buffer_recibido;
@@ -303,10 +308,15 @@ void  _atender_peticiones_memoria(){
 		switch(cod_op){
 			case INICIAR_PROCESO_MEMORIA_OK:
                 int size=0;
+				log_protegido_kernel(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
                 buffer_recibido = recibir_buffer(&size, socket_memoria);
+				sem_post(&s_init_proceso_a_memoria);
 				free(buffer_recibido);
 				log_protegido_kernel(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
-				break;			
+				break;	
+			default:
+				log_warning(logger_kernel, "Operacion no reconocida");
+				log_warning(logger_kernel, "el valor de cod_op es: %d", cod_op);
 		}
 	}
 }

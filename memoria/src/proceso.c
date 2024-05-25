@@ -83,20 +83,12 @@ static t_list* leer_archivo_instrucciones(char* path) {
 
 /*--------------*/
 /*IN*/
-void iniciar_estructura_proceso(t_buffer* buffer){
-    log_protegido_mem(string_from_format("iniciar_estructura_proceso"));
-    
-    
-
-    
-
-}
 /*OUT*/
 void confirmar_proceso_creado(){
     log_warning(logger_memoria, "VER SI ES NECESARIO UN RETARDO");
-    t_paquete* paquete = crear_paquete(INICIAR_PROCESO_MEMORIA_OK);
-    //agrego texto "OK" al paquete?
-    
+    t_paquete* paquete = crear_paquete(INICIAR_PROCESO_MEMORIA_OK);    
+    log_protegido_mem(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
+    //agrego texto "OK" al paquete?    
     enviar_paquete(paquete,socket_kernel);
     eliminar_paquete(paquete);
 }

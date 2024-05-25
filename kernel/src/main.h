@@ -75,6 +75,7 @@ int conectarInterfaz();
 // int leer_consola();
 void inicializar_estructuras();
 void free_estructuras();
+void atender_peticiones_memoria();
 
 
 /*----------------CONSOLA----------------*/

@@ -92,8 +92,7 @@ int conectarKernel(int* socket_kernel){
             break;
         case INICIAR_PROCESO_MEMORIA:
             log_protegido_mem(string_from_format("INICIAR_PROCESO_MEMORIA"));
-            buffer = recibir_buffer(&size, *socket_kernel);            
-            //iniciar_estructura_proceso(
+            buffer = recibir_buffer(&size, *socket_kernel); 
             int pid, size_path, desplazamiento = 0;
             char* path;
             memcpy(&pid, buffer +desplazamiento, sizeof(int));
