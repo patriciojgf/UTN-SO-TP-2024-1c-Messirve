@@ -63,7 +63,7 @@ int conectarKernel()
         sem_wait(&mlog);
         log_error(logger_io, "No se ha podido conectar con el KERNEL");
         sem_post(&mlog);
-        return;
+        return EXIT_FAILURE;
     }
     //1. Envio tipo de interfaz
     send(socket_servidor_kernel, &identificador, sizeof(int), 0);
@@ -82,6 +82,16 @@ int conectarKernel()
             case MENSAJE:
                 recibir_mensaje(socket_servidor_kernel, logger_io);
                 break;
+            case IO_GEN_SLEEP: 
+                //TODO: implementar
+                log_protegido_io("Me llego IO_GEN_SLEEP de parte de KERNEL.");
+                int tiempo_unidad_trabajo = config_get_int_value(config_io, "TIEMPO_UNIDAD_TRABAJO");
+                log_protegido_io("Arrancando a dormir...");
+                // El segundo parámetro del IO_GEN_SLEEP es la cantidad de unidades de trabajo que tiene que esperar, y el archivo de configuración es lo que dura 1 unidad de trabajo, 
+                // con esto en mente el tiempo de espera es unidades de trabajo * tiempo por unidad de trabajo, es decir, segundo parámetro * TIEMPO_UNIDAD_TRABAJO
+                sleep(tiempo_unidad_trabajo*1000);
+                log_protegido_io("Despertando y continuando...");
+                break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");
                 // break;
@@ -92,7 +102,7 @@ int conectarKernel()
                 return EXIT_FAILURE;
         }
     }
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int conectarMemoria()
@@ -107,7 +117,7 @@ int conectarMemoria()
         sem_wait(&mlog);
         log_error(logger_io, "No se ha podido conectar con la MEMORIA");
         sem_post(&mlog);
-        return;
+        return EXIT_FAILURE;
     }
 
     //1. Envio tipo de interfaz
@@ -137,5 +147,5 @@ int conectarMemoria()
                 return EXIT_FAILURE;
         }
     }
-    return 0;
+    return EXIT_SUCCESS;
 }
