@@ -50,6 +50,7 @@ t_instruccion* decodificar_instruccion(char* instruccion){
 }
 
 t_instruccion* execute_instruccion(t_instruccion* instruccion){
+	log_info(logger_cpu, "identificador de instruccion: %d", instruccion->identificador);
 	switch (instruccion->identificador){
 		case SET:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
@@ -93,7 +94,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			break;
 		case IO_GEN_SLEEP:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// io_gen_sleep(instruccion);
+			f_io_gen_sleep(instruccion);
 			break;
 		case IO_STDIN_READ:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
@@ -128,7 +129,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			f_exit();
 			break;
 		default:
-			log_protegido_cpu("Operacion desconocida");
+			log_protegido_cpu("Instruccion desconocida. ");
 			break;
 	}
 	return instruccion;
@@ -390,4 +391,13 @@ void f_exit(){
     flag_ejecucion = false;
     log_warning(logger_cpu, "Falta implementar devolver_contexto");
 	//devolver_contexto(EXIT, inst);
+}
+
+void f_io_gen_sleep(t_instruccion* instruccion)
+{
+	log_protegido_cpu("Proximamente hace su magia"); 
+	
+	log_warning(logger_cpu, "cantidad de parametros: %d", list_size(instruccion->parametros));
+	log_warning(logger_cpu, "parametro 1: %p", list_get(instruccion->parametros, 0));
+	log_warning(logger_cpu, "parametro 2: %p", list_get(instruccion->parametros, 1));
 }
