@@ -23,7 +23,7 @@ extern t_log* logger_cpu;
 extern sem_t mlog;
 extern t_contexto* contexto_cpu;
 
-void f_io_gen_sleep(t_instruccion* instruccion);
+void _io_gen_sleep(t_instruccion* instruccion);
 void f_exit(t_instruccion *inst);
 char* fetch_instruccion();
 t_instruccion* decodificar_instruccion(char* instruccion);

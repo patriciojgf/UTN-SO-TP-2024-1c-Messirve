@@ -315,6 +315,8 @@ void _gestionar_peticiones_de_cpu_dispatch(){
 				switch(motivo){
 					case EXIT:
 						log_protegido_kernel(string_from_format("PID: <%d> - EXIT", proceso_exec->pid));
+					case IO_GEN_SLEEP: 
+						log_protegido_kernel("Intruccion IO_GEN_SLEEP"); 
 				}
 				sleep(80);
 				break;

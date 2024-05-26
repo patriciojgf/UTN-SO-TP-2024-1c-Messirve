@@ -143,6 +143,11 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			_jnz(instruccion);
 			log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
 			break;
+		case IO_GEN_SLEEP:
+			log_info(logger_cpu, "Arranca IO_GEN_SLEEP");
+			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			_io_gen_sleep(instruccion);
+			break;
 		case RESIZE:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			// resize(instruccion);
@@ -167,10 +172,6 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 		// 	// signal(instruccion);
 		// 	break;
-		case IO_GEN_SLEEP:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			//f_io_gen_sleep(instruccion);
-			break;
 		// case IO_STDIN_READ:
 		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 		// 	// io_stdin_read(instruccion);
@@ -467,11 +468,8 @@ void f_exit(t_instruccion *inst){
 	devolver_contexto(EXIT, inst);
 }
 
-void f_io_gen_sleep(t_instruccion* instruccion)
+void _io_gen_sleep(t_instruccion* instruccion)
 {
-	log_protegido_cpu("Proximamente hace su magia"); 
-	
-	// log_warning(logger_cpu, "cantidad de parametros: %d", list_size(instruccion->parametros));
-	// log_warning(logger_cpu, "parametro 1: %p", list_get(instruccion->parametros, 0));
-	// log_warning(logger_cpu, "parametro 2: %p", list_get(instruccion->parametros, 1));
+	log_protegido_cpu("procesando _io_gen_sleep"); 
+	devolver_contexto(IO_GEN_SLEEP, instruccion);
 }
