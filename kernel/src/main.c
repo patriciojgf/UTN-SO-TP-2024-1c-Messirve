@@ -316,10 +316,17 @@ void _gestionar_peticiones_de_cpu_dispatch(){
 					case EXIT:
 						log_protegido_kernel(string_from_format("PID: <%d> - EXIT", proceso_exec->pid));
 					case IO_GEN_SLEEP: 
-						log_protegido_kernel("Intruccion IO_GEN_SLEEP"); 
+						log_protegido_kernel("Intruccion IO_GEN_SLEEP");
+						break;
+					default:
+						log_error(logger_kernel, "Error al gestionar las peticiones");
+						return; 
 				}
 				sleep(80);
 				break;
+			default:
+				log_error(logger_kernel, "Error al gestionar las peticiones");
+				return; 
 		}
 	}
 	
