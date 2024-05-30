@@ -92,6 +92,6 @@ void confirmar_proceso_creado(){
     char* mensajeOK = "OK";
 
     agregar_a_paquete(paquete,mensajeOK,strlen(mensajeOK)+1);
-    enviar_paquete(paquete,socket_kernel);
+    enviar_paquete(paquete,socket_cliente_kernel);
     eliminar_paquete(paquete);
 }

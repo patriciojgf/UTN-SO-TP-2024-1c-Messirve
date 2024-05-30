@@ -37,7 +37,7 @@ typedef struct {
     int cantidad_de_paginas;
 }t_proceso;
 
-extern void log_protegido_mem(char* mensaje);
+// extern void log_protegido_mem(char* mensaje);
 
 
 

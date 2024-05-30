@@ -4,10 +4,47 @@
 #include <utils/logconfig.h>
 #include <utils/conexiones.h>
 #include <pthread.h>
+#include <semaphore.h>
+#include <sys/socket.h>
 
 #define LOG_NAME "cpu.log"
 #define PROCESS_NAME "CPU"
 #define MSG_ERROR "No se pudo crear correctamente. "
+
+extern t_log* logger_cpu;
+extern t_config* config_cpu;
+
+//semaforos
+extern sem_t mlog;
+extern sem_t s_instruccion_actual;
+
+extern bool flag_ejecucion,flag_interrupt;
+
+//contexto
+extern char* instruccion_actual;
+extern int motivo_interrupt;
+
+//------IP y PUERTOS----------
+extern char* IP_MEMORIA;
+extern char* PUERTO_MEMORIA;
+extern char* PUERTO_ESCUCHA_DISPATCH;
+extern char* PUERTO_ESCUCHA_INTERRUPT;
+extern int CANTIDAD_ENTRADAS_TLB;
+extern char* ALGORITMO_TLB;
+
+//------Sockets---------------
+extern int socket_memoria;
+extern int socket_servidor_dispatch;
+extern int socket_servidor_interrupt;
+
+extern int socket_cliente_dispatch;
+extern int socket_cliente_interrupt;
+
+//------Hilos Conexiones----------
+extern pthread_t hilo_gestionar_memoria;
+extern pthread_t hilo_gestionar_dispatch;
+extern pthread_t hilo_gestionar_interrupt;
+
 
 typedef struct config_cpu
 {

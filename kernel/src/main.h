@@ -12,6 +12,9 @@
 #include <consola.h>
 #include <init_estructuras.h>
 #include <configuracion_kernel.h>
+#include "gestion_conexiones.h"
+
+int conexiones;
 
 t_log* logger_kernel;
 t_config* config_kernel;
@@ -23,8 +26,24 @@ sem_t planificadores;
 int GRADO_MULTIPROGRAMACION;
 t_planificacion ALGORITMO_PLANIFICACION;
 
+
+
+//------IP y PUERTOS----------
+char* IP_MEMORIA;
+char* PUERTO_MEMORIA;
+char* IP_CPU;
+char* PUERTO_CPU_DISPATCH;
+char* PUERTO_CPU_INTERRUPT;
+char* PUERTO_ESCUCHA;
+
+
+
 //-----HILOS CONEXIONES ------//
 pthread_t hilo_cpu_dispatch;
+
+pthread_t hilo_gestionar_memoria;
+pthread_t hilo_gestionar_dispatch;
+pthread_t hilo_gestionar_interrupt;
 
 // ------ Listas ------
 t_list* lista_plan_new;
@@ -47,6 +66,12 @@ t_list* lista_interfaz_socket;
 sem_t mlog, m_multiprogramacion, s_init_proceso_a_memoria;
 
 // ------ PTHREAD_MUTEX ------
+
+//semaforos para marcar conexiones existosas
+sem_t s_conexion_memoria_ok;
+sem_t s_conexion_cpu_i_ok;
+sem_t s_conexion_cpu_d_ok;
+
 //mutex
 pthread_mutex_t mutex_conexiones;
 //Listas planificador
@@ -62,6 +87,7 @@ pthread_mutex_t mutex_pid_proceso;
 //pcb
 int pid_proceso = 0;
 
+int socket_servidor_io;
 int socket_IO;
 int socket_memoria;
 int socket_dispatch;
@@ -81,7 +107,6 @@ int conectarInterfaz();
 // int leer_consola();
 void inicializar_estructuras();
 void free_estructuras();
-void atender_peticiones_memoria();
 
 
 /*----------------CONSOLA----------------*/

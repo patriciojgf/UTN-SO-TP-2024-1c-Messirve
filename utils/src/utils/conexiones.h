@@ -18,6 +18,22 @@
 
 typedef enum
 {
+	//Conexiones
+	//IMPORTANTE EL ORDEN, NO DESORDENAR LOS HANDSHAKE_.... - INICIO
+	HANDSHAKE_KERNEL,
+	HANDSHAKE_MEMORIA,
+	HANDSHAKE_CPU,
+	HANDSHAKE_CPU_D,
+	HANDSHAKE_CPU_I,
+	HANDSHAKE_IO_GEN,
+	HANDSHAKE_IO_STDIN,
+	HANDSHAKE_IO_STDOUT,
+	HANDSHAKE_IO_DIALFS,
+	HANDSHAKE_DESCONEXION,
+	HANDSHAKE_OK,
+	HANDSHAKE_ERROR,
+	//IMPORTANTE EL ORDEN, NO DESORDENAR LOS HANDSHAKE_.... - FIN
+
 	//si agregan mas tipos de mensajes, agregarlos a la funcion texto_to_cod_op
 	MENSAJE,
 	PCB,
@@ -40,8 +56,9 @@ typedef enum
 	PROCESO_ESTADO,
 	EJECUTAR_SCRIPT,
 	FETCH_INSTRUCCION,
+	FETCH_INSTRUCCION_RESPUESTA,
 	HELPER,
-
+	NUEVA_IO,
 /*MENSAJES - KERNEL-MEMRIA -INICIO*/
 	INICIAR_PROCESO_MEMORIA,
 	INICIAR_PROCESO_MEMORIA_OK,
@@ -126,5 +143,10 @@ void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 void empaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int pid,t_registros_cpu registros_cpu, int motivo);
 void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion, int* pid, t_registros_cpu* registros_cpu);
 
+
+/*------HANDSHAKE--------------*/
+//static void _send_handshake(int hs_origen, int socket);
+int handshake_cliente(int hs_origen, int socket);
+int handshake_server(int socket);
 
 #endif /* CONEXIONES_H_ */

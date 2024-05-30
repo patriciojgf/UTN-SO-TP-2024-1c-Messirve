@@ -1,6 +1,6 @@
 #!/bin/bash
 FILE=bin/entradasalida
-CONFIG_FILE=${1:-./cfg/entradasalida.config}
+CONFIG_FILE=${1:-./cfg/io_generica.config}
 NOMBRE_INTERFAZ=${2:-eth0}
 
 make clean all

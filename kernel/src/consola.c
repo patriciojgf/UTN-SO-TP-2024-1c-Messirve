@@ -1,12 +1,5 @@
 #include <consola.h>
 
-void log_protegido_kernel(char* mensaje)
-{
-	sem_wait(&mlog);
-	log_info(logger_kernel, "%s", mensaje);
-	sem_post(&mlog);
-}
-
 void leer_consola(sem_t m_multiprogramacion)
 {
     printf("Leyendo consola...\n");

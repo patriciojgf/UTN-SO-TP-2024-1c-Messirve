@@ -1,5 +1,44 @@
 #include "conexiones.h"
 
+/*------HANDSHAKE--------------*/
+static void _send_handshake(int hs_origen, int socket){
+    int handshake = hs_origen;
+    send(socket, &handshake, sizeof(handshake), 0);
+}
+
+int handshake_cliente(int hs_origen, int socket){
+	_send_handshake(hs_origen,socket);
+	return recibir_operacion(socket);
+}
+
+int handshake_server(int socket) {
+    int cod_op = recibir_operacion(socket);
+    switch (cod_op) {
+		case HANDSHAKE_CPU:
+        case HANDSHAKE_KERNEL:
+        case HANDSHAKE_MEMORIA:
+        case HANDSHAKE_CPU_D:
+        case HANDSHAKE_CPU_I:
+        case HANDSHAKE_IO_GEN:
+        case HANDSHAKE_IO_STDIN:
+        case HANDSHAKE_IO_STDOUT:
+        case HANDSHAKE_IO_DIALFS:
+            {
+				printf("Handshake recibido\n");
+                int resp_ok = HANDSHAKE_OK;
+                if (send(socket, &resp_ok, sizeof(resp_ok), 0) == -1) {
+                    perror("Error sending handshake response");
+                    return HANDSHAKE_ERROR;
+                }
+                return cod_op;
+            }
+        case -1:
+            return HANDSHAKE_DESCONEXION;
+        default:
+            return HANDSHAKE_ERROR;
+    }
+}
+
 /*-------------------------------------------CLIENTE----------------------------------------------------*/
 
 void* serializar_paquete(t_paquete* paquete, int bytes){
@@ -30,6 +69,7 @@ int crear_conexion(char *ip, char* puerto){
 	int socket_cliente = socket(server_info->ai_family,
             					server_info->ai_socktype,
 								server_info->ai_protocol);
+	
 
 	// Ahora que tenemos el socket, vamos a conectarlo
 	if(connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == -1)
@@ -149,6 +189,7 @@ int iniciar_servidor(char* puerto)
 							servinfo->ai_socktype,
 							servinfo->ai_protocol);
 
+	setsockopt(socket_servidor, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	// Asociamos el socket a un puerto
 	bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen);
 	// Escuchamos las conexiones entrantes

@@ -1,45 +1,25 @@
 #include <main.h>
 
-int conexiones;
-//semaforos
-// sem_t sem_sockets_interfaces;
-
-// void log_protegido_kernel(char* mensaje){
-// 	sem_wait(&mlog);
-// 	log_info(logger_kernel, "%s", mensaje);
-// 	sem_post(&mlog);
-// }
-
-
 /* -------------------------------------Iniciar Kernel -----------------------------------------------*/
 int main(int argc, char **argv) {
 
 	/*--------- Cargo configuraciones y log--------*/
 	init_kernel(argv[1]);
-	//config_kernel = iniciar_config(argv[1]);
-	//logger_kernel=iniciar_logger("kernel.log","KERNEL");
-	//GRADO_MULTIPROGRAMACION = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
-	//sem_init(&mlog,0,1);
-	//sem_init(&m_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
-	//pthread_mutex_init(&mutex_conexiones,NULL);
-	conexiones=0;
 
 	/*--------- Inicio conexiones y estructuras--------*/
-	pthread_t t1,t2,t3,t4,t5;
+	init_conexiones();
+	conexiones=0;
 
 	/*---------- Hilos para planificadores --------------*/
-	// inicializar_estructuras();
-	lista_interfaz_socket = list_create();
-
-    pthread_create(&t1, NULL, (void*) conectarMemoria, NULL);
-	pthread_detach(t1); //ver si es correcto el detach aca
-	pthread_create(&t2, NULL, (void*) conectarCpuDispatch, NULL);
-	pthread_detach(t2);
-	pthread_create(&t3, NULL, (void*) conectarCpuInterrupt, NULL);
-	pthread_detach(t3);
-    pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
-	pthread_detach(t4);
+	gestionar_conexion_memoria();
+	gestionar_conexion_interrupt();
+	gestionar_conexion_dispatch();
+    // pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
+	// pthread_detach(t4);
+	pthread_t t5;
 	pthread_create(&t5, NULL, (void*) leerConsola, NULL);
+	gestionar_conexion_io();
+
 
 	/*------- Inicio los planificadores ----------------*/
 	// iniciar_hilos_estructuras();
@@ -212,9 +192,9 @@ int conectarMemoria(){
 		log_protegido_kernel(string_from_format("ERROR: Handshake con memoria fallido"));	
 
 	/*---------- Hilos para atender conexiones --------------*/
-	pthread_t hilo_atender_memoria;
-    pthread_create(&hilo_atender_memoria, NULL, (void*) atender_peticiones_memoria, NULL);
-	pthread_detach(hilo_atender_memoria);
+	//pthread_t hilo_atender_memoria;
+    // pthread_create(&hilo_atender_memoria, NULL, (void*) atender_peticiones_memoria, NULL);
+	// pthread_detach(hilo_atender_memoria);
 
 	pthread_mutex_lock(&mutex_conexiones);
 	conexiones++;
@@ -224,69 +204,6 @@ return 0;
 
 }
 
-void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-
-		int size;
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		void* buffer = recibir_buffer(&size, socket_dispatch);
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		int desplazamiento = 0;		
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		//saco el pid y lo copio aproceso_en_exec->pid
-		memcpy(&(pcb->pid), buffer + desplazamiento, sizeof(int));
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		desplazamiento += sizeof(int);
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-
-		//Registros CPU
-		memcpy(&(pcb->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		desplazamiento += sizeof(uint8_t);
-		memcpy(&(pcb->registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));
-		desplazamiento += sizeof(uint8_t);
-		memcpy(&(pcb->registros_cpu.CX), buffer + desplazamiento, sizeof(uint8_t));
-		desplazamiento += sizeof(uint8_t);
-		memcpy(&(pcb->registros_cpu.DX), buffer + desplazamiento, sizeof(uint8_t));
-		desplazamiento += sizeof(uint8_t);	
-		memcpy(&(pcb->registros_cpu.EAX), buffer + desplazamiento, sizeof(uint32_t));
-		desplazamiento += sizeof(uint32_t);
-		memcpy(&(pcb->registros_cpu.EBX), buffer + desplazamiento, sizeof(uint32_t));
-		desplazamiento += sizeof(uint32_t);
-		memcpy(&(pcb->registros_cpu.ECX), buffer + desplazamiento, sizeof(uint32_t));
-		desplazamiento += sizeof(uint32_t);
-		memcpy(&(pcb->registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
-		desplazamiento += sizeof(uint32_t);
-		memcpy(&(pcb->registros_cpu.SI), buffer + desplazamiento, sizeof(uint32_t));
-		desplazamiento += sizeof(uint32_t);
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		
-		memcpy(&(instruccion->identificador ),buffer + desplazamiento, sizeof(int));
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		desplazamiento += sizeof(int);			
-		memcpy(&(instruccion->cantidad_parametros),buffer + desplazamiento, sizeof(int));
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		desplazamiento += sizeof(int);		
-		for (int i=0; i < instruccion->cantidad_parametros; i++){
-			char* parametro;
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-			int size_parametro;
-			memcpy(&(size_parametro), buffer + desplazamiento, sizeof(int));
-			desplazamiento += sizeof(int);
-			parametro=malloc(size_parametro);
-			memcpy(parametro, buffer + desplazamiento, size_parametro);
-			desplazamiento += size_parametro;
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-			list_add(instruccion->parametros, parametro);
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		}		
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		free(buffer);	
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
-		//saco el motivo
-		memcpy(&motivo, buffer + desplazamiento, sizeof(int));
-		desplazamiento += sizeof(int);
-}
 
 // void _finalizar_proceso(t_pcb *pcb, int motivo)
 // {
@@ -300,66 +217,66 @@ void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
 // 	grado_multiprogramacion++;
 // }
 
-void _gestionar_peticiones_de_cpu_dispatch(){
-	while(1){
-		log_protegido_kernel(string_from_format("_gestionar_peticiones_de_cpu_dispatch"));
-		int cod_op = recibir_operacion(socket_dispatch);
-		log_protegido_kernel(string_from_format("Recibi operacion desde CPU DISPATCH"));
-		switch (cod_op) {
-			case CONTEXTO_EJECUCION:
-				log_protegido_kernel(string_from_format("_gestionar_peticiones_de_cpu_dispatch: CONTEXTO_EJECUCION"));
-				int motivo;
-				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
-				instrucciones->parametros =list_create();
-				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
-				switch(motivo){
-					case EXIT:
-						log_protegido_kernel(string_from_format("PID: <%d> - EXIT", proceso_exec->pid));
-				}
-				sleep(80);
-				break;
-		}
-	}
+// void _gestionar_peticiones_de_cpu_dispatch(){
+// 	while(1){
+// 		log_protegido_kernel(string_from_format("_gestionar_peticiones_de_cpu_dispatch"));
+// 		int cod_op = recibir_operacion(socket_dispatch);
+// 		log_protegido_kernel(string_from_format("Recibi operacion desde CPU DISPATCH"));
+// 		switch (cod_op) {
+// 			case CONTEXTO_EJECUCION:
+// 				log_protegido_kernel(string_from_format("_gestionar_peticiones_de_cpu_dispatch: CONTEXTO_EJECUCION"));
+// 				int motivo;
+// 				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
+// 				instrucciones->parametros =list_create();
+// 				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
+// 				switch(motivo){
+// 					case EXIT:
+// 						log_protegido_kernel(string_from_format("PID: <%d> - EXIT", proceso_exec->pid));
+// 				}
+// 				sleep(80);
+// 				break;
+// 		}
+// 	}
 	
-}
+// }
 
-void _atender_cpu_dispatch(){
-	pthread_create(&hilo_cpu_dispatch, NULL, (void*)_gestionar_peticiones_de_cpu_dispatch, NULL);
-	pthread_detach(hilo_cpu_dispatch);
-}
+// void _atender_cpu_dispatch(){
+// 	pthread_create(&hilo_cpu_dispatch, NULL, (void*)_gestionar_peticiones_de_cpu_dispatch, NULL);
+// 	pthread_detach(hilo_cpu_dispatch);
+// }
 
-int conectarCpuDispatch(){
-	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
-	char* puerto_dispatch 	= config_get_string_value(config_kernel,"PUERTO_CPU_DISPATCH");
+// int conectarCpuDispatch(){
+// 	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
+// 	char* puerto_dispatch 	= config_get_string_value(config_kernel,"PUERTO_CPU_DISPATCH");
 
-    socket_dispatch = crear_conexion(ip, puerto_dispatch);
+//     socket_dispatch = crear_conexion(ip, puerto_dispatch);
 
-    if (socket_dispatch <= 0){
-        printf(" DISPATCH: No se pudo establecer una conexion con la CPU\n");
-    }
-    else{
-		log_protegido_kernel(string_from_format("DISPATCH: Conexion con CPU exitosa"));
-    }
+//     if (socket_dispatch <= 0){
+//         printf(" DISPATCH: No se pudo establecer una conexion con la CPU\n");
+//     }
+//     else{
+// 		log_protegido_kernel(string_from_format("DISPATCH: Conexion con CPU exitosa"));
+//     }
 
-	int handshake_dispatch = KERNEL_DISPATCH;
-	bool confirmacion;
-	send(socket_dispatch, &handshake_dispatch, sizeof(int),0); 
-	recv(socket_dispatch, &confirmacion, sizeof(bool), MSG_WAITALL);
+// 	int handshake_dispatch = KERNEL_DISPATCH;
+// 	bool confirmacion;
+// 	send(socket_dispatch, &handshake_dispatch, sizeof(int),0); 
+// 	recv(socket_dispatch, &confirmacion, sizeof(bool), MSG_WAITALL);
 
-	if(confirmacion)
-		log_protegido_kernel(string_from_format("Conexion de Modulo Dispatch con CPU exitosa"));
-	else
-		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
-	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
+// 	if(confirmacion)
+// 		log_protegido_kernel(string_from_format("Conexion de Modulo Dispatch con CPU exitosa"));
+// 	else
+// 		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Dispatch con CPU fallido"));
+// 	enviar_mensaje("SOY KERNEL DISPATCH",socket_dispatch);
 	
-	_atender_cpu_dispatch();
+// 	_atender_cpu_dispatch();
 
-	pthread_mutex_lock(&mutex_conexiones);
-	conexiones++;
-	pthread_mutex_unlock(&mutex_conexiones);
+// 	pthread_mutex_lock(&mutex_conexiones);
+// 	conexiones++;
+// 	pthread_mutex_unlock(&mutex_conexiones);
 	
-return 0;
-}
+// return 0;
+// }
 
 int conectarCpuInterrupt(){
 	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
@@ -396,33 +313,17 @@ int conectarCpuInterrupt(){
 /*-------------------------------------Consola----------------------------------*/
 
 void leerConsola() {
-	printf("conexiones: %d \n", conexiones);
-	printf("Arranca leer consona, esperando...\n");
-    while(conexiones < 4){/*ESPERA*/}
+	log_protegido_kernel(string_from_format("Esperando Cliente..."));
+	
+    // while(conexiones < 4){/*ESPERA*/}
+
+	sem_wait(&s_conexion_memoria_ok);
+	sem_wait(&s_conexion_cpu_i_ok);
+	sem_wait(&s_conexion_cpu_d_ok);
+
 	leer_consola(m_multiprogramacion);
 	printf("Finaliza consola...\n");
 }
 
 
-/*----------------------Memoria---------------------------------------------------*/
-void  atender_peticiones_memoria(){
-	while(1){
-		int cod_op = recibir_operacion(socket_memoria);
-		void* buffer_recibido;
-		log_protegido_kernel(string_from_format("Recibi operacion desde memoria"));
-		switch(cod_op){
-			case INICIAR_PROCESO_MEMORIA_OK:
-                int size=0;
-				log_protegido_kernel(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
-                buffer_recibido = recibir_buffer(&size, socket_memoria);
-				sem_post(&s_init_proceso_a_memoria);
-				free(buffer_recibido);
-				log_protegido_kernel(string_from_format("INICIAR_PROCESO_MEMORIA_OK"));
-				break;	
-			default:
-				exit(EXIT_FAILURE);
-				log_warning(logger_kernel, "Operacion no reconocida");
-				log_warning(logger_kernel, "el valor de cod_op es: %d", cod_op);
-		}
-	}
-}
+

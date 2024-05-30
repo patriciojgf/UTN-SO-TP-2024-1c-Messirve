@@ -2,6 +2,7 @@
 #define PROCESO_H
 
 #include "mem_estructuras.h"
+#include "init_estructuras.h"
 
 t_proceso* crear_proceso(int pid, char* path_instrucciones);
 void eliminar_proceso(t_proceso* proceso);

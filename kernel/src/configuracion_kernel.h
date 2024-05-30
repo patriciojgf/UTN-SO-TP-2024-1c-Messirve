@@ -16,11 +16,37 @@ typedef enum{
     VRR
 } t_planificacion;
 
+//---- Estructura para guardar informacion sobre la interfaz ----//
+typedef struct{
+    int socket;
+    char* tipo_io;
+    char* nombre_io;
+} t_interfaz;
+
+extern int conexiones;
+
 //conexiones
 extern int socket_dispatch;
 extern int socket_memoria;
+extern int socket_interrupt;
+extern int socket_servidor_io;
+extern t_list* lista_interfaz_socket;
+
+
 extern t_pcb* proceso_exec;
 
+//Hilos 
+extern pthread_t hilo_gestionar_memoria;
+extern pthread_t hilo_gestionar_dispatch;
+extern pthread_t hilo_gestionar_interrupt;
+
+//------IP y PUERTOS----------
+extern char* IP_MEMORIA;
+extern char* PUERTO_MEMORIA;
+extern char* IP_CPU;
+extern char* PUERTO_CPU_DISPATCH;
+extern char* PUERTO_CPU_INTERRUPT;
+extern char* PUERTO_ESCUCHA;
 
 //config
 extern t_log* logger_kernel; //main.h
@@ -30,6 +56,11 @@ extern t_config* config_kernel; //main.h
 extern sem_t mlog; //main.h
 extern sem_t m_multiprogramacion;
 extern sem_t s_init_proceso_a_memoria;
+
+//semaforos para marcar conexiones existosas
+extern sem_t s_conexion_memoria_ok;
+extern sem_t s_conexion_cpu_d_ok;
+extern sem_t s_conexion_cpu_i_ok;
 
 //mutex
 extern pthread_mutex_t mutex_conexiones; //main.h

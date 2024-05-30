@@ -1,6 +1,6 @@
 #include "instrucciones.h"
 
-static char* _recibir_instruccion(int socket_cliente);
+//static char* _recibir_instruccion(int socket_cliente);
 static u_int8_t _get_identificador(char* identificador_txt);
 static char* _get_nombre_instruccion(u_int8_t instruccion);
 static u_int8_t _cantidad_parametros(u_int8_t identificador);
@@ -10,30 +10,28 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 
 extern t_registros_cpu registros_cpu;
 
-void log_protegido_cpu(char* mensaje){
-	sem_wait(&mlog);
-	log_info(logger_cpu, "%s", mensaje);
-	sem_post(&mlog);
-	free(mensaje);
-}
 
-char* fetch_instruccion(){
+//char* fetch_instruccion(){
+void fetch_instruccion(){
 	log_protegido_cpu(string_from_format("PID: <%d> - FETCH - Program Counter: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
 	t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
 	enviar_paquete(paquete, socket_memoria);
-	char* instruccion = _recibir_instruccion(socket_memoria);
-	printf("Instruccion: %s\n", instruccion);
+	//char* instruccion = _recibir_instruccion(socket_memoria);
+    sem_wait(&s_instruccion_actual);
+	//char* instruccion_actual
 	contexto_cpu->program_counter++;
 	eliminar_paquete(paquete);
-	return instruccion;
+	// return instruccion_actual;
 }
 
-t_instruccion* decodificar_instruccion(char* instruccion){
+// t_instruccion* decodificar_instruccion(char* instruccion){
+t_instruccion* decodificar_instruccion(){
 	t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
 	//Se separa la instruccion en un array de strings
-	char** instruccion_separada = string_split(instruccion, " ");
+	// char** instruccion_separada = string_split(instruccion, " ");
+	char** instruccion_separada = string_split(instruccion_actual, " ");
 	//Se obtiene el identificador de la instruccion
 	u_int8_t identificador = _get_identificador(instruccion_separada[0]);
 
@@ -45,8 +43,9 @@ t_instruccion* decodificar_instruccion(char* instruccion){
 
 	inst_decodificada->identificador = identificador;
 	inst_decodificada->cantidad_parametros = _cantidad_parametros(identificador);
-	inst_decodificada->parametros = _parametros_instruccion(instruccion, inst_decodificada->cantidad_parametros);
-	free(instruccion);
+	// inst_decodificada->parametros = _parametros_instruccion(instruccion, inst_decodificada->cantidad_parametros);
+	inst_decodificada->parametros = _parametros_instruccion(instruccion_actual, inst_decodificada->cantidad_parametros);
+	free(instruccion_actual);
 	return inst_decodificada;
 }
 
@@ -206,7 +205,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 	return instruccion;
 }
 
-static char* _recibir_instruccion(int socket_cliente){
+char* recibir_instruccion(int socket_cliente){
 	int size=0;
 	recibir_operacion(socket_cliente);
 	return recibir_buffer(&size, socket_cliente);
@@ -452,13 +451,13 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 }
 
 void devolver_contexto(int motivo, t_instruccion* instruccion){
-	log_warning(logger_cpu, "devolver_contexto");
-	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
-	empaquetar_contexto_cpu(paquete, instruccion, contexto_cpu->pid,contexto_cpu->registros_cpu, motivo);
-	log_warning(logger_cpu, "empaquetar_contexto_cpu");
-	enviar_paquete(paquete, socket_dispatch);
-	log_warning(logger_cpu, "enviar_paquete(paquete, socket_dispatch)");
-	eliminar_paquete(paquete);
+	// log_warning(logger_cpu, "devolver_contexto");
+	// t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
+	// empaquetar_contexto_cpu(paquete, instruccion, contexto_cpu->pid,contexto_cpu->registros_cpu, motivo);
+	// log_warning(logger_cpu, "empaquetar_contexto_cpu");
+	// enviar_paquete(paquete, socket_dispatch);
+	// log_warning(logger_cpu, "enviar_paquete(paquete, socket_dispatch)");
+	// eliminar_paquete(paquete);
 }
 
 void f_exit(t_instruccion *inst){ 

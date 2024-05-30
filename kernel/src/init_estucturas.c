@@ -38,6 +38,13 @@ static void iniciar_configuracion(char* config_path){
     RECURSOS = config_get_array_value(config_kernel,"RECURSOS");
     INSTANCIAS_RECURSOS = config_get_array_value(config_kernel, "INSTANCIAS_RECURSOS"); 
     GRADO_MULTIPROGRAMACION = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
+
+    IP_MEMORIA = config_get_string_value(config_kernel,"IP_MEMORIA");
+	PUERTO_MEMORIA = config_get_string_value(config_kernel,"PUERTO_MEMORIA");
+	IP_CPU = config_get_string_value(config_kernel,"IP_CPU");
+	PUERTO_CPU_DISPATCH = config_get_string_value(config_kernel,"PUERTO_CPU_DISPATCH");   
+    PUERTO_CPU_INTERRUPT = config_get_string_value(config_kernel,"PUERTO_CPU_INTERRUPT");
+    PUERTO_ESCUCHA = config_get_string_value(config_kernel,"PUERTO_ESCUCHA");
 }
 
 static void init_listas_planificacion(){
@@ -56,6 +63,9 @@ static void init_semaforos(){
     sem_init(&mlog,0,1);
     sem_init(&m_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
     sem_init(&s_init_proceso_a_memoria,0,0);
+    sem_init(&s_conexion_memoria_ok,0,0);
+    sem_init(&s_conexion_cpu_d_ok,0,0);
+    sem_init(&s_conexion_cpu_i_ok,0,0);
 }
 
 static void init_pthread_mutex(){
@@ -93,4 +103,11 @@ void init_kernel(char* path_config){
     init_semaforos();
     init_pthread_mutex();
     init_recursos();
+}
+
+void log_protegido_kernel(char* mensaje)
+{
+	sem_wait(&mlog);
+	log_info(logger_kernel, "%s", mensaje);
+	sem_post(&mlog);
 }
