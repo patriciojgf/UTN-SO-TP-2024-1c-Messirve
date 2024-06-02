@@ -55,11 +55,5 @@ pthread_t hilo_cpu;
 pthread_t hilo_kernelDispatch;
 pthread_t hilo_kernelInterrupt;
 
-int conectarMemoria();
-int conectarKernelDispatch();
-int conectarKernelInterrupt();
-// static void _recibir_pcb(int socket);
-// static void _desempaquetar_pcb(void *buffer);
-
     
 #endif

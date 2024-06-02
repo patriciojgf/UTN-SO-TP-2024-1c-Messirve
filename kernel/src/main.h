@@ -83,6 +83,8 @@ pthread_mutex_t mutex_plan_exit;
 pthread_mutex_t mutex_procesos_planificados;
 //pcb
 pthread_mutex_t mutex_pid_proceso;
+//listas interfaces conectadas
+pthread_mutex_t mutex_lista_interfaz;
 
 //pcb
 int pid_proceso = 0;

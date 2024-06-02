@@ -14,39 +14,14 @@ int main(int argc, char **argv) {
 	gestionar_conexion_memoria();
 	gestionar_conexion_interrupt();
 	gestionar_conexion_dispatch();
-    // pthread_create(&t4, NULL, (void*) conectarInterfaz, NULL);
-	// pthread_detach(t4);
+	
 	pthread_t t5;
 	pthread_create(&t5, NULL, (void*) leerConsola, NULL);
 	gestionar_conexion_io();
 
-
-	/*------- Inicio los planificadores ----------------*/
-	// iniciar_hilos_estructuras();
-
-	
-	/*------- Limpio listas, semaforos, etc ------------*/
-	// free_estructuras();
-
-	// log_destroy(logger_kernel);
- 	// config_destroy(config_kernel);
-	
-	// liberar_conexion(socket_FS);
 	pthread_join(t5, NULL);
 
-	//pthread_detach(t1);
-	// pthread_join(t1, NULL); //patricio:agrego esta linea momentaneamente para darle tiempo a que se conecte a memoria
-	// pthread_join(t2, NULL);
-	// pthread_join(t3, NULL);
-	// pthread_join(t4, NULL);
-	// pthread_join(t5, NULL);
 
-	liberar_conexion(socket_memoria);
-	liberar_conexion(socket_dispatch);
-	liberar_conexion(socket_interrupt);
-	liberar_conexion(socket_servidor);
-	sem_destroy(&planificadores);
-	// free_estructuras();
     return 0;
 }
 

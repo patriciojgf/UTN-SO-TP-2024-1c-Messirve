@@ -73,6 +73,8 @@ extern pthread_mutex_t mutex_plan_exit;
 extern pthread_mutex_t mutex_procesos_planificados; 
 //pcb
 extern pthread_mutex_t mutex_pid_proceso;
+//listas interfaces conectadas
+extern pthread_mutex_t mutex_lista_interfaz;
 
 //pcb
 extern int pid_proceso;

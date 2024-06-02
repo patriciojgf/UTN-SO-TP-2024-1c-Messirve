@@ -292,6 +292,7 @@ void empaquetar_registros_cpu(t_paquete* paquete_contexto, t_registros_cpu regis
 	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.ECX), sizeof(uint32_t));
 	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.PC), sizeof(uint32_t));
 	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.SI), sizeof(uint32_t));
+	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(registros_cpu.DI), sizeof(uint32_t));
 }
 
 void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* instruccion){
@@ -299,7 +300,7 @@ void empaquetar_instruccion_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 	agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(instruccion->cantidad_parametros), sizeof(int));
 	for(int i = 0; i < instruccion->cantidad_parametros; i++){
 		char* parametro = list_get(instruccion->parametros, i);
-		agregar_datos_sin_tamaño_a_paquete(paquete_contexto, &(parametro), strlen(parametro) + 1);
+		agregar_a_paquete(paquete_contexto, parametro, strlen(parametro) + 1);
 	}
 }
 

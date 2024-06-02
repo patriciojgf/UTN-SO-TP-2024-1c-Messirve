@@ -5,6 +5,8 @@ static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instru
 static void _handshake_cliente_kernel(int socket, char* nombre_destino);
 static char* _io_handshake_to_char(int handshake);
 static void _gestionar_nueva_interfaz(void *void_args);
+static void _atender_peticiones_io_gen(t_interfaz *interfaz);
+static void _agregar_a_lista_interfaces(t_interfaz *interfaz_nueva);
 
 void init_conexiones(){
 	socket_servidor_io = iniciar_servidor(PUERTO_ESCUCHA);
@@ -49,10 +51,24 @@ void gestionar_conexion_io(){
 	}	
 }
 
-static void _gestionar_nueva_interfaz(void *void_args){
-	t_interfaz *interfaz_nueva = (t_interfaz *)void_args;
-	list_add(lista_interfaz_socket, interfaz_nueva);
-	log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Nueva interfaz %s conectada\n", interfaz_nueva->nombre_io));
+static void _gestionar_nueva_interfaz(void *void_args) {
+    t_interfaz *interfaz_nueva = (t_interfaz *)void_args;
+    _agregar_a_lista_interfaces(interfaz_nueva);
+    log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Nueva interfaz %s conectada\n", interfaz_nueva->nombre_io));
+
+    // Utilizar strcmp para comparar cadenas
+    if (strcmp(interfaz_nueva->tipo_io, "STDIN") == 0) {
+        log_error(logger_kernel, "falta implementar STDIN");
+    } else if (strcmp(interfaz_nueva->tipo_io, "STDOUT") == 0) {
+        log_error(logger_kernel, "falta implementar STDOUT");
+    } else if (strcmp(interfaz_nueva->tipo_io, "DIALFS") == 0) {
+        log_error(logger_kernel, "falta implementar DIALFS");
+    } else if (strcmp(interfaz_nueva->tipo_io, "GENERICA") == 0) {
+        _atender_peticiones_io_gen(interfaz_nueva);
+    } else {
+        log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion de interfaz '%s' desconocida\n", interfaz_nueva->tipo_io);
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -147,6 +163,12 @@ void atender_peticiones_dispatch(){
 				switch(motivo){
 					case EXIT:
 						log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));
+						break;
+					case IO_GEN_SLEEP:
+						log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid));
+						break;
+					default:
+                		log_error(logger_kernel, "[CONTEXTO_EJECUCION]: motivo no reconocido <%d> \n", cod_op);
 				}
 				break;
             default:
@@ -159,6 +181,39 @@ void atender_peticiones_dispatch(){
 void atender_peticiones_interrupt(){
 	log_protegido_kernel(string_from_format("[ATENDER INTERRUPT]: por ahora solo se conectarme"));
 }
+/*------------------------INTERFACES-----------------------------------------*/
+/*GENERICAS*/
+static void _atender_peticiones_io_gen(t_interfaz *interfaz){
+    log_protegido_kernel(string_from_format("[INTERFAZ GEN %s]: ---- ESPERANDO OPERACION ----", interfaz->nombre_io));
+	while (1) {
+        int cod_op = recibir_operacion(interfaz->socket);
+        void *buffer_recibido;
+        log_protegido_kernel(string_from_format("[ATENDER INTERFAZ GENÉRICA]: Recibí operación %d", cod_op));
+        switch (cod_op) {
+            // case GEN_IO_TASK_COMPLETED:
+            //     log_protegido_kernel("[ATENDER INTERFAZ GENÉRICA]: Tarea de I/O completada");
+            //     // Lógica adicional si es necesaria
+            //     break;
+            // case GEN_IO_DATA_AVAILABLE:
+            //     int size = 0;
+            //     buffer_recibido = recibir_buffer(&size, socket_interfaz_generica);
+            //     // Procesar los datos recibidos
+            //     free(buffer_recibido);
+            //     break;
+            // case GEN_IO_ERROR:
+            //     log_protegido_kernel("[ATENDER INTERFAZ GENÉRICA]: Error en la interfaz I/O");
+            //     // Manejo de errores
+            //     break;
+            // case GEN_IO_STATUS_UPDATE:
+            //     // Actualizar estado de la interfaz o manejar la información del estado
+            //     break;
+            default:
+                log_protegido_kernel(string_from_format("[ATENDER INTERFAZ GENÉRICA]: Operación no reconocida %d", cod_op));
+                exit(EXIT_FAILURE);
+        }
+    }
+}
+
 
 
 // --------------------------------------------------------------------------//
@@ -172,6 +227,17 @@ void atender_peticiones_interrupt(){
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES AUXILIARES----------------------------------------//
 // --------------------------------------------------------------------------//
+
+
+
+static void _agregar_a_lista_interfaces(t_interfaz *interfaz_nueva) {
+    pthread_mutex_lock(&mutex_lista_interfaz);  // Bloquear el mutex
+
+    // Agregar la nueva interfaz al inicio de la lista
+    list_add(lista_interfaz_socket, interfaz_nueva);
+
+    pthread_mutex_unlock(&mutex_lista_interfaz);  // Desbloquear el mutex
+}
 
 static void _handshake_cliente_kernel(int socket, char* nombre_destino){
 	log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Inicio Handshake con %s\n", nombre_destino));
@@ -191,7 +257,6 @@ static void _handshake_cliente_kernel(int socket, char* nombre_destino){
 
 /*----------------------Dispatch---------------------------------------------------*/
 static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
-		log_protegido_kernel(string_from_format("_recibir_contexto_cpu"));
 		int size;
 		void* buffer = recibir_buffer(&size, socket_dispatch);
 		int desplazamiento = 0;		
@@ -212,12 +277,16 @@ static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instru
 		desplazamiento += sizeof(uint32_t);
 		memcpy(&(pcb->registros_cpu.ECX), buffer + desplazamiento, sizeof(uint32_t));
 		desplazamiento += sizeof(uint32_t);
+		memcpy(&(pcb->registros_cpu.EDX), buffer + desplazamiento, sizeof(uint32_t));
+		desplazamiento += sizeof(uint32_t);
 		memcpy(&(pcb->registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
 		desplazamiento += sizeof(uint32_t);
 		memcpy(&(pcb->registros_cpu.SI), buffer + desplazamiento, sizeof(uint32_t));
+		desplazamiento += sizeof(uint32_t);	
+		memcpy(&(pcb->registros_cpu.DI), buffer + desplazamiento, sizeof(uint32_t));
 		desplazamiento += sizeof(uint32_t);		
 		memcpy(&(instruccion->identificador ),buffer + desplazamiento, sizeof(int));
-		desplazamiento += sizeof(int);			
+		desplazamiento += sizeof(int);
 		memcpy(&(instruccion->cantidad_parametros),buffer + desplazamiento, sizeof(int));
 		desplazamiento += sizeof(int);		
 		for (int i=0; i < instruccion->cantidad_parametros; i++){
@@ -230,10 +299,9 @@ static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instru
 			desplazamiento += size_parametro;
 			list_add(instruccion->parametros, parametro);
 		}
-		free(buffer);
-		//saco el motivo
-		memcpy(&motivo, buffer + desplazamiento, sizeof(int));
+		memcpy(motivo, buffer + desplazamiento, sizeof(int));
 		desplazamiento += sizeof(int);
+		free(buffer);
 }
 
 

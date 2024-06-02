@@ -23,14 +23,11 @@ extern bool flag_ejecucion, flag_interrupt;
 extern t_log* logger_cpu;
 extern t_contexto* contexto_cpu;
 
-void f_io_gen_sleep(t_instruccion* instruccion);
-void f_exit(t_instruccion *inst);
 // char* fetch_instruccion();
 void fetch_instruccion();
 // t_instruccion* decodificar_instruccion(char* instruccion);
 t_instruccion* decodificar_instruccion();
 t_instruccion* execute_instruccion(t_instruccion* instruccion);
-void devolver_contexto(int motivo, t_instruccion* instruccion);
 char* recibir_instruccion(int socket_cliente);
 
 #endif // INSTRUCCIONES_H

@@ -6,12 +6,22 @@ static char* _get_nombre_instruccion(u_int8_t instruccion);
 static u_int8_t _cantidad_parametros(u_int8_t identificador);
 static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_parametros);
 static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros);
+//instrucciones
+static void _io_gen_sleep(t_instruccion* instruccion);
+static void _set(t_instruccion* instruccion);
+static void _sum(t_instruccion* instruccion);
+static void _sub(t_instruccion* instruccion);
+static void _jnz(t_instruccion* instruccion);
+static void _f_exit(t_instruccion *inst);
+//
+static void _devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion);
 
 
+//----
 extern t_registros_cpu registros_cpu;
 
+//---------------------------------------------------------------------------------------------------------------------//
 
-//char* fetch_instruccion(){
 void fetch_instruccion(){
 	log_protegido_cpu(string_from_format("PID: <%d> - FETCH - Program Counter: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
 	t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
@@ -71,45 +81,12 @@ uint8_t* _get_direccion_registro(char* string_registro){
     return registro;
 }
 
-static void _set(t_instruccion* instruccion){
-	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
-	*dir_registro = atoi(list_get(instruccion->parametros, 1));
-}
-
-static void _sum(t_instruccion* instruccion){
-    char *registro_destino = list_get(instruccion->parametros, 0);
-    char *registro_origen = list_get(instruccion->parametros, 1);
-
-    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
-    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // dreccion del registro origen
-    
-    uint8_t aux = *registro_des + *registro_ori;
-    
-    *registro_des = aux;	
-}
-
-static void _sub(t_instruccion* instruccion){
-    char *registro_destino = list_get(instruccion->parametros, 0);
-    char *registro_origen = list_get(instruccion->parametros, 1);    
-    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
-    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // direccion del registro origen    
-    uint8_t aux = *registro_des - *registro_ori;    
-    *registro_des = aux;
-}
-
-static void _jnz(t_instruccion* instruccion){
-	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
-	if(*dir_registro != 0){
-		contexto_cpu->program_counter = atoi(list_get(instruccion->parametros, 1));
-	}
-}
-
 t_instruccion* execute_instruccion(t_instruccion* instruccion){
 	log_info(logger_cpu, "identificador de instruccion: %d", instruccion->identificador);
 	switch (instruccion->identificador){
 		case EXIT:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			f_exit(instruccion);
+			_f_exit(instruccion);
 			break;
 		case SET:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
@@ -142,62 +119,10 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			_jnz(instruccion);
 			log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
 			break;
-		case RESIZE:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// resize(instruccion);
-			break;
-		// case MOV_IN:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// mov_in(instruccion);
-		// 	break;
-		// case MOV_OUT:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// mov_out(instruccion);
-		// 	break;
-		// case COPY_STRING:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// copy_string(instruccion);
-		// 	break;
-		// case WAIT:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// wait(instruccion);
-		// 	break;
-		// case SIGNAL:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// signal(instruccion);
-		// 	break;
 		case IO_GEN_SLEEP:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			//f_io_gen_sleep(instruccion);
+			_io_gen_sleep(instruccion);
 			break;
-		// case IO_STDIN_READ:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// io_stdin_read(instruccion);
-		// 	break;
-		// case IO_STDOUT_WRITE:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// io_stdout_write(instruccion);
-		// 	break;
-		// case IO_FS_CREATE:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// io_fs_create(instruccion);
-		// 	break;
-		// case IO_FS_DELETE:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// io_fs_delete(instruccion);
-		// 	break;
-		// case IO_FS_TRUNCATE:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// io_fs_truncate(instruccion);
-		// 	break;
-		// case IO_FS_WRITE:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// io_fs_write(instruccion);
-		// 	break;
-		// case IO_FS_READ:
-		// 	_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-		// 	// io_fs_read(instruccion);
-		// 	break;
 		default:
 			log_protegido_cpu("Instruccion desconocida. ");
 			break;
@@ -450,27 +375,67 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 	log_warning(logger_cpu, "Necesito hacer un free aca?");
 }
 
-void devolver_contexto(int motivo, t_instruccion* instruccion){
-	// log_warning(logger_cpu, "devolver_contexto");
-	// t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
-	// empaquetar_contexto_cpu(paquete, instruccion, contexto_cpu->pid,contexto_cpu->registros_cpu, motivo);
-	// log_warning(logger_cpu, "empaquetar_contexto_cpu");
-	// enviar_paquete(paquete, socket_dispatch);
-	// log_warning(logger_cpu, "enviar_paquete(paquete, socket_dispatch)");
-	// eliminar_paquete(paquete);
+static void _devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
+	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
+	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
+	//agrego registros_cpu al paquete
+	empaquetar_registros_cpu(paquete, contexto_cpu->registros_cpu);
+	empaquetar_instruccion_cpu(paquete, instruccion);
+	//agrego motivo
+	agregar_datos_sin_tamaño_a_paquete(paquete, &motivo, sizeof(int));
+	enviar_paquete(paquete, socket_cliente_dispatch);
+	eliminar_paquete(paquete);
 }
 
-void f_exit(t_instruccion *inst){ 
+
+
+
+/*------------_INSTRUCCIONES---------------------------------------*/
+
+static void _io_gen_sleep(t_instruccion* instruccion)
+{
+	_devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
+}
+
+static void _set(t_instruccion* instruccion){
+	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
+	*dir_registro = atoi(list_get(instruccion->parametros, 1));
+}
+
+static void _sum(t_instruccion* instruccion){
+    char *registro_destino = list_get(instruccion->parametros, 0);
+    char *registro_origen = list_get(instruccion->parametros, 1);
+
+    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
+    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // dreccion del registro origen
+    
+    uint8_t aux = *registro_des + *registro_ori;
+    
+    *registro_des = aux;	
+}
+
+static void _sub(t_instruccion* instruccion){
+    char *registro_destino = list_get(instruccion->parametros, 0);
+    char *registro_origen = list_get(instruccion->parametros, 1);    
+    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
+    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // direccion del registro origen    
+    uint8_t aux = *registro_des - *registro_ori;    
+    *registro_des = aux;
+}
+
+static void _jnz(t_instruccion* instruccion){
+	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
+	if(*dir_registro != 0){
+		contexto_cpu->program_counter = atoi(list_get(instruccion->parametros, 1));
+	}
+}
+
+
+static void _f_exit(t_instruccion *inst){ 
     flag_ejecucion = false;
     log_warning(logger_cpu, "Falta implementar devolver_contexto");
-	devolver_contexto(EXIT, inst);
+	_devolver_contexto_a_dispatch(EXIT, inst);
 }
 
-void f_io_gen_sleep(t_instruccion* instruccion)
-{
-	log_protegido_cpu("Proximamente hace su magia"); 
-	
-	// log_warning(logger_cpu, "cantidad de parametros: %d", list_size(instruccion->parametros));
-	// log_warning(logger_cpu, "parametro 1: %p", list_get(instruccion->parametros, 0));
-	// log_warning(logger_cpu, "parametro 2: %p", list_get(instruccion->parametros, 1));
-}
+

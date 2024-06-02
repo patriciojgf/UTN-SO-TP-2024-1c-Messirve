@@ -140,8 +140,6 @@ static void _recibir_nuevo_contexto(void* buffer){
     desplazamiento += sizeof(int);
     memcpy(&(contexto_cpu->program_counter), buffer + desplazamiento, sizeof(uint32_t));
     desplazamiento += sizeof(uint32_t);
-    memcpy(&(contexto_cpu->registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
     memcpy(&(contexto_cpu->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
     desplazamiento += sizeof(uint8_t);
     memcpy(&(contexto_cpu->registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));
@@ -157,6 +155,8 @@ static void _recibir_nuevo_contexto(void* buffer){
     memcpy(&(contexto_cpu->registros_cpu.ECX), buffer + desplazamiento, sizeof(uint32_t));
     desplazamiento += sizeof(uint32_t);
     memcpy(&(contexto_cpu->registros_cpu.EDX), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(contexto_cpu->registros_cpu.PC), buffer + desplazamiento, sizeof(uint32_t));
     desplazamiento += sizeof(uint32_t);
     memcpy(&(contexto_cpu->registros_cpu.SI), buffer + desplazamiento, sizeof(uint32_t));
     desplazamiento += sizeof(uint32_t);
@@ -175,8 +175,8 @@ static void _ejecutar_proceso(){
 
 static void _check_interrupt(t_instruccion* instruccion){
     if(flag_interrupt && flag_ejecucion){
-        log_warning(logger_cpu, "hay interrupcion");
-        devolver_contexto(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
+        log_warning(logger_cpu, "hay interrupcion, modificar el devolver contexto");
+        //_devolver_contexto_a(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
         flag_ejecucion = false;
     }
     flag_interrupt = false;
