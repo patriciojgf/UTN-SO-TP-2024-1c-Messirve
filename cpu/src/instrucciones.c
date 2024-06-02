@@ -14,7 +14,6 @@ static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
 //
-static void _devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion);
 
 
 //----
@@ -375,7 +374,7 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 	log_warning(logger_cpu, "Necesito hacer un free aca?");
 }
 
-static void _devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
+void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
@@ -389,13 +388,12 @@ static void _devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion
 }
 
 
-
-
 /*------------_INSTRUCCIONES---------------------------------------*/
 
 static void _io_gen_sleep(t_instruccion* instruccion)
 {
-	_devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
+	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
+    flag_ejecucion = false;
 }
 
 static void _set(t_instruccion* instruccion){
@@ -434,8 +432,7 @@ static void _jnz(t_instruccion* instruccion){
 
 static void _f_exit(t_instruccion *inst){ 
     flag_ejecucion = false;
-    log_warning(logger_cpu, "Falta implementar devolver_contexto");
-	_devolver_contexto_a_dispatch(EXIT, inst);
+	devolver_contexto_a_dispatch(EXIT, inst);
 }
 
 

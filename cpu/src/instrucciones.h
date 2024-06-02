@@ -29,5 +29,6 @@ void fetch_instruccion();
 t_instruccion* decodificar_instruccion();
 t_instruccion* execute_instruccion(t_instruccion* instruccion);
 char* recibir_instruccion(int socket_cliente);
+void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion);
 
 #endif // INSTRUCCIONES_H
