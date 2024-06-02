@@ -1,6 +1,14 @@
 #ifndef STATIC_CONFIGURACION_CPU_H_  
 #define STATIC_CONFIGURACION_CPU_H_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <commons/log.h>
+#include <commons/string.h>
+#include <commons/config.h>
+#include <commons/collections/list.h>
+#include <commons/collections/queue.h>
+#include <commons/collections/dictionary.h>
 #include <utils/logconfig.h>
 #include <utils/conexiones.h>
 #include <pthread.h>

@@ -172,7 +172,6 @@ static void _ejecutar_proceso(){
         _check_interrupt(execute_instruccion(decodificar_instruccion()));
     }
 }
-
 static void _check_interrupt(t_instruccion* instruccion){
     if(flag_interrupt && flag_ejecucion){
         log_warning(logger_cpu, "hay interrupcion, modificar el devolver contexto");
