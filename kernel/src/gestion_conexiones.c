@@ -43,7 +43,11 @@ void gestionar_conexion_io(){
         t_interfaz *info_interfaz = malloc(sizeof(t_interfaz));
 		info_interfaz->socket = socket_io_nuevo;
 		info_interfaz->nombre_io = nombre_nueva_io;
-		info_interfaz->tipo_io = _io_handshake_to_char(cod_tipo_io);
+		//info_interfaz->tipo_io = _io_handshake_to_char(cod_tipo_io);
+		info_interfaz->tipo_io = cod_tipo_io;
+		info_interfaz->cola_procesos = list_create();
+		pthread_mutex_init(&(info_interfaz->mutex_cola_block), NULL);
+		sem_init(&info_interfaz->semaforo, 0, 0);		
 
 		pthread_t hilo_interfaz;
 		pthread_create(&hilo_interfaz, NULL, (void *) _gestionar_nueva_interfaz, info_interfaz);
@@ -57,16 +61,16 @@ static void _gestionar_nueva_interfaz(void *void_args) {
     log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Nueva interfaz %s conectada\n", interfaz_nueva->nombre_io));
 
     // Utilizar strcmp para comparar cadenas
-    if (strcmp(interfaz_nueva->tipo_io, "STDIN") == 0) {
+    if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDIN") == 0) {
         log_error(logger_kernel, "falta implementar STDIN");
-    } else if (strcmp(interfaz_nueva->tipo_io, "STDOUT") == 0) {
+    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDOUT") == 0) {
         log_error(logger_kernel, "falta implementar STDOUT");
-    } else if (strcmp(interfaz_nueva->tipo_io, "DIALFS") == 0) {
+    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {
         log_error(logger_kernel, "falta implementar DIALFS");
-    } else if (strcmp(interfaz_nueva->tipo_io, "GENERICA") == 0) {
+    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "GENERICA") == 0) {
         _atender_peticiones_io_gen(interfaz_nueva);
     } else {
-        log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion de interfaz '%s' desconocida\n", interfaz_nueva->tipo_io);
+        log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion de interfaz '%s' desconocida\n", _io_handshake_to_char(interfaz_nueva->tipo_io));
         exit(EXIT_FAILURE);
     }
 }
@@ -166,6 +170,7 @@ void atender_peticiones_dispatch(){
 						break;
 					case IO_GEN_SLEEP:
 						log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid));
+						atender_io_gen_sleep(proceso_exec,instrucciones);
 						break;
 					default:
                 		log_error(logger_kernel, "[CONTEXTO_EJECUCION]: motivo no reconocido <%d> \n", cod_op);
@@ -183,36 +188,47 @@ void atender_peticiones_interrupt(){
 }
 /*------------------------INTERFACES-----------------------------------------*/
 /*GENERICAS*/
-static void _atender_peticiones_io_gen(t_interfaz *interfaz){
-    log_protegido_kernel(string_from_format("[INTERFAZ GEN %s]: ---- ESPERANDO OPERACION ----", interfaz->nombre_io));
-	while (1) {
-        int cod_op = recibir_operacion(interfaz->socket);
-        void *buffer_recibido;
-        log_protegido_kernel(string_from_format("[ATENDER INTERFAZ GENÉRICA]: Recibí operación %d", cod_op));
-        switch (cod_op) {
-            // case GEN_IO_TASK_COMPLETED:
-            //     log_protegido_kernel("[ATENDER INTERFAZ GENÉRICA]: Tarea de I/O completada");
-            //     // Lógica adicional si es necesaria
-            //     break;
-            // case GEN_IO_DATA_AVAILABLE:
-            //     int size = 0;
-            //     buffer_recibido = recibir_buffer(&size, socket_interfaz_generica);
-            //     // Procesar los datos recibidos
-            //     free(buffer_recibido);
-            //     break;
-            // case GEN_IO_ERROR:
-            //     log_protegido_kernel("[ATENDER INTERFAZ GENÉRICA]: Error en la interfaz I/O");
-            //     // Manejo de errores
-            //     break;
-            // case GEN_IO_STATUS_UPDATE:
-            //     // Actualizar estado de la interfaz o manejar la información del estado
-            //     break;
-            default:
-                log_protegido_kernel(string_from_format("[ATENDER INTERFAZ GENÉRICA]: Operación no reconocida %d", cod_op));
-                exit(EXIT_FAILURE);
-        }
-    }
-}
+static void _atender_peticiones_io_gen(t_interfaz *interfaz){		
+		while(1){
+    		log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
+			int cod_op = recibir_operacion(interfaz->socket);
+			switch (cod_op){
+				case IO_GEN_SLEEP:	
+					log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- IO_GEN_SLEEP ----", interfaz->nombre_io));
+			
+					t_pedido_sleep* pedido = list_get(interfaz->cola_procesos, 0);
+					sem_post(&pedido->semaforo_pedido_ok);
+					free(pedido);
+					break;
+				case -1:
+					log_error(logger_kernel,"[ATENDER INTERFAZ IO GEN %s]: Se desconecto la interfaz.",interfaz->nombre_io);
+					log_warning(logger_kernel, "ver si hay que eliminar la interfaz");
+					break;
+				default:
+					log_error(logger_kernel,"[ATENDER INTERFAZ IO GEN %s]: operacion desconocida - %d",interfaz->nombre_io, cod_op);
+					exit(EXIT_FAILURE);
+			}			
+		}
+}	
+
+// static void _enviar_peticiones_io_gen(t_interfaz *interfaz){
+//     log_protegido_kernel(string_from_format("[ENVIAR PETICION INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
+// 	while (1) {
+// 		//espero que haya algun pedido creado
+//         sem_wait(&interfaz->semaforo);
+
+// 		//envio pedido a la interfaz
+// 		t_pedido_sleep* pedido = list_get(interfaz->cola_procesos, 0);
+// 		t_paquete* paquete_pedido = crear_paquete(IO_GEN_SLEEP);
+// 		agregar_datos_sin_tamaño_a_paquete(paquete_pedido, &pedido->tiempo_sleep, sizeof(int));
+// 		enviar_paquete(paquete_pedido, interfaz->socket);
+
+// 		//espero el ok
+// 		sem_wait(&pedido->semaforo_pedido_ok);
+// 		list_remove(interfaz->cola_procesos, 0);
+// 		free(pedido);
+//     }
+// }
 
 
 

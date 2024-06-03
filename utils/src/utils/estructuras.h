@@ -10,6 +10,7 @@
 #include <string.h>
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
+#include <semaphore.h>
 
 
 typedef struct{

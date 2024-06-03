@@ -61,7 +61,7 @@ char** RECURSOS;
 char** INSTANCIAS_RECURSOS;
 
 
-//armo estructura lista de tipo t_socket_interfaz para guardar todas las que llegan
+//armo estructura lista de tipo t_interfaz para guardar todas las que llegan
 t_list* lista_interfaz_socket;
 sem_t mlog, m_multiprogramacion, s_init_proceso_a_memoria;
 
@@ -103,7 +103,6 @@ int conectarCpuDispatch();
 int conectarCpuInterrupt();
 int conectarMemoria();
 int conectarIO();
-int nuevaInterfaz(int socket_cliente);
 int esperar_interfaz(int socket_servidor);
 int conectarInterfaz();
 // int leer_consola();

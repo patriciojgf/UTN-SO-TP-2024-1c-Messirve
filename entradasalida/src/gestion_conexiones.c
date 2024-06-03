@@ -85,6 +85,22 @@ static void _atender_peticiones_kernel(){
             case MENSAJE:
                 recibir_mensaje(socket_cliente_kernel, logger_io);
                 break;
+            case IO_GEN_SLEEP:
+                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP ----"));
+                int size=0;
+                void *buffer = recibir_buffer(&size, socket_cliente_kernel);           
+                int tiempo_sleep;
+                memcpy(&tiempo_sleep, buffer, sizeof(int));
+                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP: tiempo %d ----",tiempo_sleep));
+                usleep(tiempo_sleep*1000);
+                //le doy el ok a kernel
+                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- VOY A ENVIAR EL CODIGO: %d ----",IO_GEN_SLEEP));
+                t_paquete* paquete_pedido = crear_paquete(IO_GEN_SLEEP);
+                enviar_paquete(paquete_pedido, socket_cliente_kernel);
+
+                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP: fin ----",tiempo_sleep));
+
+                break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");
                 // break;

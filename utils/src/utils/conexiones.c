@@ -237,12 +237,12 @@ void liberar_conexion(int socket_cliente){
 }
 
 
-void agregar_socket_a_lista(t_list* lista, t_socket_interfaz* socket){
+void agregar_socket_a_lista(t_list* lista, t_interfaz* socket){
 	list_add(lista, socket);
 }
 
-t_socket_interfaz* buscar_socket_por_nombre(t_list* lista, char* nombre){
-	t_socket_interfaz* socket = list_find(lista, (void*)nombre);
+t_interfaz* buscar_socket_por_nombre(t_list* lista, char* nombre){
+	t_interfaz* socket = list_find(lista, (void*)nombre);
 	return socket;
 }
 

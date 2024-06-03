@@ -102,13 +102,28 @@ typedef struct
 } t_paquete;
 
 //defino la estructura t_list que guarde el socket y el nombre de la interfaz
-typedef struct
-{
-	int socket;
-	int tipo_interfaz;
-	char* nombre_interfaz;
-} t_socket_interfaz;
+// typedef struct
+// {
+// 	int socket;
+// 	int tipo_interfaz;
+// 	char* nombre_interfaz;
+// } t_socket_interfaz;
 
+//---- Estructura para guardar informacion sobre la interfaz ----//
+typedef struct{
+    int socket;
+    int tipo_io;
+    char* nombre_io;
+    t_list* cola_procesos; // Lista para encolar procesos que esperan IO_GEN_SLEEP
+	pthread_mutex_t mutex_cola_block;
+    sem_t semaforo;// Semaforo para controlar el acceso a la cola de procesos
+} t_interfaz;
+
+typedef struct {
+    t_pcb* pcb;      // Puntero al PCB del proceso
+    int tiempo_sleep; // Tiempo de sleep solicitado
+	sem_t semaforo_pedido_ok;
+} t_pedido_sleep;
 
 int crear_conexion(char* ip, char* puerto);
 void enviar_mensaje(char* mensaje, int socket_cliente);
@@ -123,9 +138,9 @@ void* recibir_buffer(int*, int);
 char* leer_mensaje(int socket_cliente);
 int recibir_operacion(int);
 
-void agregar_socket_a_lista(t_list* lista, t_socket_interfaz* socket);
+void agregar_socket_a_lista(t_list* lista, t_interfaz* socket);
 void quitar_socket_por_nombre(t_list* lista, char* nombre);
-t_socket_interfaz* buscar_socket_por_nombre(t_list* lista, char* nombre);
+t_interfaz* buscar_socket_por_nombre(t_list* lista, char* nombre);
 
 
 /*Paquetes*/

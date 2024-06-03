@@ -3,6 +3,7 @@
 
 #include <configuracion_kernel.h>
 #include "init_estructuras.h"
+#include "atender_cpu.h"
 
 
 void init_conexiones();

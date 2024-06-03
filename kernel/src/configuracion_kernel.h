@@ -16,12 +16,15 @@ typedef enum{
     VRR
 } t_planificacion;
 
-//---- Estructura para guardar informacion sobre la interfaz ----//
-typedef struct{
-    int socket;
-    char* tipo_io;
-    char* nombre_io;
-} t_interfaz;
+// //---- Estructura para guardar informacion sobre la interfaz ----//
+// typedef struct{
+//     int socket;
+//     char* tipo_io;
+//     char* nombre_io;
+//     t_list* cola_procesos; // Lista para encolar procesos que esperan IO_GEN_SLEEP
+// 	pthread_mutex_t mutex_cola_block;
+//     sem_t semaforo;// Semaforo para controlar el acceso a la cola de procesos
+// } t_interfaz;
 
 extern int conexiones;
 
