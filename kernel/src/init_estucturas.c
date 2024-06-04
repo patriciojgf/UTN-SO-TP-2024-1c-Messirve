@@ -51,7 +51,7 @@ static void init_listas_planificacion(){
     log_warning(logger_kernel,"creando las listas");
     lista_plan_new = list_create();
     lista_plan_ready = list_create();
-    lista_plan_execute = list_create();
+    // lista_plan_execute = list_create();
     lista_plan_blocked = list_create();
     lista_plan_exit = list_create();
 

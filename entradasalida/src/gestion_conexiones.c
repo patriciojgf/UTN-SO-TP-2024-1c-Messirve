@@ -95,10 +95,12 @@ static void _atender_peticiones_kernel(){
                 usleep(tiempo_sleep*1000);
                 //le doy el ok a kernel
                 log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- VOY A ENVIAR EL CODIGO: %d ----",IO_GEN_SLEEP));
-                t_paquete* paquete_pedido = crear_paquete(IO_GEN_SLEEP);
-                enviar_paquete(paquete_pedido, socket_cliente_kernel);
+                // t_paquete* paquete_pedido = crear_paquete(IO_GEN_SLEEP);
+                // enviar_paquete(paquete_pedido, socket_cliente_kernel);
+                int handshake = IO_GEN_SLEEP;
+                send(socket_cliente_kernel, &handshake, sizeof(handshake), 0);
 
-                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP: fin ----",tiempo_sleep));
+                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP: fin ----"));
 
                 break;
             case -1:

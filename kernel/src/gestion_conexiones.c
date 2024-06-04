@@ -55,27 +55,6 @@ void gestionar_conexion_io(){
 	}	
 }
 
-static void _gestionar_nueva_interfaz(void *void_args) {
-    t_interfaz *interfaz_nueva = (t_interfaz *)void_args;
-    _agregar_a_lista_interfaces(interfaz_nueva);
-    log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Nueva interfaz %s conectada\n", interfaz_nueva->nombre_io));
-
-    // Utilizar strcmp para comparar cadenas
-    if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDIN") == 0) {
-        log_error(logger_kernel, "falta implementar STDIN");
-    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDOUT") == 0) {
-        log_error(logger_kernel, "falta implementar STDOUT");
-    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {
-        log_error(logger_kernel, "falta implementar DIALFS");
-    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "GENERICA") == 0) {
-        _atender_peticiones_io_gen(interfaz_nueva);
-    } else {
-        log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion de interfaz '%s' desconocida\n", _io_handshake_to_char(interfaz_nueva->tipo_io));
-        exit(EXIT_FAILURE);
-    }
-}
-
-
 /*MEMORIA*/
 void gestionar_conexion_memoria(){
     _handshake_cliente_kernel(socket_memoria, "MEMORIA");
@@ -115,21 +94,26 @@ void gestionar_conexion_interrupt(){
 // ------------- FUNCIONES DE LOGICA POR MODULO------------------------------//
 // --------------------------------------------------------------------------//
 
-static char* _io_handshake_to_char(int handshake) {
-    switch (handshake) {
-        case HANDSHAKE_IO_GEN:
-            return "GENERICA";
-        case HANDSHAKE_IO_STDIN:
-            return "STDIN";
-        case HANDSHAKE_IO_STDOUT:
-            return "STDOUT";
-        case HANDSHAKE_IO_DIALFS:
-            return "DIALFS";
-        default:
-            log_error(logger_kernel, "TIPO DE INTERFAZ NO RECONOCIDO: %d", handshake);
-            exit(EXIT_FAILURE);  // Considera retornar NULL o una cadena indicando error en lugar de salir.
+static void _gestionar_nueva_interfaz(void *void_args) {
+    t_interfaz *interfaz_nueva = (t_interfaz *)void_args;
+    _agregar_a_lista_interfaces(interfaz_nueva);
+    log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Nueva interfaz %s conectada\n", interfaz_nueva->nombre_io));
+
+    // Utilizar strcmp para comparar cadenas
+    if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDIN") == 0) {
+        log_error(logger_kernel, "falta implementar STDIN");
+    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDOUT") == 0) {
+        log_error(logger_kernel, "falta implementar STDOUT");
+    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {
+        log_error(logger_kernel, "falta implementar DIALFS");
+    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "GENERICA") == 0) {
+        _atender_peticiones_io_gen(interfaz_nueva);
+    } else {
+        log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion de interfaz '%s' desconocida\n", _io_handshake_to_char(interfaz_nueva->tipo_io));
+        exit(EXIT_FAILURE);
     }
 }
+
 
 /*----------------------Memoria---------------------------------------------------*/
 void atender_peticiones_memoria(){
@@ -167,17 +151,18 @@ void atender_peticiones_dispatch(){
 				switch(motivo){
 					case EXIT:
 						log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));
+						atender_cpu_exit(proceso_exec,instrucciones);
 						break;
 					case IO_GEN_SLEEP:
 						log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid));
-						atender_io_gen_sleep(proceso_exec,instrucciones);
+						atender_cpu_io_gen_sleep(proceso_exec,instrucciones);
 						break;
 					default:
                 		log_error(logger_kernel, "[CONTEXTO_EJECUCION]: motivo no reconocido <%d> \n", cod_op);
 				}
 				break;
             default:
-                log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion N* %d desconocida\n", cod_op);
+                log_error(logger_kernel, "ERROR EN PETICION DISPATCH: Operacion N* %d desconocida\n", cod_op);
                 exit(EXIT_FAILURE);
 		}
 	}
@@ -198,11 +183,12 @@ static void _atender_peticiones_io_gen(t_interfaz *interfaz){
 			
 					t_pedido_sleep* pedido = list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido->semaforo_pedido_ok);
-					free(pedido);
+					//free(pedido);
 					break;
 				case -1:
 					log_error(logger_kernel,"[ATENDER INTERFAZ IO GEN %s]: Se desconecto la interfaz.",interfaz->nombre_io);
 					log_warning(logger_kernel, "ver si hay que eliminar la interfaz");
+					exit(EXIT_FAILURE);
 					break;
 				default:
 					log_error(logger_kernel,"[ATENDER INTERFAZ IO GEN %s]: operacion desconocida - %d",interfaz->nombre_io, cod_op);
@@ -244,6 +230,21 @@ static void _atender_peticiones_io_gen(t_interfaz *interfaz){
 // ------------- FUNCIONES AUXILIARES----------------------------------------//
 // --------------------------------------------------------------------------//
 
+static char* _io_handshake_to_char(int handshake) {
+    switch (handshake) {
+        case HANDSHAKE_IO_GEN:
+            return "GENERICA";
+        case HANDSHAKE_IO_STDIN:
+            return "STDIN";
+        case HANDSHAKE_IO_STDOUT:
+            return "STDOUT";
+        case HANDSHAKE_IO_DIALFS:
+            return "DIALFS";
+        default:
+            log_error(logger_kernel, "TIPO DE INTERFAZ NO RECONOCIDO: %d", handshake);
+            exit(EXIT_FAILURE);  // Considera retornar NULL o una cadena indicando error en lugar de salir.
+    }
+}
 
 
 static void _agregar_a_lista_interfaces(t_interfaz *interfaz_nueva) {
@@ -273,10 +274,13 @@ static void _handshake_cliente_kernel(int socket, char* nombre_destino){
 
 /*----------------------Dispatch---------------------------------------------------*/
 static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
+		log_protegido_kernel(string_from_format("[_recibir_contexto_cpu]"));
 		int size;
 		void* buffer = recibir_buffer(&size, socket_dispatch);
 		int desplazamiento = 0;		
 		memcpy(&(pcb->pid), buffer + desplazamiento, sizeof(int));
+		desplazamiento += sizeof(int);
+		memcpy(&(pcb->program_counter), buffer + desplazamiento, sizeof(int));
 		desplazamiento += sizeof(int);
 		//Registros CPU
 		memcpy(&(pcb->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));

@@ -72,11 +72,11 @@ static void atender_peticiones_cpu(void *void_args){
         log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
         switch (code_op) {
             case MENSAJE:
-                log_protegido_mem(string_from_format("[ATENDER KERNEL]: MENSAJE"));
+                log_protegido_mem(string_from_format("[ATENDER CPU]: MENSAJE"));
                 recibir_mensaje(*socket,logger_memoria);
                 break;
             case FETCH_INSTRUCCION:
-                log_protegido_mem(string_from_format("[ATENDER KERNEL]: FETCH_INSTRUCCION - PID: %d, PC: %d",pid,PC));                
+                log_protegido_mem(string_from_format("[ATENDER CPU]: FETCH_INSTRUCCION - PID: %d, PC: %d",pid,PC));                
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&PC, buffer + sizeof(int), sizeof(int));
@@ -87,9 +87,12 @@ static void atender_peticiones_cpu(void *void_args){
                 t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION_RESPUESTA);
                 agregar_a_paquete(paquete, instruccion, strlen(instruccion)+1);
                 enviar_paquete(paquete, *socket);
-                log_protegido_mem(string_from_format("[ATENDER KERNEL]: INST ENVIADA - PID: %d, PC: %d",pid,PC));  
+                log_protegido_mem(string_from_format("[ATENDER CPU]: INST ENVIADA - PID: %d, PC: %d",pid,PC));  
                 eliminar_paquete(paquete);
                 break;
+            default:
+                log_error(logger_memoria,"codigo desconocido %d",code_op);
+                exit(EXIT_FAILURE);
         }
     }
 }

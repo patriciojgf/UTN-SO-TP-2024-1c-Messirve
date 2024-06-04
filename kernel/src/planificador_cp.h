@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include "kernel_pcb.h"
 #include "configuracion_kernel.h"
+#include "init_estructuras.h"
 
 // ------ PTHREAD_MUTEX ------
 extern pthread_mutex_t mutex_plan_new;
@@ -16,7 +17,7 @@ extern pthread_mutex_t mutex_plan_exit;
 // ------ Listas ------
 extern t_list* lista_plan_new;
 extern t_list* lista_plan_ready;
-extern t_list* lista_plan_execute;
+// extern t_list* lista_plan_execute;
 extern t_list* lista_plan_blocked;
 extern t_list* lista_plan_exit;
 
@@ -26,6 +27,8 @@ extern t_log* logger_kernel;
 
 //funciones
 void planificador_cp();
+void desbloquar_proceso(int pid);
+t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb);
 
 
 #endif /* PLANIFICADOR_CP_H_ */

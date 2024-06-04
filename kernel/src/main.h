@@ -48,7 +48,7 @@ pthread_t hilo_gestionar_interrupt;
 // ------ Listas ------
 t_list* lista_plan_new;
 t_list* lista_plan_ready;
-t_list* lista_plan_execute;
+// t_list* lista_plan_execute;
 t_list* lista_plan_blocked;
 t_list* lista_plan_exit;
 //-----

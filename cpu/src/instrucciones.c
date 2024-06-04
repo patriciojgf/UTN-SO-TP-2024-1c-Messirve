@@ -89,34 +89,34 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			break;
 		case SET:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			_set(instruccion);
-			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case SUM:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			_sum(instruccion);
-			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case SUB:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			_sub(instruccion);
-			log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
+			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
+			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case JNZ:
-			log_info(logger_cpu, "Valor de CX: %d", contexto_cpu->registros_cpu.CX);
+			// log_info(logger_cpu, "Valor de CX: %d", contexto_cpu->registros_cpu.CX);
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			log_info(logger_cpu, "Valor de program_counter: %d", contexto_cpu->program_counter);
+			// log_info(logger_cpu, "Valor de program_counter: %d", contexto_cpu->program_counter);
 			_jnz(instruccion);
-			log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
+			// log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
 			break;
 		case IO_GEN_SLEEP:
 			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
@@ -357,7 +357,7 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 	// free(nombre_instruccion);
 	
 	// Prepara el mensaje con el nombre de la instrucción
-    char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s", pid, nombre_instruccion);
+    char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s", contexto_cpu->pid, nombre_instruccion);
     
     // Agrega los parámetros al mensaje
     for (int i = 0; i < cantidad_parametros; i++) {
@@ -375,6 +375,7 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 }
 
 void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
+	log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));

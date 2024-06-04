@@ -88,7 +88,7 @@ extern int cantidad_procesos_planificados;
 extern t_planificacion ALGORITMO_PLANIFICACION; //main.h
 extern t_list* lista_plan_new; //main.h
 extern t_list* lista_plan_ready; //main.h
-extern t_list* lista_plan_execute; //main.h
+// extern t_list* lista_plan_execute; //main.h
 extern t_list* lista_plan_blocked; //main.h
 extern t_list* lista_plan_exit; //main.h
 extern t_list* lista_recursos; //main.h

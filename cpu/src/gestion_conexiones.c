@@ -88,14 +88,14 @@ void atender_peticiones_memoria(){
                     instruccion_actual = NULL;
                 }
 
-                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]: ---- DEVOLUCION FETCH_INSTRUCCION ----"));
                 int size, tam_inst, desplazamiento = 0;
                 void *buffer = recibir_buffer(&size, socket_memoria);
                 memcpy(&tam_inst,buffer +desplazamiento, sizeof(int));;
+                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]tam_inst: %d\n", tam_inst));
                 desplazamiento+=sizeof(int);
-                //copio con memcpy a instruccion_actual
                 instruccion_actual = malloc(tam_inst+1); 
                 memcpy(instruccion_actual, buffer + desplazamiento, tam_inst);
+                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]instruccion_actual: %s\n", instruccion_actual));
                 //instruccion_actual = recibir_instruccion(socket_memoria);
                 sem_post(&s_instruccion_actual);
                 break;
