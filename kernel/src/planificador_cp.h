@@ -4,12 +4,12 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include "kernel_pcb.h"
-#include "configuracion_kernel.h"
-#include "init_estructuras.h"
+#include "gestion_conexiones.h"
 
 // ------ PTHREAD_MUTEX ------
 extern pthread_mutex_t mutex_plan_new;
 extern pthread_mutex_t mutex_plan_ready;
+extern pthread_mutex_t mutex_plan_ready_vrr;
 extern pthread_mutex_t mutex_plan_exec;
 extern pthread_mutex_t mutex_plan_blocked;
 extern pthread_mutex_t mutex_plan_exit;

@@ -39,7 +39,6 @@ int conectarMemoria(){
 
 	while((socket_memoria = crear_conexion(ip, puerto)) <= 0){
 		log_protegido_kernel(string_from_format("No se pudo establecer una conexion con la Memoria"));
-        sleep(60);
 	}
 
 	int handshake = KERNEL;

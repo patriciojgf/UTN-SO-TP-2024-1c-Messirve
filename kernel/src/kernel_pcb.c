@@ -13,6 +13,7 @@ t_pcb* crear_pcb(char* path){
     pcb->archivos_abiertos = list_create();
     pcb->recursos_asignados = list_create();
     pcb->path = string_duplicate(path);
+    pcb->quantum = QUANTUM;
 
     //TODO: validar si esto esta bien
     //pcb->registros_cpu = malloc(sizeof(t_registros_cpu));

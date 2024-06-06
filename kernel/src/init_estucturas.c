@@ -7,6 +7,11 @@ static void init_listas_planificacion();
 static void init_semaforos();
 static void init_pthread_mutex();
 static void init_recursos();
+static void init_variables_globales();
+
+static void init_variables_globales(){
+    var_id_ejecucion=0;
+}
 
 static t_planificacion algoritmo_planinifacion(char* algoritmo){
     if(strcmp(algoritmo,"FIFO") == 0){
@@ -38,6 +43,7 @@ static void iniciar_configuracion(char* config_path){
     RECURSOS = config_get_array_value(config_kernel,"RECURSOS");
     INSTANCIAS_RECURSOS = config_get_array_value(config_kernel, "INSTANCIAS_RECURSOS"); 
     GRADO_MULTIPROGRAMACION = config_get_int_value(config_kernel, "GRADO_MULTIPROGRAMACION");
+    QUANTUM = config_get_int_value(config_kernel, "QUANTUM");
 
     IP_MEMORIA = config_get_string_value(config_kernel,"IP_MEMORIA");
 	PUERTO_MEMORIA = config_get_string_value(config_kernel,"PUERTO_MEMORIA");
@@ -51,6 +57,7 @@ static void init_listas_planificacion(){
     log_warning(logger_kernel,"creando las listas");
     lista_plan_new = list_create();
     lista_plan_ready = list_create();
+    lista_plan_ready_vrr = list_create();
     // lista_plan_execute = list_create();
     lista_plan_blocked = list_create();
     lista_plan_exit = list_create();
@@ -66,6 +73,9 @@ static void init_semaforos(){
     sem_init(&s_conexion_memoria_ok,0,0);
     sem_init(&s_conexion_cpu_d_ok,0,0);
     sem_init(&s_conexion_cpu_i_ok,0,0);
+    sem_init(&sem_pcb_desalojado,0,0);
+    sem_init(&sem_plan_exec_libre,0,1);
+    sem_init(&sem_plan_ready,0,0);
 }
 
 static void init_pthread_mutex(){
@@ -78,7 +88,7 @@ static void init_pthread_mutex(){
     pthread_mutex_init(&mutex_procesos_planificados,NULL);
     pthread_mutex_init(&mutex_pid_proceso,NULL);
     pthread_mutex_init(&mutex_lista_interfaz,NULL);
-    
+    pthread_mutex_init(&mutex_id_ejecucion,NULL);    
 }
 
 static void init_recursos(){
@@ -103,6 +113,7 @@ void init_kernel(char* path_config){
     init_semaforos();
     init_pthread_mutex();
     init_recursos();
+    init_variables_globales();
 }
 
 void log_protegido_kernel(char* mensaje)

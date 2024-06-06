@@ -31,6 +31,7 @@ extern bool flag_ejecucion,flag_interrupt;
 //contexto
 extern char* instruccion_actual;
 extern int motivo_interrupt;
+extern int pid_interrupt;
 
 //------IP y PUERTOS----------
 extern char* IP_MEMORIA;

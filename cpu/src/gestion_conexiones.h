@@ -16,5 +16,6 @@ void gestionar_conexion_dispatch();
 void atender_peticiones_memoria();
 void atender_peticiones_interrupt();
 void atender_peticiones_dispatch();
+void atender_peticiones_interrupt();
 
 #endif /*CONX_H*/

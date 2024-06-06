@@ -84,7 +84,8 @@ typedef enum
 	IO_FS_TRUNCATE,
 	IO_FS_WRITE,
 	IO_FS_READ,
-	EXIT
+	EXIT,
+	FIN_QUANTUM
 /*INSTRUCCIONES - FIN*/
     /*agregar el resto*/
 }op_code;

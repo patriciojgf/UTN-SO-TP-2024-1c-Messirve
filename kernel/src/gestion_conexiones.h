@@ -19,4 +19,6 @@ void atender_peticiones_dispatch();
 void gestionar_conexion_interrupt();
 void atender_peticiones_interrupt();
 
+void envio_interrupcion(int pid, int motivo);
+
 #endif /* GES_CONEXIONES_H_ */

@@ -8,6 +8,7 @@
 
 void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion);
 void atender_cpu_exit(t_pcb* pcb, t_instruccion* instruccion);
+void atender_cpu_fin_quantum(t_pcb* pcb);
 
 
 #endif /*ATENDER_CPU_H*/

@@ -22,16 +22,16 @@ extern t_registros_cpu registros_cpu;
 //---------------------------------------------------------------------------------------------------------------------//
 
 void fetch_instruccion(){
-	log_protegido_cpu(string_from_format("PID: <%d> - FETCH - Program Counter: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
+	log_protegido_cpu(string_from_format("[fetch_instruccion] PID: <%d> - FETCH - Program Counter: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
 	t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
 	enviar_paquete(paquete, socket_memoria);
-	//char* instruccion = _recibir_instruccion(socket_memoria);
-    sem_wait(&s_instruccion_actual);
-	//char* instruccion_actual
-	contexto_cpu->program_counter++;
 	eliminar_paquete(paquete);
+    sem_wait(&s_instruccion_actual);
+	log_warning(logger_cpu, "[fetch_instruccion]:si elimino el paquete falla");
+	contexto_cpu->program_counter++;
+	log_protegido_cpu(string_from_format("[fetch_instruccion] salgo - PID: <%d> - FETCH - Program Counter ++: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
 	// return instruccion_actual;
 }
 
@@ -84,11 +84,11 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 	log_info(logger_cpu, "identificador de instruccion: %d", instruccion->identificador);
 	switch (instruccion->identificador){
 		case EXIT:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			_f_exit(instruccion);
 			break;
 		case SET:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
 			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			_set(instruccion);
@@ -96,7 +96,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case SUM:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
 			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			_sum(instruccion);
@@ -104,7 +104,7 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			break;
 		case SUB:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
 			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
 			_sub(instruccion);
@@ -113,13 +113,13 @@ t_instruccion* execute_instruccion(t_instruccion* instruccion){
 			break;
 		case JNZ:
 			// log_info(logger_cpu, "Valor de CX: %d", contexto_cpu->registros_cpu.CX);
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			// log_info(logger_cpu, "Valor de program_counter: %d", contexto_cpu->program_counter);
 			_jnz(instruccion);
 			// log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
 			break;
 		case IO_GEN_SLEEP:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
+			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
 			_io_gen_sleep(instruccion);
 			break;
 		default:
@@ -386,6 +386,7 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 	agregar_datos_sin_tamaño_a_paquete(paquete, &motivo, sizeof(int));
 	enviar_paquete(paquete, socket_cliente_dispatch);
 	eliminar_paquete(paquete);
+	//free(contexto_cpu);
 }
 
 
@@ -436,4 +437,4 @@ static void _f_exit(t_instruccion *inst){
 	devolver_contexto_a_dispatch(EXIT, inst);
 }
 
-
+//CONTEXTO

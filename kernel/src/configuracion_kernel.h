@@ -42,6 +42,7 @@ extern t_pcb* proceso_exec;
 extern pthread_t hilo_gestionar_memoria;
 extern pthread_t hilo_gestionar_dispatch;
 extern pthread_t hilo_gestionar_interrupt;
+extern pthread_t hilo_esperar_quantum;
 
 //------IP y PUERTOS----------
 extern char* IP_MEMORIA;
@@ -65,11 +66,17 @@ extern sem_t s_conexion_memoria_ok;
 extern sem_t s_conexion_cpu_d_ok;
 extern sem_t s_conexion_cpu_i_ok;
 
+//planificacion
+extern sem_t sem_pcb_desalojado;
+extern sem_t sem_plan_exec_libre;
+extern sem_t sem_plan_ready;
+
 //mutex
 extern pthread_mutex_t mutex_conexiones; //main.h
 //Listas planificador
 extern pthread_mutex_t mutex_plan_new;
 extern pthread_mutex_t mutex_plan_ready;
+extern pthread_mutex_t mutex_plan_ready_vrr;
 extern pthread_mutex_t mutex_plan_exec;
 extern pthread_mutex_t mutex_plan_blocked;
 extern pthread_mutex_t mutex_plan_exit;
@@ -79,6 +86,10 @@ extern pthread_mutex_t mutex_pid_proceso;
 //listas interfaces conectadas
 extern pthread_mutex_t mutex_lista_interfaz;
 
+//RR
+extern pthread_mutex_t mutex_id_ejecucion;
+extern int var_id_ejecucion;
+
 //pcb
 extern int pid_proceso;
 
@@ -86,8 +97,10 @@ extern int pid_proceso;
 extern int GRADO_MULTIPROGRAMACION;
 extern int cantidad_procesos_planificados;
 extern t_planificacion ALGORITMO_PLANIFICACION; //main.h
+extern int QUANTUM;
 extern t_list* lista_plan_new; //main.h
 extern t_list* lista_plan_ready; //main.h
+extern t_list* lista_plan_ready_vrr; //main.h
 // extern t_list* lista_plan_execute; //main.h
 extern t_list* lista_plan_blocked; //main.h
 extern t_list* lista_plan_exit; //main.h

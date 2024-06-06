@@ -5,22 +5,42 @@ static t_interfaz* _obtener_interfaz(char* nombre);
 /*---------------------------------------------------------*/
 void atender_cpu_exit(t_pcb* pcb, t_instruccion* instruccion){
     log_protegido_kernel(string_from_format("[atender_cpu_exit]: pid: %d", pcb->pid));
+    sem_post(&sem_pcb_desalojado);
     
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
-    
+    //sem_post(&sem_pcb_desalojado);
+    sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
+
     pthread_mutex_lock(&mutex_plan_exit);
     list_add(lista_plan_exit, pcb);
     pthread_mutex_unlock(&mutex_plan_exit);
     
     pthread_mutex_lock(&mutex_procesos_planificados);
-    cantidad_procesos_planificados++;
+    cantidad_procesos_planificados--;
     pthread_mutex_unlock(&mutex_procesos_planificados);
 
     pthread_t hilo_plp; 
     pthread_create(&hilo_plp, NULL, (void*)planificador_lp_new_ready, NULL);
     pthread_detach(hilo_plp);
+}
+
+void atender_cpu_fin_quantum(t_pcb* pcb){
+    log_protegido_kernel(string_from_format("[atender_cpu_fin_quantum]: pid: %d", pcb->pid));
+    pthread_mutex_lock(&mutex_plan_exec);
+    proceso_exec = NULL;
+    pthread_mutex_unlock(&mutex_plan_exec);
+    log_protegido_kernel(string_from_format("[atender_cpu_fin_quantum]: mutex_plan_exec"));
+    //sem_post(&sem_pcb_desalojado);
+    sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
+
+    pthread_mutex_lock(&mutex_plan_ready);
+    list_add(lista_plan_ready, pcb);
+    pthread_mutex_unlock(&mutex_plan_ready);
+    log_protegido_kernel(string_from_format("[atender_cpu_fin_quantum]: mutex_plan_ready"));
+    sem_post(&sem_plan_ready);
+
 }
 
 void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
@@ -41,7 +61,8 @@ void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
         proceso_exec = NULL;
         pthread_mutex_unlock(&mutex_plan_exec);
 
-        planificador_cp();
+        //planificador_cp();
+        sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
 
 		pthread_mutex_lock(&interfaz->mutex_cola_block);
         list_add(interfaz->cola_procesos, pedido);    
@@ -73,7 +94,8 @@ static void _enviar_peticiones_io_gen(t_interfaz *interfaz){
     t_paquete* paquete_pedido = crear_paquete(IO_GEN_SLEEP);
     agregar_datos_sin_tamaño_a_paquete(paquete_pedido, &pedido->tiempo_sleep, sizeof(int));
     enviar_paquete(paquete_pedido, interfaz->socket);
-    
+    log_warning(logger_kernel, "pruebo");
+    eliminar_paquete(paquete_pedido);
     //espero el ok
     sem_wait(&pedido->semaforo_pedido_ok);
 
