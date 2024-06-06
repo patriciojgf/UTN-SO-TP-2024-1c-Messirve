@@ -71,7 +71,7 @@ void atender_peticiones_dispatch(){
                 void *buffer = recibir_buffer(&size, socket_cliente_dispatch);
                 _recibir_nuevo_contexto(buffer);
                 flag_ejecucion = true;             
-                _ejecutar_proceso(); 
+                _ejecutar_proceso();
         }
     }
 }
@@ -98,7 +98,14 @@ void atender_peticiones_memoria(){
                 log_protegido_cpu(string_from_format("[ATENDER MEMORIA]instruccion_actual: %s\n", instruccion_actual));
                 //instruccion_actual = recibir_instruccion(socket_memoria);
                 sem_post(&s_instruccion_actual);
-                break;
+            break;
+            case TAMANIO_PAGINA:
+                int _size, tam_pag, _desplazamiento = 0;
+                void *_buffer = recibir_buffer(&_size, socket_memoria);
+                memcpy(&tam_pag,_buffer +_desplazamiento, sizeof(int));;
+                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]tam_pag: %d\n", tam_pag));
+                
+            break;
         }
     }
 }

@@ -3,6 +3,7 @@
 static void identificar_conexion_y_derivar(int socket_cliente, int cod_op);
 static void atender_peticiones_kernel(void *void_args);
 static void atender_peticiones_cpu(void *void_args);
+static void _enviar_tamanio_a_cpu(int socket_cliente_cpu);
 
 // --------------------------------------------------------------------------//
 // ------------- CONEXIONES E HILOS -----------------------------------------//
@@ -37,7 +38,10 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
 
 			int *argumentos = malloc(sizeof(int));
 			*argumentos = socket_cliente;
-            socket_cliente_cpu = socket_cliente;            
+            socket_cliente_cpu = socket_cliente;
+
+            _enviar_tamanio_a_cpu(socket_cliente_cpu);
+   
             pthread_create(&hilo_gestionar_cpu, NULL, (void*) atender_peticiones_cpu, argumentos);
             pthread_detach(hilo_gestionar_cpu);
             break;
@@ -139,4 +143,20 @@ static void atender_peticiones_kernel(void *void_args){
 
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES DE LOGICA POR MODULO ---- FIN --------------------//
+// --------------------------------------------------------------------------//
+
+// --------------------------------------------------------------------------//
+// ------------- FUNCIONES AUXILIARES POR MODULO -----------------------------//
+// --------------------------------------------------------------------------//
+
+static void _enviar_tamanio_a_cpu(int socket_cliente_cpu)
+{
+    t_paquete* paquete_a_enviar = crear_paquete(TAMANIO_PAGINA);
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(TAM_PAGINA),sizeof(int));
+    enviar_paquete(paquete_a_enviar, socket_cliente_cpu);
+    eliminar_paquete(paquete_a_enviar);
+}
+
+// --------------------------------------------------------------------------//
+// ------------- FUNCIONES AUXILIARES POR MODULO ---- FIN --------------------//
 // --------------------------------------------------------------------------//
