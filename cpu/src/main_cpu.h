@@ -14,6 +14,7 @@ char* instruccion_actual;
 //semaforos
 sem_t mlog;
 sem_t s_instruccion_actual;
+sem_t s_fetch_espere_instruccion;
 
 //conexiones
 int socket_memoria;

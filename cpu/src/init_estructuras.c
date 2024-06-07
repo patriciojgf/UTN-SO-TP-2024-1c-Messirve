@@ -33,11 +33,13 @@ static void iniciar_configuracion(char* config_path){
 static void iniciar_semaforos(){
     sem_init(&mlog,0,1);
     sem_init(&s_instruccion_actual,0,0);
+    sem_init(&s_fetch_espere_instruccion,0,0);
 }
 
 static void iniciar_estructuras(){
     flag_ejecucion=false;
     flag_interrupt=false;
+    contexto_cpu= malloc(sizeof(t_contexto));
 }
 
 void init_cpu(char* path_config){

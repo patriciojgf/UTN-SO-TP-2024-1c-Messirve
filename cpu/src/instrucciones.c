@@ -21,42 +21,6 @@ extern t_registros_cpu registros_cpu;
 
 //---------------------------------------------------------------------------------------------------------------------//
 
-void fetch_instruccion(){
-	log_protegido_cpu(string_from_format("[fetch_instruccion] PID: <%d> - FETCH - Program Counter: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
-	t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
-	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
-	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
-	enviar_paquete(paquete, socket_memoria);
-	eliminar_paquete(paquete);
-    sem_wait(&s_instruccion_actual);
-	log_warning(logger_cpu, "[fetch_instruccion]:si elimino el paquete falla");
-	contexto_cpu->program_counter++;
-	log_protegido_cpu(string_from_format("[fetch_instruccion] salgo - PID: <%d> - FETCH - Program Counter ++: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
-	// return instruccion_actual;
-}
-
-// t_instruccion* decodificar_instruccion(char* instruccion){
-t_instruccion* decodificar_instruccion(){
-	t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
-	//Se separa la instruccion en un array de strings
-	// char** instruccion_separada = string_split(instruccion, " ");
-	char** instruccion_separada = string_split(instruccion_actual, " ");
-	//Se obtiene el identificador de la instruccion
-	u_int8_t identificador = _get_identificador(instruccion_separada[0]);
-
-	for (int i=0; i < string_array_size(instruccion_separada);i++){
-		free(instruccion_separada[i]);
-	}
-	free(instruccion_separada);
-	printf("Identificador: %d\n", identificador);
-
-	inst_decodificada->identificador = identificador;
-	inst_decodificada->cantidad_parametros = _cantidad_parametros(identificador);
-	// inst_decodificada->parametros = _parametros_instruccion(instruccion, inst_decodificada->cantidad_parametros);
-	inst_decodificada->parametros = _parametros_instruccion(instruccion_actual, inst_decodificada->cantidad_parametros);
-	free(instruccion_actual);
-	return inst_decodificada;
-}
 
 uint8_t* _get_direccion_registro(char* string_registro){
     uint8_t* registro;
@@ -80,54 +44,6 @@ uint8_t* _get_direccion_registro(char* string_registro){
     return registro;
 }
 
-t_instruccion* execute_instruccion(t_instruccion* instruccion){
-	log_info(logger_cpu, "identificador de instruccion: %d", instruccion->identificador);
-	switch (instruccion->identificador){
-		case EXIT:
-			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			_f_exit(instruccion);
-			break;
-		case SET:
-			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			_set(instruccion);
-			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			break;
-		case SUM:
-			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			_sum(instruccion);
-			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			break;
-		case SUB:
-			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			_sub(instruccion);
-			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			break;
-		case JNZ:
-			// log_info(logger_cpu, "Valor de CX: %d", contexto_cpu->registros_cpu.CX);
-			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de program_counter: %d", contexto_cpu->program_counter);
-			_jnz(instruccion);
-			// log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
-			break;
-		case IO_GEN_SLEEP:
-			//_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			_io_gen_sleep(instruccion);
-			break;
-		default:
-			log_protegido_cpu("Instruccion desconocida. ");
-			break;
-	}
-	return instruccion;
-}
 
 char* recibir_instruccion(int socket_cliente){
 	int size=0;
@@ -328,30 +244,31 @@ static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_para
 }
 
 static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros){
+	//log_protegido_cpu("_mostrar_parametros ");
 	char* nombre_instruccion = _get_nombre_instruccion(instruccion->identificador);
 	// if(cantidad_parametros == 0){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s>",pid,nombre_instruccion);
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 1){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);		
 	// }else if(cantidad_parametros == 2){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 3){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 4){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 5){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3),list_get(instruccion->parametros,4));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }
 	// free(nombre_instruccion);
@@ -369,13 +286,13 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
     mensaje_log = string_from_format("%s>", mensaje_log);
     
     // Loggea el mensaje
-    log_protegido_cpu(mensaje_log);
+    //log_protegido_cpu(mensaje_log);
     
 	log_warning(logger_cpu, "Necesito hacer un free aca?");
 }
 
 void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
-	log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
+	//log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
@@ -438,3 +355,64 @@ static void _f_exit(t_instruccion *inst){
 }
 
 //CONTEXTO
+void ejecutar_proceso(){
+    // Continúa ejecutando mientras la bandera de ejecución esté activa.
+    while (flag_ejecucion) {
+
+        // Enviar solicitud de instrucción.
+        t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
+        int pid_a_enviar = contexto_cpu->pid;
+        int pc_a_enviar = contexto_cpu->program_counter;
+        agregar_datos_sin_tamaño_a_paquete(paquete, &pid_a_enviar, sizeof(int));
+        agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
+        enviar_paquete(paquete, socket_memoria);
+        eliminar_paquete(paquete);
+        sem_wait(&s_instruccion_actual);
+
+        // Decodificar la instrucción actual.
+        char** instruccion_separada = string_split(instruccion_actual, " ");
+        u_int8_t identificador = _get_identificador(instruccion_separada[0]);
+        char* nombre_instruccion = _get_nombre_instruccion(identificador);
+        log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción decodificada: %s", nombre_instruccion);
+
+        t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
+        inst_decodificada->identificador = identificador;
+        inst_decodificada->cantidad_parametros = _cantidad_parametros(identificador);
+        inst_decodificada->parametros = _parametros_instruccion(instruccion_actual, inst_decodificada->cantidad_parametros);
+
+        // Ejecutar la instrucción.
+        log_info(logger_cpu,"[Ejecutar Proceso]: Ejecutando %s.", nombre_instruccion);
+
+        switch (inst_decodificada->identificador) {
+            case EXIT: _f_exit(inst_decodificada); break;
+            case SET: _set(inst_decodificada); break;
+            case SUM: _sum(inst_decodificada); break;
+            case SUB: _sub(inst_decodificada); break;
+            case JNZ: _jnz(inst_decodificada); break;
+            case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
+            default: 
+                log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción desconocida: %s.", nombre_instruccion);
+                break;
+        }
+
+        // Verificar interrupciones.
+        if (flag_interrupt && flag_ejecucion) {
+            log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
+            devolver_contexto_a_dispatch(motivo_interrupt, inst_decodificada);
+            flag_ejecucion = false;
+        }
+        flag_interrupt = false;
+
+        // Limpiar recursos.
+        for (int i = 0; i < list_size(inst_decodificada->parametros); i++) {
+            char* parametro = list_get(inst_decodificada->parametros, i);
+            free(parametro);
+        }
+        list_destroy(inst_decodificada->parametros);
+        free(inst_decodificada);
+        free(instruccion_actual);
+		instruccion_actual=NULL; 
+        contexto_cpu->program_counter++;
+        log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción completada y recursos liberados.");
+    }
+}

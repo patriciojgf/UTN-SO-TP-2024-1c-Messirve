@@ -25,6 +25,7 @@ extern t_config* config_cpu;
 //semaforos
 extern sem_t mlog;
 extern sem_t s_instruccion_actual;
+extern sem_t s_fetch_espere_instruccion;
 
 extern bool flag_ejecucion,flag_interrupt;
 

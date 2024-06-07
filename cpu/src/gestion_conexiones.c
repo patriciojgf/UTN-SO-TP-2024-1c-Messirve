@@ -1,8 +1,6 @@
 #include "gestion_conexiones.h"
 
 static void _handshake_cliente_memoria(int socket, char* nombre_destino);
-static void _check_interrupt(t_instruccion* instruccion);
-static void _ejecutar_proceso();
 // static void _recibir_nuevo_contexto(void* buffer);
 static void _recibir_nuevo_contexto(int socket);
 // static int _get_retardo();
@@ -24,29 +22,29 @@ void init_conexiones(){
 
 /*MEMORIA*/
 void gestionar_conexion_memoria(){
-    log_protegido_cpu(string_from_format("[GESTION CON MEMORIA]: ---- SOY CLIENTE ----"));
+    //log_info(logger_cpu,"[GESTION CON MEMORIA]: ---- SOY CLIENTE ----");
     _handshake_cliente_memoria(socket_memoria, "MEMORIA");
-    log_protegido_cpu(string_from_format("[GESTION CON MEMORIA]: ---- MEMORIA CONECTADO ----"));
+    //log_info(logger_cpu,"[GESTION CON MEMORIA]: ---- MEMORIA CONECTADO ----");
 
     pthread_create(&hilo_gestionar_memoria, NULL, (void*) atender_peticiones_memoria, NULL);
 	pthread_detach(hilo_gestionar_memoria);
 }
 /*CPU_INTERRUPT*/
 void gestionar_conexion_interrupt(){
-    log_protegido_cpu(string_from_format("[GESTION CON INT]: ---- ESPERANDO CLIENTE ----"));
+    //log_info(logger_cpu,"[GESTION CON INT]: ---- ESPERANDO CLIENTE ----");
     socket_cliente_interrupt = esperar_cliente(socket_servidor_interrupt);
     handshake_server(socket_cliente_interrupt);
-    log_protegido_cpu(string_from_format("[GESTION CON INT]: ---- INTERRUPT CONECTADO ----"));
+    //log_info(logger_cpu,"[GESTION CON INT]: ---- INTERRUPT CONECTADO ----");
 
     pthread_create(&hilo_gestionar_interrupt, NULL, (void*) atender_peticiones_interrupt, NULL);
 	pthread_detach(hilo_gestionar_interrupt);//JOIN
 }
 /*CPU_DISPATCH*/
 void gestionar_conexion_dispatch(){
-    log_protegido_cpu(string_from_format("[GESTION CON DIS]: ---- ESPERANDO CLIENTE ----"));
+    //log_info(logger_cpu,"[GESTION CON DIS]: ---- ESPERANDO CLIENTE ----");
     socket_cliente_dispatch = esperar_cliente(socket_servidor_dispatch);
     handshake_server(socket_cliente_dispatch);
-    log_protegido_cpu(string_from_format("[GESTION CON DIS]: ---- DISPATCH CONECTADO ----"));
+    //log_info(logger_cpu,"[GESTION CON DIS]: ---- DISPATCH CONECTADO ----");
 
     pthread_create(&hilo_gestionar_dispatch, NULL, (void*) atender_peticiones_dispatch, NULL);
 	pthread_join(hilo_gestionar_dispatch,NULL);//JOIN
@@ -64,22 +62,28 @@ void gestionar_conexion_dispatch(){
 // ------------- FUNCIONES DE LOGICA POR MODULO------------------------------//
 // --------------------------------------------------------------------------//
 void atender_peticiones_interrupt(){
-    log_protegido_cpu(string_from_format("[ATENDER INTERRUPT]: ---- ESPERANDO OPERACION ----"));
+    //log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- ESPERANDO OPERACION ----");
     while(1){
         int cod_op = recibir_operacion(socket_cliente_interrupt);
         switch(cod_op){
             case FIN_QUANTUM:
                 log_warning(logger_cpu,"fin de quantum");
-                log_protegido_cpu(string_from_format("[ATENDER INTERRUPT]: ---- QUANTUM ----"));
+                //log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- QUANTUM ----");
                 int size=0;
                 void *buffer = recibir_buffer(&size, socket_cliente_interrupt);
                 motivo_interrupt=FIN_QUANTUM;
                 memcpy(&(pid_interrupt), buffer , sizeof(int));    
-                log_protegido_cpu(string_from_format("[ATENDER INTERRUPT]: ---- pid_interrupt: %d", pid_interrupt));
-                log_protegido_cpu(string_from_format("[ATENDER INTERRUPT]: ---- contexto_cpu->pid: %d", contexto_cpu->pid));
+                //log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- pid_interrupt: %d", pid_interrupt));
+                //log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- contexto_cpu->pid: %d", contexto_cpu->pid));
                 if(contexto_cpu->pid==pid_interrupt){
                     log_warning(logger_cpu,"flag_interrupt=true");
                     flag_interrupt=true;
+                }
+                else{
+                    log_warning(logger_cpu,"flag_interrupt=false");
+                    log_warning(logger_cpu,"pid: %d",pid_interrupt);
+                    log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
+
                 }
                 free(buffer);
                 break;
@@ -92,23 +96,15 @@ void atender_peticiones_interrupt(){
 }
 
 void atender_peticiones_dispatch(){
-    log_protegido_cpu(string_from_format("[ATENDER DISPATCH]: ---- ESPERANDO OPERACION ----"));
+    log_info(logger_cpu,"[ATENDER DISPATCH]: ---- ESPERANDO OPERACION ----");
     while(1){
         int cod_op = recibir_operacion(socket_cliente_dispatch);
         switch(cod_op){
             case PCB:
-                log_protegido_cpu(string_from_format("[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----"));
-                // int size=0;
-                // void *buffer = recibir_buffer(&size, socket_cliente_dispatch);
-                // _recibir_nuevo_contexto(buffer);
-                if (contexto_cpu != NULL) {
-                    free(contexto_cpu);
-                    contexto_cpu = NULL;
-                }
+                log_info(logger_cpu,"[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----");
                 _recibir_nuevo_contexto(socket_cliente_dispatch);
                 flag_ejecucion = true;             
-                _ejecutar_proceso(); 
-                free(contexto_cpu);
+                ejecutar_proceso(); 
                 break;
             default:
                 log_error(logger_cpu,"atender_peticiones_dispatch cod_op no reconocidos");
@@ -119,12 +115,12 @@ void atender_peticiones_dispatch(){
 
 void atender_peticiones_memoria(){    
     while(1){
-        log_protegido_cpu(string_from_format("[ATENDER MEMORIA]: ---- ESPERANDO OPERACION ----"));
+        log_info(logger_cpu,"[ATENDER MEMORIA]: ---- ESPERANDO OPERACION ----");
         int cod_op = recibir_operacion(socket_memoria);
-        log_protegido_cpu(string_from_format("[ATENDER MEMORIA]: ---- COD OP ----"));
+        log_info(logger_cpu,"[ATENDER MEMORIA]: ---- COD OP ----");
         switch(cod_op){
             case FETCH_INSTRUCCION_RESPUESTA:
-                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]: ---- FETCH_INSTRUCCION_RESPUESTA ----"));
+                log_info(logger_cpu,"[ATENDER MEMORIA]: ---- FETCH_INSTRUCCION_RESPUESTA ----");
                 if (instruccion_actual != NULL) {
                     free(instruccion_actual);
                     instruccion_actual = NULL;
@@ -132,15 +128,11 @@ void atender_peticiones_memoria(){
                 int size, tam_inst, desplazamiento = 0;
                 void *buffer = recibir_buffer(&size, socket_memoria);
                 memcpy(&tam_inst,buffer +desplazamiento, sizeof(int));;
-                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]tam_inst: %d\n", tam_inst));
                 desplazamiento+=sizeof(int);
                 instruccion_actual = malloc(tam_inst+1); 
                 memcpy(instruccion_actual, buffer + desplazamiento, tam_inst);
-                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]instruccion_actual: %s\n", instruccion_actual));
-                //instruccion_actual = recibir_instruccion(socket_memoria);
                 sem_post(&s_instruccion_actual);
                 free(buffer);
-                log_protegido_cpu(string_from_format("[ATENDER MEMORIA] sem_post(&s_instruccion_actual)"));
                 break;
             default:
                 log_error(logger_cpu, "[atender_peticiones_memoria]: cod_op no identificado <%d>",cod_op);
@@ -163,7 +155,7 @@ static void _handshake_cliente_memoria(int socket, char* nombre_destino){
     int resultado_hs = handshake_cliente(HANDSHAKE_CPU,socket);
     switch(resultado_hs){
         case HANDSHAKE_OK:
-            log_protegido_cpu(string_from_format("[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
+            //log_info(logger_cpu,"[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
             break;
         default:
             log_error(logger_cpu, "ERROR EN HANDSHAKE: Operacion N* %d desconocida\n", resultado_hs);
@@ -173,17 +165,16 @@ static void _handshake_cliente_memoria(int socket, char* nombre_destino){
 }
 
 // static int _get_retardo(){
-//     // log_protegido_mem(string_from_format("pedido de retardo"));
-//     return atoi(config_get_string_value(config_memoria,"RETARDO_RESPUESTA"));
+//     // log_protegido_mem(string_from_format("pedido de retardo");
+//     return atoi(config_get_string_value(config_memoria,"RETARDO_RESPUESTA");
 // }
 
 /*DISPATCH*/
-// static void _recibir_nuevo_contexto(void* buffer){
 static void _recibir_nuevo_contexto(int socket){    
-    log_protegido_cpu(string_from_format("[DISPATCH]: Recibiendo contexto\n"));
+    log_info(logger_cpu,"[DISPATCH]: Recibiendo contexto\n");
     int size=0;
     void *buffer = recibir_buffer(&size, socket_cliente_dispatch); 
-    contexto_cpu= malloc(sizeof(t_contexto));
+    //contexto_cpu= malloc(sizeof(t_contexto));
     int desplazamiento = 0;
     memcpy(&(contexto_cpu->pid), buffer + desplazamiento, sizeof(int));
     desplazamiento += sizeof(int);
@@ -212,33 +203,4 @@ static void _recibir_nuevo_contexto(int socket){
     memcpy(&(contexto_cpu->registros_cpu.DI), buffer + desplazamiento, sizeof(uint32_t));
     desplazamiento += sizeof(uint32_t);
     free(buffer);
-}
-
-static void _ejecutar_proceso(){
-    log_protegido_cpu(string_from_format("[DISPATCH]: EJECUTANDO PROCESO PID <%d>",contexto_cpu->pid));
-    while (flag_ejecucion){
-        fetch_instruccion();
-        log_protegido_cpu(string_from_format("[DISPATCH]: fetch hecho EJECUTANDO PROCESO PID>"));
-        log_protegido_cpu(string_from_format("[DISPATCH]: fetch hecho EJECUTANDO PROCESO PID <%d>",contexto_cpu->pid));
-        _check_interrupt(execute_instruccion(decodificar_instruccion()));
-    }
-}
-
-static void _check_interrupt(t_instruccion* instruccion){
-    log_protegido_cpu(string_from_format("[_check_interrupt]"));
-    log_protegido_cpu(string_from_format("[_check_interrupt]: flag_interrupt <%d>",flag_interrupt));
-    log_protegido_cpu(string_from_format("[_check_interrupt]: flag_ejecucion <%d>",flag_ejecucion));
-    if(flag_interrupt && flag_ejecucion){
-        log_warning(logger_cpu, "hay interrupcion, modificar el devolver contexto");
-        devolver_contexto_a_dispatch(motivo_interrupt, instruccion); //se envia el contetxto al kernel dispatch
-        flag_ejecucion = false;
-    }
-    flag_interrupt = false;
-    for (int i = 0; i < list_size(instruccion->parametros); i++){
-        char* parametro = list_get(instruccion->parametros, i);
-        free(parametro);
-    }
-    list_destroy(instruccion->parametros);
-    free(instruccion);
-    return;
 }

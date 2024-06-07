@@ -9,13 +9,13 @@ static void _quantum_wait(t_pcb* pcb);
 /*------------------------------------------------------------------------------------------------------*/
 
 void planificador_cp(){
-    log_protegido_kernel(string_from_format("[planificador_cp]"));
+    //log_protegido_kernel(string_from_format("[planificador_cp]"));
     while(1){
         sem_wait(&sem_plan_ready);
         
-        log_protegido_kernel(string_from_format("[planificador_cp] espero sem_plan_exec_libre"));
+        //log_protegido_kernel(string_from_format("[planificador_cp] espero sem_plan_exec_libre"));
         sem_wait(&sem_plan_exec_libre); //espero que haya lugar para ejecutar
-        log_protegido_kernel(string_from_format("[planificador_cp] bloqueo mutex_plan_exec"));
+        //log_protegido_kernel(string_from_format("[planificador_cp] bloqueo mutex_plan_exec"));
         
 
 
@@ -41,7 +41,7 @@ void planificador_cp(){
             // }
             pthread_mutex_lock(&mutex_plan_exec); //bloqueo el acceso al proceso_exec hasta que quede planificado el nuevo
             if(proceso_exec==NULL){
-                log_protegido_kernel(string_from_format("[planificador_cp]: Hay lugar para planificar"));
+                //log_protegido_kernel(string_from_format("[planificador_cp]: Hay lugar para planificar"));
                 t_pcb* pcb_ready = NULL;
 
                 //busco el proximo pcb a ejecutar
@@ -58,7 +58,7 @@ void planificador_cp(){
                 }
                 //preparo PCB y envio a CPU
                 if(pcb_ready != NULL){
-                    log_protegido_kernel(string_from_format("[planificador_cp] - Enviando PCB a dispatch: PID <%d>",pcb_ready->pid));
+                    //log_protegido_kernel(string_from_format("[planificador_cp] - Enviando PCB a dispatch: PID <%d>",pcb_ready->pid));
                     pcb_ready->estado_anterior = pcb_ready->estado_actual;
                     pcb_ready->estado_actual = estado_EXEC;
                     proceso_exec = pcb_ready;
@@ -82,18 +82,18 @@ void planificador_cp(){
             log_error(logger_kernel,"[planificador_cp]: Hay nada en Ready para planificar");
             exit(EXIT_FAILURE);
         }    
-        log_protegido_kernel(string_from_format("[planificador_cp] desbloqueo mutex_plan_exec"));
+        //log_protegido_kernel(string_from_format("[planificador_cp] desbloqueo mutex_plan_exec"));
         pthread_mutex_unlock(&mutex_plan_exec); //bloqueo el acceso al proceso_exec hasta que quede planificado el nuevo
     }
 }
 
 void desbloquar_proceso(int pid){
-    log_protegido_kernel(string_from_format("[desbloquar_proceso] - PID %d", pid));
+    //log_protegido_kernel(string_from_format("[desbloquar_proceso] - PID %d", pid));
     pthread_mutex_lock(&mutex_plan_blocked);
 
     t_pcb* pcb_desbloqueado = buscar_pcb_por_pid(pid, lista_plan_blocked);    
     if(pcb_desbloqueado != NULL){
-        log_protegido_kernel(string_from_format("Desbloqueo - PID %d con PC %d", pcb_desbloqueado->pid, pcb_desbloqueado->program_counter));
+        //log_protegido_kernel(string_from_format("Desbloqueo - PID %d con PC %d", pcb_desbloqueado->pid, pcb_desbloqueado->program_counter));
         pcb_desbloqueado->estado_anterior = pcb_desbloqueado->estado_actual;
         pcb_desbloqueado->estado_actual = estado_READY;
         list_remove_element(lista_plan_blocked, pcb_desbloqueado);
@@ -139,7 +139,7 @@ t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb){
 
 static void _FIFO(){    
     if(proceso_exec==NULL){
-        log_protegido_kernel(string_from_format("[_FIFO]: Hay lugar para planificar"));
+        //log_protegido_kernel(string_from_format("[_FIFO]: Hay lugar para planificar"));
         t_pcb* pcb_ready = NULL;        
         
         pthread_mutex_lock(&mutex_plan_ready);//bloqueo la lista de ready para poder validar que haya pendientes
@@ -149,7 +149,7 @@ static void _FIFO(){
         pthread_mutex_unlock(&mutex_plan_ready);
 
         if(pcb_ready != NULL){
-            log_protegido_kernel(string_from_format("[_FIFO] - PCB a planificar: PID <%d>",pcb_ready->pid));
+            //log_protegido_kernel(string_from_format("[_FIFO] - PCB a planificar: PID <%d>",pcb_ready->pid));
             pcb_ready->estado_anterior = pcb_ready->estado_actual;
             pcb_ready->estado_actual = estado_EXEC;
             proceso_exec = pcb_ready;
@@ -169,7 +169,7 @@ static void _quantum_wait(t_pcb* pcb){
     log_warning(logger_kernel,"_quantum_wait");
     usleep(pcb->quantum*1000);
     log_warning(logger_kernel,"fin de quantum");
-    log_protegido_kernel(string_from_format("[_quantum_wait] - PID %d", pcb->pid));
+    //log_protegido_kernel(string_from_format("[_quantum_wait] - PID %d", pcb->pid));
     envio_interrupcion(pcb->pid, FIN_QUANTUM);
 }
 

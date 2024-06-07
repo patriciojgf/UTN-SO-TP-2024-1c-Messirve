@@ -33,7 +33,7 @@ void leer_consola(sem_t m_multiprogramacion)
                 int nuevo_grado_mult = atoi(list_get(comando->parametros,0));
 				int grado_multiprogramacion_viejo = GRADO_MULTIPROGRAMACION;
                 cambiar_multiprogramacion(nuevo_grado_mult, m_multiprogramacion);
-                log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo, nuevo_grado_mult));
+                //log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo, nuevo_grado_mult));
                 // log_info(logger_kernel, "Proximamente hace su magia...");
                 break;
 

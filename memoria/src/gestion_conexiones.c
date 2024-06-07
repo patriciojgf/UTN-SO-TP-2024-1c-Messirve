@@ -13,10 +13,10 @@ void init_conexiones(){
 
 void gestionar_conexiones_entrantes(){
     while(1){
-        log_protegido_mem(string_from_format("[GESTION CONEXION ENTRANTE]: 1) ---- ESPERANDO CLIENTE ----"));
+        //log_protegido_mem(string_from_format("[GESTION CONEXION ENTRANTE]: 1) ---- ESPERANDO CLIENTE ----"));
         int socket_cliente_temp = esperar_cliente(socket_servidor_escucha);
         int cod_handshake = handshake_server(socket_cliente_temp);
-        log_protegido_mem(string_from_format("[GESTION CONEXION ENTRANTE]: 2) ---- HANDSHAKE RECIBIDO ----"));
+        //log_protegido_mem(string_from_format("[GESTION CONEXION ENTRANTE]: 2) ---- HANDSHAKE RECIBIDO ----"));
         identificar_conexion_y_derivar(socket_cliente_temp, cod_handshake);
     }
 }
@@ -24,7 +24,7 @@ void gestionar_conexiones_entrantes(){
 static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
     switch(cod_op){
         case HANDSHAKE_KERNEL: {
-            log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE KERNEL RECIBIDO ----"));
+            //log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE KERNEL RECIBIDO ----"));
 			int *argumentos = malloc(sizeof(int));
 			*argumentos = socket_cliente;
             socket_cliente_kernel = socket_cliente;
@@ -33,7 +33,7 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
             break;
         }
         case HANDSHAKE_CPU:{
-            log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE CPU RECIBIDO ----"));
+            //log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE CPU RECIBIDO ----"));
 
 			int *argumentos = malloc(sizeof(int));
 			*argumentos = socket_cliente;
@@ -43,7 +43,7 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
             break;
         }
         case HANDSHAKE_IO_GEN:
-            log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE CPU RECIBIDO ----"));
+            //log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE CPU RECIBIDO ----"));
             break;
         case HANDSHAKE_IO_STDIN:
         case HANDSHAKE_IO_STDOUT:
@@ -67,16 +67,16 @@ static void atender_peticiones_cpu(void *void_args){
     int PC, size, pid = 0;
     void *buffer;
     while(1){
-        log_protegido_mem(string_from_format("[ATENDER CPU]: Esperando operación."));
+        //log_protegido_mem(string_from_format("[ATENDER CPU]: Esperando operación."));
         int code_op = recibir_operacion(*socket);
-        log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
+        //log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
         switch (code_op) {
             case MENSAJE:
-                log_protegido_mem(string_from_format("[ATENDER CPU]: MENSAJE"));
+                //log_protegido_mem(string_from_format("[ATENDER CPU]: MENSAJE"));
                 recibir_mensaje(*socket,logger_memoria);
                 break;
             case FETCH_INSTRUCCION:
-                log_protegido_mem(string_from_format("[ATENDER CPU]: FETCH_INSTRUCCION - PID: %d, PC: %d",pid,PC));                
+                //log_protegido_mem(string_from_format("[ATENDER CPU]: FETCH_INSTRUCCION - PID: %d, PC: %d",pid,PC));                
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&PC, buffer + sizeof(int), sizeof(int));
@@ -87,7 +87,7 @@ static void atender_peticiones_cpu(void *void_args){
                 t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION_RESPUESTA);
                 agregar_a_paquete(paquete, instruccion, strlen(instruccion)+1);
                 enviar_paquete(paquete, *socket);
-                log_protegido_mem(string_from_format("[ATENDER CPU]: INST ENVIADA - PID: %d, PC: %d",pid,PC));  
+                //log_protegido_mem(string_from_format("[ATENDER CPU]: INST ENVIADA - PID: %d, PC: %d",pid,PC));  
                 eliminar_paquete(paquete);
                 break;
             default:
@@ -102,16 +102,16 @@ static void atender_peticiones_kernel(void *void_args){
     int size;
     void *buffer;
     while(1){
-        log_protegido_mem(string_from_format("[ATENDER KERNEL]: Esperando operación."));
+        //log_protegido_mem(string_from_format("[ATENDER KERNEL]: Esperando operación."));
         int code_op = recibir_operacion(*socket);
-        log_protegido_mem(string_from_format("[ATENDER KERNEL]: Operación recibida."));
+        //log_protegido_mem(string_from_format("[ATENDER KERNEL]: Operación recibida."));
         switch (code_op) {
             case MENSAJE:
-                log_protegido_mem(string_from_format("[ATENDER KERNEL]: MENSAJE"));
+                //log_protegido_mem(string_from_format("[ATENDER KERNEL]: MENSAJE"));
                 recibir_mensaje(*socket,logger_memoria);
                 break;       
             case INICIAR_PROCESO_MEMORIA:
-                log_protegido_mem(string_from_format("[ATENDER KERNEL]: INICIAR_PROCESO_MEMORIA"));
+                //log_protegido_mem(string_from_format("[ATENDER KERNEL]: INICIAR_PROCESO_MEMORIA"));
                 buffer = recibir_buffer(&size, *socket); 
                 int pid, size_path, desplazamiento = 0;
                 char* path;
