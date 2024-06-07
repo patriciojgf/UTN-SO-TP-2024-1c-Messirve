@@ -5,4 +5,8 @@
 #include <init_estructuras.h>
 #include <math.h>
 
+void destroy_fila_TLB(fila_tlb* row_to_destroy);
+void iniciar_tbl();
+int MMU(int dir_logica);
+
 #endif

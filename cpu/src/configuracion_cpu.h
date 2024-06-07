@@ -14,10 +14,13 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
 #define LOG_NAME "cpu.log"
 #define PROCESS_NAME "CPU"
 #define MSG_ERROR "No se pudo crear correctamente. "
+#define FIFO "FIFO"
+#define LRU "LRU"
 
 extern t_log* logger_cpu;
 extern t_config* config_cpu;
@@ -74,6 +77,15 @@ t_config_cpu* iniciar_config_cpu(t_config* config_cpu);
 void finalizar_config_cpu(t_config_cpu* config_cpu);
 
 /**************** MMU - TLB ****************/
+typedef struct{ //estructura [ pid | página | marco ] 
+    int pid;
+    int page;
+    int frame;
+    struct timeval init_time; //fifo hora minuto y segundo de cuando el proceso entro por primera vez
+    struct timeval last_reference; //lru 
+} fila_tlb; 
+// tlb : [fila_tlb1,fila_tlb2,fila_tlb3] y los elementos q tiene adentro el struct son la columna
+
 extern t_list* TLB;
 extern int TAM_PAG;
 extern sem_t sem_control_peticion_marco_a_memoria;
