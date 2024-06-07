@@ -73,4 +73,9 @@ typedef struct{
 t_config_cpu* iniciar_config_cpu(t_config* config_cpu);
 void finalizar_config_cpu(t_config_cpu* config_cpu);
 
+/**************** MMU - TLB ****************/
+extern t_list* TLB;
+extern int TAM_PAG;
+extern sem_t sem_control_peticion_marco_a_memoria;
+
 #endif
