@@ -114,7 +114,6 @@ static void _gestionar_nueva_interfaz(void *void_args) {
     }
 }
 
-
 /*----------------------Memoria---------------------------------------------------*/
 void atender_peticiones_memoria(){
 	while(1){
@@ -189,9 +188,8 @@ static void _atender_peticiones_io_gen(t_interfaz *interfaz){
     		// //log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 			int cod_op = recibir_operacion(interfaz->socket);
 			switch (cod_op){
-				case IO_GEN_SLEEP:	
-					//log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- IO_GEN_SLEEP ----", interfaz->nombre_io));
-			
+				case IO_GEN_SLEEP:	    
+    				log_info(logger_kernel,"[ATENDER PETICION IO GEN]: SLEEP TERMINADO ");
 					t_pedido_sleep* pedido = list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido->semaforo_pedido_ok);
 					//free(pedido);

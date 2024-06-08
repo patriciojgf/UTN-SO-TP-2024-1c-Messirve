@@ -36,6 +36,10 @@ static void iniciar_semaforos(){
     sem_init(&s_fetch_espere_instruccion,0,0);
 }
 
+static void iniciar_mutex(){
+    pthread_mutex_init(&mutex_ejecucion_proceso,NULL);
+}
+
 static void iniciar_estructuras(){
     flag_ejecucion=false;
     flag_interrupt=false;
@@ -47,5 +51,5 @@ void init_cpu(char* path_config){
     iniciar_configuracion(path_config);
     iniciar_estructuras();
     iniciar_semaforos();
-
+    iniciar_mutex();
 }

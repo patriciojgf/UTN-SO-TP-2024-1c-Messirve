@@ -12,53 +12,35 @@ void planificador_cp(){
     //log_protegido_kernel(string_from_format("[planificador_cp]"));
     while(1){
         sem_wait(&sem_plan_ready);
-        
-        //log_protegido_kernel(string_from_format("[planificador_cp] espero sem_plan_exec_libre"));
-        sem_wait(&sem_plan_exec_libre); //espero que haya lugar para ejecutar
-        //log_protegido_kernel(string_from_format("[planificador_cp] bloqueo mutex_plan_exec"));
-        
-
+        sem_wait(&sem_plan_exec_libre); //espero que haya lugar para ejecutar     
 
         pthread_mutex_lock(&mutex_plan_ready);
         pthread_mutex_lock(&mutex_plan_ready_vrr);
-        if(!list_is_empty(lista_plan_ready) || !list_is_empty(lista_plan_ready_vrr)){            
-            pthread_mutex_unlock(&mutex_plan_ready);
-            pthread_mutex_unlock(&mutex_plan_ready_vrr);
-            // switch(ALGORITMO_PLANIFICACION){
-            //     case FIFO:
-            //         _FIFO();
-            //         break;
-            //     case RR:
-            //         _FIFO();
-            //         // _RR();
-            //         break;
-            //     case VRR:
-            //         log_error(logger_kernel,"falta implementar VRR");
-            //         exit(EXIT_FAILURE);
-            //     default:
-            //         log_error(logger_kernel,"No se reconoce el Algoritmo de planificacion");
-            //         exit(EXIT_FAILURE);
-            // }
+        if(!list_is_empty(lista_plan_ready) || !list_is_empty(lista_plan_ready_vrr)){   
             pthread_mutex_lock(&mutex_plan_exec); //bloqueo el acceso al proceso_exec hasta que quede planificado el nuevo
             if(proceso_exec==NULL){
-                //log_protegido_kernel(string_from_format("[planificador_cp]: Hay lugar para planificar"));
                 t_pcb* pcb_ready = NULL;
-
                 //busco el proximo pcb a ejecutar
                 if(ALGORITMO_PLANIFICACION==VRR){
-                    log_error(logger_kernel,"ALGORITMO_PLANIFICACION VRR no hecho");
-                    exit(EXIT_FAILURE);
+                    //valido si hay prioridad
+                    if(!list_is_empty(lista_plan_ready_vrr)){
+                        pcb_ready = list_remove(lista_plan_ready_vrr, 0); //saco el pcb de ready para pasarlo a exec
+                        log_info(logger_kernel,"[PLANIFICADOR_CP] - hay PCB en lista ready vrr - quantum restante: %d",pcb_ready->quantum);
+                    }
+                    else{
+                        pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
+                    }
                 } else if ((ALGORITMO_PLANIFICACION==RR)||(ALGORITMO_PLANIFICACION==FIFO)){
-                    pthread_mutex_lock(&mutex_plan_ready);
                     pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
-                    pthread_mutex_unlock(&mutex_plan_ready);
                 } else{
                     log_error(logger_kernel,"ALGORITMO_PLANIFICACION no reconocido");
                     exit(EXIT_FAILURE);
                 }
+                pthread_mutex_unlock(&mutex_plan_ready_vrr);         
+                pthread_mutex_unlock(&mutex_plan_ready);
+
                 //preparo PCB y envio a CPU
                 if(pcb_ready != NULL){
-                    //log_protegido_kernel(string_from_format("[planificador_cp] - Enviando PCB a dispatch: PID <%d>",pcb_ready->pid));
                     pcb_ready->estado_anterior = pcb_ready->estado_actual;
                     pcb_ready->estado_actual = estado_EXEC;
                     proceso_exec = pcb_ready;
@@ -167,6 +149,7 @@ static void _FIFO(){
 
 static void _quantum_wait(t_pcb* pcb){
     log_warning(logger_kernel,"_quantum_wait");
+    log_warning(logger_kernel,"_quantum disponible: %d", pcb->quantum);
     usleep(pcb->quantum*1000);
     log_warning(logger_kernel,"fin de quantum");
     //log_protegido_kernel(string_from_format("[_quantum_wait] - PID %d", pcb->pid));
@@ -181,10 +164,12 @@ static void _esperar_liberar_quantum(t_pcb* pcb){
 
     sem_wait(&sem_pcb_desalojado);
     
+    log_warning(logger_kernel,"libero quantum, ya se desalojo el proceso");
     pthread_cancel(hilo_esperar_quantum);
 }
 
 static void _esperar_vrr(t_pcb* pcb){
+    log_warning(logger_kernel,"_esperar_vrr");
     t_temporal* quantum_usado = temporal_create();
     _esperar_liberar_quantum(pcb);
     temporal_stop(quantum_usado);

@@ -16,6 +16,9 @@ sem_t mlog;
 sem_t s_instruccion_actual;
 sem_t s_fetch_espere_instruccion;
 
+//mutex
+pthread_mutex_t mutex_ejecucion_proceso;
+
 //conexiones
 int socket_memoria;
 int socket_servidor_dispatch;

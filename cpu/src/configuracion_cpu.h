@@ -27,6 +27,10 @@ extern sem_t mlog;
 extern sem_t s_instruccion_actual;
 extern sem_t s_fetch_espere_instruccion;
 
+//mutex
+extern pthread_mutex_t mutex_ejecucion_proceso;
+
+//flags
 extern bool flag_ejecucion,flag_interrupt;
 
 //contexto

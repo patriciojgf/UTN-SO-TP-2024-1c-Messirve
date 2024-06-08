@@ -292,6 +292,7 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
 }
 
 void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
+	log_info(logger_cpu,"[DEVUELVO CONTEXTO]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);                
 	//log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
@@ -359,6 +360,10 @@ void ejecutar_proceso(){
     // Continúa ejecutando mientras la bandera de ejecución esté activa.
     while (flag_ejecucion) {
 
+		// Bloqueo el "hilo" del proceso, no quiero pedir esperar un fetch de memoria al mismo tiempo 
+		// que estoy tratando un fin de QUANTUM
+		pthread_mutex_lock(&mutex_ejecucion_proceso);
+
         // Enviar solicitud de instrucción.
         t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
         int pid_a_enviar = contexto_cpu->pid;
@@ -367,13 +372,14 @@ void ejecutar_proceso(){
         agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
         enviar_paquete(paquete, socket_memoria);
         eliminar_paquete(paquete);
+        log_info(logger_cpu,"[EJECUTAR PROCESO]: -- HICE FETCH -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
         sem_wait(&s_instruccion_actual);
 
         // Decodificar la instrucción actual.
         char** instruccion_separada = string_split(instruccion_actual, " ");
         u_int8_t identificador = _get_identificador(instruccion_separada[0]);
         char* nombre_instruccion = _get_nombre_instruccion(identificador);
-        log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción decodificada: %s", nombre_instruccion);
+        //log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción decodificada: %s", nombre_instruccion);
 
         t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
         inst_decodificada->identificador = identificador;
@@ -381,7 +387,8 @@ void ejecutar_proceso(){
         inst_decodificada->parametros = _parametros_instruccion(instruccion_actual, inst_decodificada->cantidad_parametros);
 
         // Ejecutar la instrucción.
-        log_info(logger_cpu,"[Ejecutar Proceso]: Ejecutando %s.", nombre_instruccion);
+
+		int motivo_desalojo = -1;
 
         switch (inst_decodificada->identificador) {
             case EXIT: _f_exit(inst_decodificada); break;
@@ -389,15 +396,28 @@ void ejecutar_proceso(){
             case SUM: _sum(inst_decodificada); break;
             case SUB: _sub(inst_decodificada); break;
             case JNZ: _jnz(inst_decodificada); break;
-            case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
+            // case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
+			case IO_GEN_SLEEP:
+				motivo_desalojo = IO_GEN_SLEEP;
+				break;
             default: 
-                log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción desconocida: %s.", nombre_instruccion);
+                log_error(logger_cpu,"[Ejecutar Proceso]: Instrucción no reconocida.");
+				exit(EXIT_FAILURE);
                 break;
         }
+        contexto_cpu->program_counter++;
+		pthread_mutex_unlock(&mutex_ejecucion_proceso);
 
+
+		pthread_mutex_lock(&mutex_ejecucion_proceso);
+		//Desalojos por instrucciones ejecutadas
+		if(motivo_desalojo > -1){
+			flag_ejecucion = false;
+			devolver_contexto_a_dispatch(motivo_desalojo, inst_decodificada);
+		}
         // Verificar interrupciones.
         if (flag_interrupt && flag_ejecucion) {
-            log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
+            //log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
             devolver_contexto_a_dispatch(motivo_interrupt, inst_decodificada);
             flag_ejecucion = false;
         }
@@ -412,7 +432,8 @@ void ejecutar_proceso(){
         free(inst_decodificada);
         free(instruccion_actual);
 		instruccion_actual=NULL; 
-        contexto_cpu->program_counter++;
-        log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción completada y recursos liberados.");
+		pthread_mutex_unlock(&mutex_ejecucion_proceso);
+
+        //log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción completada y recursos liberados.");
     }
 }

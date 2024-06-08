@@ -44,9 +44,10 @@ void atender_cpu_fin_quantum(t_pcb* pcb){
 }
 
 void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
-    //verifico que el nombre de la interfaz que viene en la instruccion exista en el listado lista_interfaz_socket
+    
+    log_info(logger_kernel,"[ATENDER CPU IO SLEEP]");
+                
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
-    //log_protegido_kernel(string_from_format("[atender_io_gen_sleep]: nombre interfaz: %s", nombre_interfaz));
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
     if(interfaz !=NULL){
         t_pedido_sleep* pedido = malloc(sizeof(t_pedido_sleep));
