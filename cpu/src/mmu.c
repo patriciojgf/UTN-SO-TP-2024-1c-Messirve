@@ -86,7 +86,7 @@ static void _consultar_frame_a_memoria(int socket_cliente_cpu)
 }
 
 /**************** TLB ****************/
-void iniciar_tbl()
+void iniciar_tlb()
 {
     log_protegido_cpu(string_from_format("[TLB] Inicializando TLB..."));
     for(int i=0; i<CANTIDAD_ENTRADAS_TLB; i++)
@@ -116,7 +116,7 @@ void agregar_a_tbl(int pid, int pagina, int marco)
         else if(string_equals_ignore_case(ALGORITMO_TLB, LRU))
         {
             log_protegido_cpu(string_from_format("Tamaño tlb %d previo al list_sort", list_size(TLB)));
-            list_sort(TLB, _comparar_referencias); 
+            list_sort(TLB, (void*)_comparar_referencias); 
             log_protegido_cpu(string_from_format("Tamaño tlb %d", list_size(TLB)));
             list_remove(TLB, 0);
         }
@@ -157,4 +157,20 @@ static void _agregar_fila_tlb(int pid, int pagina, int marco)
 void destroy_fila_TLB(fila_tlb* row_to_destroy) 
 {
     free(row_to_destroy);
+}
+
+void log_tlb()
+{
+    log_protegido_cpu(string_from_format("[TLB] pid | pagina | marco"));
+    log_protegido_cpu(string_from_format("TLB: "));
+    for(int i = 0; i < list_size(TLB); i++)
+    {
+        fila_tlb* tlb_aux = list_get(TLB, i);
+        log_protegido_cpu(string_from_format("%d | PID: %d | Pagina: %d | Marco: %d",
+            i,
+            tlb_aux->pid,
+            tlb_aux->page,
+            tlb_aux->frame
+        ));
+    }
 }
