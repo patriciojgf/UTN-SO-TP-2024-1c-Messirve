@@ -95,3 +95,13 @@ void confirmar_proceso_creado(){
     enviar_paquete(paquete,socket_cliente_kernel);
     eliminar_paquete(paquete);
 }
+
+void confirmar_memoria_liberada(){
+    log_warning(logger_memoria, "VER SI ES NECESARIO UN RETARDO");
+    t_paquete* paquete = crear_paquete(LIBERAR_ESTRUCTURAS_MEMORIA_OK);    
+    char* mensajeOK = "OK";
+
+    agregar_a_paquete(paquete,mensajeOK,strlen(mensajeOK)+1);
+    enviar_paquete(paquete,socket_cliente_kernel);
+    eliminar_paquete(paquete);
+}

@@ -1,6 +1,6 @@
 #include "planificador_cp.h"
 
-static void _FIFO();
+// static void _FIFO();
 static void _esperar_liberar_quantum(t_pcb* pcb);
 static void _esperar_vrr(t_pcb* pcb);
 static void _quantum_wait(t_pcb* pcb);
@@ -119,33 +119,33 @@ t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb){
 
 /*--------------------------------------------*/
 
-static void _FIFO(){    
-    if(proceso_exec==NULL){
-        //log_protegido_kernel(string_from_format("[_FIFO]: Hay lugar para planificar"));
-        t_pcb* pcb_ready = NULL;        
+// static void _FIFO(){    
+//     if(proceso_exec==NULL){
+//         //log_protegido_kernel(string_from_format("[_FIFO]: Hay lugar para planificar"));
+//         t_pcb* pcb_ready = NULL;        
         
-        pthread_mutex_lock(&mutex_plan_ready);//bloqueo la lista de ready para poder validar que haya pendientes
-        if(!list_is_empty(lista_plan_ready)){
-            pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
-        }
-        pthread_mutex_unlock(&mutex_plan_ready);
+//         pthread_mutex_lock(&mutex_plan_ready);//bloqueo la lista de ready para poder validar que haya pendientes
+//         if(!list_is_empty(lista_plan_ready)){
+//             pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
+//         }
+//         pthread_mutex_unlock(&mutex_plan_ready);
 
-        if(pcb_ready != NULL){
-            //log_protegido_kernel(string_from_format("[_FIFO] - PCB a planificar: PID <%d>",pcb_ready->pid));
-            pcb_ready->estado_anterior = pcb_ready->estado_actual;
-            pcb_ready->estado_actual = estado_EXEC;
-            proceso_exec = pcb_ready;
-            enviar_contexto_dispatch(proceso_exec); //envio el pcb a CPU
-        }
-        else{
-            log_warning(logger_kernel, "No hay procesos en READY");
-        }
-    }
-    else {
-        log_error(logger_kernel,"[_FIFO]: Ya hay un proceso en EXEC : PID <%d>",proceso_exec->pid);
-        exit(EXIT_FAILURE);
-    }
-}
+//         if(pcb_ready != NULL){
+//             //log_protegido_kernel(string_from_format("[_FIFO] - PCB a planificar: PID <%d>",pcb_ready->pid));
+//             pcb_ready->estado_anterior = pcb_ready->estado_actual;
+//             pcb_ready->estado_actual = estado_EXEC;
+//             proceso_exec = pcb_ready;
+//             enviar_contexto_dispatch(proceso_exec); //envio el pcb a CPU
+//         }
+//         else{
+//             log_warning(logger_kernel, "No hay procesos en READY");
+//         }
+//     }
+//     else {
+//         log_error(logger_kernel,"[_FIFO]: Ya hay un proceso en EXEC : PID <%d>",proceso_exec->pid);
+//         exit(EXIT_FAILURE);
+//     }
+// }
 
 static void _quantum_wait(t_pcb* pcb){
     log_warning(logger_kernel,"_quantum_wait");

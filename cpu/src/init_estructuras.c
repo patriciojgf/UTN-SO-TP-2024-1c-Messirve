@@ -33,6 +33,7 @@ static void iniciar_configuracion(char* config_path){
 static void iniciar_semaforos(){
     sem_init(&mlog,0,1);
     sem_init(&s_instruccion_actual,0,0);
+    sem_init(&s_signal_kernel,0,0);
     sem_init(&s_fetch_espere_instruccion,0,0);
 }
 

@@ -4,6 +4,6 @@
 #include "configuracion_kernel.h"
 
 void init_kernel(char* path_config);
-void log_protegido_kernel(char* mensaje);
+// void log_protegido_kernel(char* mensaje);
 
 #endif /*INIT_ESTRUCTURAS_H_*/

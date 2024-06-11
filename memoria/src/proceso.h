@@ -15,7 +15,7 @@ void eliminar_proceso_estructuras(t_buffer* buffer);
 
 /*OUT*/
 void confirmar_proceso_creado();
-void confirmar_proceso_estructuras_eliminadas();
+void confirmar_memoria_liberada();
 
 
 #endif // PROCESO_H

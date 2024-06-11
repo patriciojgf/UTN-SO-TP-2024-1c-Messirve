@@ -119,16 +119,25 @@ void atender_peticiones_memoria(){
 	while(1){
 		int cod_op = recibir_operacion(socket_memoria);
 		void* buffer_recibido;
+		int size = 0;
 		// //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: Recibi operacion"));
 		switch(cod_op){
 			case INICIAR_PROCESO_MEMORIA_OK:
 		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: INICIAR PROCESO"));
-                int size=0;
+                size=0;
                 buffer_recibido = recibir_buffer(&size, socket_memoria);
 				sem_post(&s_init_proceso_a_memoria);
 				free(buffer_recibido);
 		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: INICIAR PROCESO REALIZADO"));
 				break;	
+			case LIBERAR_ESTRUCTURAS_MEMORIA_OK:
+		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: FINALIZAR PROCESO"));
+				size=0;
+				buffer_recibido = recibir_buffer(&size, socket_memoria);
+				sem_post(&s_memoria_liberada_pcb);
+				free(buffer_recibido);
+		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: FINALIZAR PROCESO REALIZADO"));
+				break;
 			default:
 		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: Operacion no reconocida"));
 				exit(EXIT_FAILURE);
@@ -149,19 +158,39 @@ void atender_peticiones_dispatch(){
 				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
 				switch(motivo){
 					case EXIT:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));						
-						atender_cpu_exit(proceso_exec,instrucciones);
+						sem_post(&sem_pcb_desalojado);
+						atender_cpu_exit(proceso_exec,"Instruccion EXIT");
 						break;
 					case IO_GEN_SLEEP:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid));
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_gen_sleep(proceso_exec,instrucciones);
 						break;
 					case FIN_QUANTUM:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid));
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_fin_quantum(proceso_exec);	
 						break;
+					case WAIT:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - WAIT", proceso_exec->pid);
+						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - WAIT", proceso_exec->pid));
+						sem_post(&sem_pcb_desalojado);
+						atender_cpu_wait(proceso_exec,instrucciones);
+						break;
+					case SIGNAL:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - SIGNAL", proceso_exec->pid);
+						//sem_post(&sem_pcb_desalojado); //no se desaloja
+						atender_cpu_signal(proceso_exec,obtener_recurso(list_get(instrucciones->parametros, 0)));
+						break;
+					case INT_SIGNAL:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_SIGNAL", proceso_exec->pid);
+						atender_cpu_int_signal(proceso_exec);
+						break;
+
 					default:
                 		log_error(logger_kernel, "[CONTEXTO_EJECUCION]: motivo no reconocido <%d> \n", cod_op);
 				}

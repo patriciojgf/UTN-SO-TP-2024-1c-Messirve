@@ -67,7 +67,7 @@ char** INSTANCIAS_RECURSOS;
 
 //armo estructura lista de tipo t_interfaz para guardar todas las que llegan
 t_list* lista_interfaz_socket;
-sem_t mlog, m_multiprogramacion, s_init_proceso_a_memoria;
+sem_t mlog, m_multiprogramacion, s_init_proceso_a_memoria, s_memoria_liberada_pcb;
 sem_t sem_pcb_desalojado;
 sem_t sem_plan_exec_libre;
 sem_t sem_plan_ready;
@@ -91,6 +91,8 @@ pthread_mutex_t mutex_plan_exit;
 pthread_mutex_t mutex_procesos_planificados;
 //pcb
 pthread_mutex_t mutex_pid_proceso;
+//recursos
+pthread_mutex_t mutex_lista_recursos;
 //listas interfaces conectadas
 pthread_mutex_t mutex_lista_interfaz;
 

@@ -59,7 +59,8 @@ extern t_config* config_kernel; //main.h
 //semaforos
 extern sem_t mlog; //main.h
 extern sem_t m_multiprogramacion;
-extern sem_t s_init_proceso_a_memoria;
+extern sem_t s_init_proceso_a_memoria; //se crearon las estructuras de memoria
+extern sem_t s_memoria_liberada_pcb; //se liberaron las estructuras de memoria 
 
 //semaforos para marcar conexiones existosas
 extern sem_t s_conexion_memoria_ok;
@@ -83,6 +84,8 @@ extern pthread_mutex_t mutex_plan_exit;
 extern pthread_mutex_t mutex_procesos_planificados; 
 //pcb
 extern pthread_mutex_t mutex_pid_proceso;
+//recursos
+extern pthread_mutex_t mutex_lista_recursos;
 //listas interfaces conectadas
 extern pthread_mutex_t mutex_lista_interfaz;
 

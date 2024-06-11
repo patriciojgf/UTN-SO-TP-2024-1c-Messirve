@@ -88,7 +88,8 @@ static void init_pthread_mutex(){
     pthread_mutex_init(&mutex_procesos_planificados,NULL);
     pthread_mutex_init(&mutex_pid_proceso,NULL);
     pthread_mutex_init(&mutex_lista_interfaz,NULL);
-    pthread_mutex_init(&mutex_id_ejecucion,NULL);    
+    pthread_mutex_init(&mutex_id_ejecucion,NULL);  
+    pthread_mutex_init(&mutex_lista_recursos,NULL);  
 }
 
 static void init_recursos(){
@@ -98,7 +99,7 @@ static void init_recursos(){
         nuevo_recurso->nombre = RECURSOS[i];
         nuevo_recurso->instancias = atoi(INSTANCIAS_RECURSOS[i]);
         nuevo_recurso->l_bloqueados = list_create();
-        nuevo_recurso->pcb_asignado = NULL;
+        // nuevo_recurso->pcb_asignado = NULL;
         pthread_mutex_init(&nuevo_recurso->mutex_bloqueados, NULL);
         
         list_add(lista_recursos,nuevo_recurso);
@@ -116,9 +117,9 @@ void init_kernel(char* path_config){
     init_variables_globales();
 }
 
-void log_protegido_kernel(char* mensaje)
-{
-	sem_wait(&mlog);
-	log_info(logger_kernel, "%s", mensaje);
-	sem_post(&mlog);
-}
+// void log_protegido_kernel(char* mensaje)
+// {
+// 	sem_wait(&mlog);
+// 	log_info(logger_kernel, "%s", mensaje);
+// 	sem_post(&mlog);
+// }

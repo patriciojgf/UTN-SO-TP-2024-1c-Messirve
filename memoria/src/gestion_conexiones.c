@@ -101,6 +101,7 @@ static void atender_peticiones_kernel(void *void_args){
 	int* socket = (int*) void_args;
     int size;
     void *buffer;
+    int pid, size_path, desplazamiento = 0;
     while(1){
         //log_protegido_mem(string_from_format("[ATENDER KERNEL]: Esperando operación."));
         int code_op = recibir_operacion(*socket);
@@ -112,8 +113,8 @@ static void atender_peticiones_kernel(void *void_args){
                 break;       
             case INICIAR_PROCESO_MEMORIA:
                 //log_protegido_mem(string_from_format("[ATENDER KERNEL]: INICIAR_PROCESO_MEMORIA"));
-                buffer = recibir_buffer(&size, *socket); 
-                int pid, size_path, desplazamiento = 0;
+                pid=0; size_path=0; desplazamiento = 0; size = 0;
+                buffer = recibir_buffer(&size, *socket);
                 char* path;
                 memcpy(&pid, buffer +desplazamiento, sizeof(int));
                 desplazamiento+=sizeof(int);
@@ -124,7 +125,15 @@ static void atender_peticiones_kernel(void *void_args){
                 t_proceso* proceso = crear_proceso(pid,path);
                 list_add(lista_procesos_en_memoria, proceso);
                 confirmar_proceso_creado(); 
-                break;    
+                break;
+            case LIBERAR_ESTRUCTURAS_MEMORIA:
+                pid=0; desplazamiento = 0; size = 0;
+                buffer = recibir_buffer(&size, *socket);
+                memcpy(&pid, buffer, sizeof(int));
+                log_warning(logger_memoria, "falta implementar liberar estructuras memoria");
+                confirmar_memoria_liberada();
+                break; 
+
             case -1:
                 log_error(logger_memoria,"El KERNEL se desconecto");
                 exit(EXIT_FAILURE);

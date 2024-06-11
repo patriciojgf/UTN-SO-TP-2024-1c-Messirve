@@ -65,14 +65,17 @@ void atender_peticiones_interrupt(){
     ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- ESPERANDO OPERACION ----");
     while(1){
         int cod_op = recibir_operacion(socket_cliente_interrupt);
+        log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- COD OP ---- %d",cod_op);
+        int size=0;
+        void* buffer;
         switch(cod_op){
             case FIN_QUANTUM:
 		        pthread_mutex_lock(&mutex_ejecucion_proceso);
                 log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 log_warning(logger_cpu,"fin de quantum");
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- QUANTUM ----");
-                int size=0;
-                void *buffer = recibir_buffer(&size, socket_cliente_interrupt);
+                size=0;
+                buffer = recibir_buffer(&size, socket_cliente_interrupt);
                 motivo_interrupt=FIN_QUANTUM;
                 memcpy(&(pid_interrupt), buffer , sizeof(int));    
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- pid_interrupt: %d", pid_interrupt));
@@ -90,6 +93,26 @@ void atender_peticiones_interrupt(){
                 free(buffer);
 		        pthread_mutex_unlock(&mutex_ejecucion_proceso);
                 break;
+            case INT_SIGNAL:
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_warning(logger_cpu,"int SIGNAL");
+                size=0;
+                buffer = recibir_buffer(&size, socket_cliente_interrupt);
+                motivo_interrupt=INT_SIGNAL;
+                memcpy(&(pid_interrupt), buffer , sizeof(int));  
+                if(contexto_cpu->pid==pid_interrupt){
+                    log_warning(logger_cpu,"flag_interrupt=true");
+                    flag_interrupt=true;
+                    sem_post(&s_signal_kernel);
+                }
+                else{
+                    log_warning(logger_cpu,"flag_interrupt=false");
+                    log_warning(logger_cpu,"pid: %d",pid_interrupt);
+                    log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
+
+                }
+                free(buffer);
+                break;
             default:
                 log_error(logger_cpu, "ERROR EN cod_op: Operacion N* %d desconocida\n", cod_op);
                 exit(EXIT_FAILURE);
@@ -101,7 +124,9 @@ void atender_peticiones_interrupt(){
 void atender_peticiones_dispatch(){
     //log_info(logger_cpu,"[ATENDER DISPATCH]: ---- ESPERANDO OPERACION ----");
     while(1){
+        int size=0;       
         int cod_op = recibir_operacion(socket_cliente_dispatch);
+        log_info(logger_cpu,"[ATENDER DISPATCH]: ---- COD OP ---- %d",cod_op);
         switch(cod_op){
             case PCB:
                 //log_info(logger_cpu,"[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----");
@@ -109,6 +134,12 @@ void atender_peticiones_dispatch(){
                 log_info(logger_cpu,"[ATENDER DISPATCH]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 flag_ejecucion = true;             
                 ejecutar_proceso(); 
+                break;
+            case SIGNAL:
+                log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                void*  buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
+                sem_post(&s_signal_kernel);
+				free(buffer_recibido);
                 break;
             default:
                 log_error(logger_cpu,"atender_peticiones_dispatch cod_op no reconocidos");

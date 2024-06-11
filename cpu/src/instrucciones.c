@@ -7,7 +7,6 @@ static u_int8_t _cantidad_parametros(u_int8_t identificador);
 static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_parametros);
 static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros);
 //instrucciones
-static void _io_gen_sleep(t_instruccion* instruccion);
 static void _set(t_instruccion* instruccion);
 static void _sum(t_instruccion* instruccion);
 static void _sub(t_instruccion* instruccion);
@@ -43,7 +42,6 @@ uint8_t* _get_direccion_registro(char* string_registro){
     }
     return registro;
 }
-
 
 char* recibir_instruccion(int socket_cliente){
 	int size=0;
@@ -310,11 +308,12 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 
 /*------------_INSTRUCCIONES---------------------------------------*/
 
-static void _io_gen_sleep(t_instruccion* instruccion)
-{
-	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
-    flag_ejecucion = false;
-}
+//esto se hace directamente en el case del exe
+// static void _io_gen_sleep(t_instruccion* instruccion)
+// {
+// 	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
+//     flag_ejecucion = false;
+// }
 
 static void _set(t_instruccion* instruccion){
 	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
@@ -378,7 +377,6 @@ void ejecutar_proceso(){
         // Decodificar la instrucción actual.
         char** instruccion_separada = string_split(instruccion_actual, " ");
         u_int8_t identificador = _get_identificador(instruccion_separada[0]);
-        char* nombre_instruccion = _get_nombre_instruccion(identificador);
         //log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción decodificada: %s", nombre_instruccion);
 
         t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
@@ -399,6 +397,34 @@ void ejecutar_proceso(){
             // case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
 			case IO_GEN_SLEEP:
 				motivo_desalojo = IO_GEN_SLEEP;
+				break;
+			case WAIT:
+				motivo_desalojo = WAIT;
+				break;
+			case SIGNAL:
+				int motivo = SIGNAL;
+				int mensajeOk = 0;
+				int size = 0;
+				t_paquete* paquete_signal = crear_paquete(CONTEXTO_EJECUCION);
+				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->pid, sizeof(int));
+				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->program_counter, sizeof(int));
+				empaquetar_registros_cpu(paquete_signal, contexto_cpu->registros_cpu);
+				empaquetar_instruccion_cpu(paquete_signal, inst_decodificada);
+				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &motivo, sizeof(int));
+				enviar_paquete(paquete_signal, socket_cliente_dispatch);
+				eliminar_paquete(paquete_signal);
+				// sem_wait(&s_signal_kernel);
+				//recibo respuesta del dispatch
+				int codigo_op = recibir_operacion(socket_cliente_dispatch);
+				log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL codigo_op <%d>",codigo_op);
+				void* buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
+				memcpy((&mensajeOk),buffer_recibido,sizeof(int));
+				log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL mensajeOk <%d>",mensajeOk);
+				free(buffer_recibido);
+				if(!mensajeOk){
+					motivo_desalojo=INT_SIGNAL;
+					log_info(logger_cpu,"[EJECUTAR PROCESO]: -- PID <%d> - PC<%d> - SIGNAL NO OK",contexto_cpu->pid,contexto_cpu->program_counter);
+				}
 				break;
             default: 
                 log_error(logger_cpu,"[Ejecutar Proceso]: Instrucción no reconocida.");

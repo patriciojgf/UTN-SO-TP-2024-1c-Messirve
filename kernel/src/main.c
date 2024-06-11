@@ -28,43 +28,43 @@ int main(int argc, char **argv) {
 
 
 /* ------------------------------------Conexiones--------------------------------------------*/
-int conectarMemoria(){
-	socket_memoria = -1;
-	char* ip;
-	char* puerto;
+// int conectarMemoria(){
+// 	socket_memoria = -1;
+// 	char* ip;
+// 	char* puerto;
 
-    ip= config_get_string_value(config_kernel,"IP_MEMORIA");
-	puerto=config_get_string_value(config_kernel,"PUERTO_MEMORIA");
-	log_protegido_kernel(string_from_format("MEMORIA:Conectando a memoria..."));
+//     ip= config_get_string_value(config_kernel,"IP_MEMORIA");
+// 	puerto=config_get_string_value(config_kernel,"PUERTO_MEMORIA");
+// 	log_info(logger_kernel,"MEMORIA:Conectando a memoria...");
 
-	while((socket_memoria = crear_conexion(ip, puerto)) <= 0){
-		log_protegido_kernel(string_from_format("No se pudo establecer una conexion con la Memoria"));
-	}
+// 	while((socket_memoria = crear_conexion(ip, puerto)) <= 0){
+// 		log_info(logger_kernel,"No se pudo establecer una conexion con la Memoria");
+// 	}
 
-	int handshake = KERNEL;
-	bool confirmacion;
+// 	int handshake = KERNEL;
+// 	bool confirmacion;
 
-	send(socket_memoria, &handshake, sizeof(int),0);		//no hace handshake
-	recv(socket_memoria, &confirmacion, sizeof(bool), MSG_WAITALL);
+// 	send(socket_memoria, &handshake, sizeof(int),0);		//no hace handshake
+// 	recv(socket_memoria, &confirmacion, sizeof(bool), MSG_WAITALL);
 
 	
-	if(confirmacion)
-		log_protegido_kernel(string_from_format("Conexion con memoria exitosa"));
-	else
-		log_protegido_kernel(string_from_format("ERROR: Handshake con memoria fallido"));	
+// 	if(confirmacion)
+// 		log_info(logger_kernel,"Conexion con memoria exitosa");
+// 	else
+// 		log_protegido_kernel(string_from_format("ERROR: Handshake con memoria fallido"));	
 
-	/*---------- Hilos para atender conexiones --------------*/
-	//pthread_t hilo_atender_memoria;
-    // pthread_create(&hilo_atender_memoria, NULL, (void*) atender_peticiones_memoria, NULL);
-	// pthread_detach(hilo_atender_memoria);
+// 	/*---------- Hilos para atender conexiones --------------*/
+// 	//pthread_t hilo_atender_memoria;
+//     // pthread_create(&hilo_atender_memoria, NULL, (void*) atender_peticiones_memoria, NULL);
+// 	// pthread_detach(hilo_atender_memoria);
 
-	pthread_mutex_lock(&mutex_conexiones);
-	conexiones++;
-	pthread_mutex_unlock(&mutex_conexiones);
+// 	pthread_mutex_lock(&mutex_conexiones);
+// 	conexiones++;
+// 	pthread_mutex_unlock(&mutex_conexiones);
 
-return 0;
+// return 0;
 
-}
+// }
 
 
 // void _finalizar_proceso(t_pcb *pcb, int motivo)
@@ -140,42 +140,42 @@ return 0;
 // return 0;
 // }
 
-int conectarCpuInterrupt(){
-	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
-	char* puerto_interrupt 	= config_get_string_value(config_kernel,"PUERTO_CPU_INTERRUPT");
+// int conectarCpuInterrupt(){
+// 	char* ip 				= config_get_string_value(config_kernel,"IP_CPU");
+// 	char* puerto_interrupt 	= config_get_string_value(config_kernel,"PUERTO_CPU_INTERRUPT");
 
-    socket_interrupt = crear_conexion(ip, puerto_interrupt);
+//     socket_interrupt = crear_conexion(ip, puerto_interrupt);
 
-    if (socket_interrupt <= 0){
-        printf(" INTERRUPT: No se pudo establecer una conexion con la CPU\n");
-    }
-    else{
-		log_protegido_kernel(string_from_format("INTERRUPT: Conexion con CPU exitosa"));
-    }
+//     if (socket_interrupt <= 0){
+//         printf(" INTERRUPT: No se pudo establecer una conexion con la CPU\n");
+//     }
+//     else{
+// 		log_protegido_kernel(string_from_format("INTERRUPT: Conexion con CPU exitosa"));
+//     }
 
-	int handshake_interrupt = KERNEL_INTERRUPT;
-	bool confirmacion;
-	send(socket_interrupt, &handshake_interrupt, sizeof(int),0); 
-	recv(socket_interrupt, &confirmacion, sizeof(bool), MSG_WAITALL);
+// 	int handshake_interrupt = KERNEL_INTERRUPT;
+// 	bool confirmacion;
+// 	send(socket_interrupt, &handshake_interrupt, sizeof(int),0); 
+// 	recv(socket_interrupt, &confirmacion, sizeof(bool), MSG_WAITALL);
 
-	if(confirmacion)
-		log_protegido_kernel(string_from_format("Conexion de Modulo Interrupt con CPU exitosa"));
-	else
-		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Interrupt con CPU fallido"));
+// 	if(confirmacion)
+// 		log_protegido_kernel(string_from_format("Conexion de Modulo Interrupt con CPU exitosa"));
+// 	else
+// 		log_protegido_kernel(string_from_format("ERROR: Handshake de Modulo Interrupt con CPU fallido"));
 
-	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
+// 	enviar_mensaje("SOY KERNEL INTERRUPT",socket_interrupt);
 
-	pthread_mutex_lock(&mutex_conexiones);
-	conexiones++;
-	pthread_mutex_unlock(&mutex_conexiones);
+// 	pthread_mutex_lock(&mutex_conexiones);
+// 	conexiones++;
+// 	pthread_mutex_unlock(&mutex_conexiones);
 
-	return 0;
-}
+// 	return 0;
+// }
 
 /*-------------------------------------Consola----------------------------------*/
 
 void leerConsola() {
-	log_protegido_kernel(string_from_format("Esperando Cliente..."));
+	log_info(logger_kernel,"Esperando Cliente...");
 	
     // while(conexiones < 4){/*ESPERA*/}
 
