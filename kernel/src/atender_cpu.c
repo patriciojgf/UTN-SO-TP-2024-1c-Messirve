@@ -5,9 +5,11 @@ static t_interfaz* _obtener_interfaz(char* nombre);
 
 /*---------------------------------------------------------*/
 void atender_cpu_exit(t_pcb* pcb, char* motivo_exit){
-    //log_protegido_kernel(string_from_format("[atender_cpu_exit]: pid: %d", pcb->pid));
-    // sem_post(&sem_pcb_desalojado);
-    log_info(logger_kernel, "[CPU EXIT] PID <%d> Motivo <%s>", pcb->pid, motivo_exit);
+
+    log_info(logger_kernel, "[CPU EXIT] PID <%d> Motivo <%s>", pcb->pid, motivo_exit);            
+    //verifico si la planificacion esta activa.
+    check_detener_planificador();   
+    
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
@@ -225,6 +227,9 @@ static void _enviar_peticiones_io_gen(t_interfaz *interfaz){
     //espero el ok
     sem_wait(&pedido->semaforo_pedido_ok);
 
+    //verifico si la planificacion esta activa.
+    check_detener_planificador();    
+
     list_remove(interfaz->cola_procesos, 0);
     desbloquar_proceso(pedido->pcb->pid);
     free(pedido);    
@@ -269,6 +274,9 @@ t_recurso* obtener_recurso(char* recurso){
 }
 
 void liberar_estructuras_memoria(t_pcb* pcb){
+    //verifico si la planificacion esta activa.
+    check_detener_planificador();   
+
     // Envio peticion a memoria para liberar las estructuras de un proceso.
     t_paquete* paquete = crear_paquete(LIBERAR_ESTRUCTURAS_MEMORIA);
     agregar_datos_sin_tamaño_a_paquete(paquete, &pcb->pid, sizeof(int));
@@ -277,7 +285,9 @@ void liberar_estructuras_memoria(t_pcb* pcb){
     sem_wait(&s_memoria_liberada_pcb);
 }
 
-void liberar_recursos_pcb(t_pcb* pcb){
+void liberar_recursos_pcb(t_pcb* pcb){    
+    //verifico si la planificacion esta activa.
+    check_detener_planificador();   
     // Liberar cualquier recurso que realmente haya sido asignado al PCB.
     while (!list_is_empty(pcb->recursos_asignados)) {
         t_recurso* recurso_asignado = list_remove(pcb->recursos_asignados, 0);

@@ -30,6 +30,7 @@ void planificador_cp();
 void fuerzo_ejecucion_proceso(t_pcb* pcb);
 void desbloquar_proceso(int pid);
 t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb);
+void check_detener_planificador();
 
 
 #endif /* PLANIFICADOR_CP_H_ */

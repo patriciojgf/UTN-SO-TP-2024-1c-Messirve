@@ -16,6 +16,24 @@ typedef enum{
     VRR
 } t_planificacion;
 
+//--- Consola -----
+typedef enum{
+    EJECUTAR_SCRIPT,
+    INICIAR_PROCESO,
+    FINALIZAR_PROCESO,
+    DETENER_PLANIFICACION,
+    INICIAR_PLANIFICACION,
+    MULTIPROGRAMACION,
+    PROCESO_ESTADO
+} t_codigo_consola;
+
+typedef struct
+{
+    char* nombre;
+    t_codigo_consola cod_identificador; //identificador de la instruccion
+    int cantidad_parametros; //cantidad de parametros que tiene la instruccion
+} t_instruccion_consola;
+
 // //---- Estructura para guardar informacion sobre la interfaz ----//
 // typedef struct{
 //     int socket;
@@ -66,11 +84,13 @@ extern sem_t s_memoria_liberada_pcb; //se liberaron las estructuras de memoria
 extern sem_t s_conexion_memoria_ok;
 extern sem_t s_conexion_cpu_d_ok;
 extern sem_t s_conexion_cpu_i_ok;
+extern sem_t s_conexion_interfaz; //para la primer interfaz
 
 //planificacion
 extern sem_t sem_pcb_desalojado;
 extern sem_t sem_plan_exec_libre;
 extern sem_t sem_plan_ready;
+extern sem_t sem_planificacion_activa;
 
 //mutex
 extern pthread_mutex_t mutex_conexiones; //main.h
@@ -82,6 +102,7 @@ extern pthread_mutex_t mutex_plan_exec;
 extern pthread_mutex_t mutex_plan_blocked;
 extern pthread_mutex_t mutex_plan_exit;
 extern pthread_mutex_t mutex_procesos_planificados; 
+extern pthread_mutex_t mutex_detener_planificacion;
 //pcb
 extern pthread_mutex_t mutex_pid_proceso;
 //recursos
@@ -97,6 +118,7 @@ extern int var_id_ejecucion;
 extern int pid_proceso;
 
 //planificacion
+extern int planificacion_detenida;
 extern int GRADO_MULTIPROGRAMACION;
 extern int cantidad_procesos_planificados;
 extern t_planificacion ALGORITMO_PLANIFICACION; //main.h
@@ -109,10 +131,10 @@ extern t_list* lista_plan_blocked; //main.h
 extern t_list* lista_plan_exit; //main.h
 extern t_list* lista_recursos; //main.h
 extern t_list* lista_archivos_abiertos; //main.h
+extern t_list* lista_instrucciones_permitidas; //consola.h
 
 //--- Estructuras -----
 extern char** RECURSOS;
 extern char** INSTANCIAS_RECURSOS;
-
 
 #endif /* CONFIG_KERNEL_H */

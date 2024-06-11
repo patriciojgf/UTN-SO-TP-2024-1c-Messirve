@@ -46,8 +46,6 @@ typedef struct
     t_list* parametros; //lista de parametros sin contar el identificador
 }t_instruccion;
 
-
-
 //PCB.h
 
 typedef enum estado {

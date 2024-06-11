@@ -8,11 +8,24 @@ static void _quantum_wait(t_pcb* pcb);
 
 /*------------------------------------------------------------------------------------------------------*/
 
+void check_detener_planificador(){
+    pthread_mutex_lock(&mutex_detener_planificacion);
+    if(planificacion_detenida == 1){
+        log_info(logger_kernel,"se activa DETENER_PLANIFICACION");
+        sem_wait(&sem_planificacion_activa);
+    }
+    pthread_mutex_unlock(&mutex_detener_planificacion);
+}
+
+
 void planificador_cp(){
     //log_protegido_kernel(string_from_format("[planificador_cp]"));
     while(1){
         sem_wait(&sem_plan_ready);
         sem_wait(&sem_plan_exec_libre); //espero que haya lugar para ejecutar     
+        
+        //verifico si la planificacion esta activa.
+        check_detener_planificador();           
 
         pthread_mutex_lock(&mutex_plan_ready);
         pthread_mutex_lock(&mutex_plan_ready_vrr);

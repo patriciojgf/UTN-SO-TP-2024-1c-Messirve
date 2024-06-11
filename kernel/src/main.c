@@ -12,13 +12,20 @@ int main(int argc, char **argv) {
 
 	/*---------- Hilos para planificadores --------------*/
 	gestionar_conexion_memoria();
+	log_info(logger_kernel,"[main IO]: gestionar_conexion_memoria");
 	gestionar_conexion_interrupt();
+	log_info(logger_kernel,"[main IO]: gestionar_conexion_interrupt");
 	gestionar_conexion_dispatch();
+	log_info(logger_kernel,"[main IO]: gestionar_conexion_dispatch");
+
+	pthread_t hilo_gestionar_conexion_io;
+	pthread_create(&hilo_gestionar_conexion_io, NULL, (void*) gestionar_conexion_io, NULL);
+	pthread_detach(hilo_gestionar_conexion_io);
+
 	
+	log_info(logger_kernel,"[main IO]: leerConsola");
 	pthread_t t5;
 	pthread_create(&t5, NULL, (void*) leerConsola, NULL);
-	gestionar_conexion_io();
-
 	pthread_join(t5, NULL);
 
 
@@ -182,8 +189,10 @@ void leerConsola() {
 	sem_wait(&s_conexion_memoria_ok);
 	sem_wait(&s_conexion_cpu_i_ok);
 	sem_wait(&s_conexion_cpu_d_ok);
+	sem_wait(&s_conexion_interfaz);
 
-	leer_consola(m_multiprogramacion);
+	// leer_consola(m_multiprogramacion);
+	procesar_comandos_consola();
 	printf("Finaliza consola...\n");
 }
 

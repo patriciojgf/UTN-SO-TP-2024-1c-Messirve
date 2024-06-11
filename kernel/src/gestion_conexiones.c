@@ -22,10 +22,8 @@ void init_conexiones(){
 /*SERVER IO*/
 void gestionar_conexion_io(){
 	while(1) {
-		// //log_protegido_kernel(string_from_format("[GESTION IO]: Esperando cliente"));
 		//genero nueva conexion para cada IO
 		int socket_io_nuevo = esperar_cliente(socket_servidor_io);
-		// //log_protegido_kernel(string_from_format("[GESTION IO]: Recibi operacion"));
 
 		//hago handshake y guardo el tipo de io.
 		int cod_tipo_io = handshake_server(socket_io_nuevo);
@@ -52,6 +50,7 @@ void gestionar_conexion_io(){
 		pthread_t hilo_interfaz;
 		pthread_create(&hilo_interfaz, NULL, (void *) _gestionar_nueva_interfaz, info_interfaz);
 		pthread_detach(hilo_interfaz);
+		sem_post(&s_conexion_interfaz);
 	}	
 }
 
@@ -156,6 +155,10 @@ void atender_peticiones_dispatch(){
 				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
 				instrucciones->parametros =list_create();
 				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
+				
+				//verifico si la planificacion esta activa.
+				check_detener_planificador();
+				
 				switch(motivo){
 					case EXIT:
 						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid);

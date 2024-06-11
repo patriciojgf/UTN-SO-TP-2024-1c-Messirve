@@ -76,6 +76,7 @@ static void init_semaforos(){
     sem_init(&sem_pcb_desalojado,0,0);
     sem_init(&sem_plan_exec_libre,0,1);
     sem_init(&sem_plan_ready,0,0);
+    sem_init(&sem_planificacion_activa,0,0);
 }
 
 static void init_pthread_mutex(){
@@ -86,6 +87,7 @@ static void init_pthread_mutex(){
     pthread_mutex_init(&mutex_plan_blocked,NULL);
     pthread_mutex_init(&mutex_plan_exit,NULL);
     pthread_mutex_init(&mutex_procesos_planificados,NULL);
+    pthread_mutex_init(&mutex_detener_planificacion,NULL);
     pthread_mutex_init(&mutex_pid_proceso,NULL);
     pthread_mutex_init(&mutex_lista_interfaz,NULL);
     pthread_mutex_init(&mutex_id_ejecucion,NULL);  
@@ -107,6 +109,30 @@ static void init_recursos(){
     }
 }
 
+static void agrego_instruccion_permitida(t_list* listado_instrucciones, char* instruccion_nueva, t_codigo_consola codigo_inst, int cantidad_parametros){
+    t_instruccion_consola* instruccion = malloc(sizeof(t_codigo_consola));
+    instruccion->cod_identificador = codigo_inst;
+    instruccion->cantidad_parametros = cantidad_parametros;
+    instruccion->nombre = instruccion_nueva;
+    list_add(listado_instrucciones,instruccion);
+}
+
+static void init_instrucciones_consola(){
+    lista_instrucciones_permitidas = list_create();
+// Nomenclatura: EJECUTAR_SCRIPT [PATH]
+// Nomenclatura: INICIAR_PROCESO [PATH]
+// Nomenclatura: FINALIZAR_PROCESO [PID]
+// Nomenclatura: DETENER_PLANIFICACION
+// Nomenclatura: INICIAR_PLANIFICACION
+// Nomenclatura: MULTIPROGRAMACION [VALOR]
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"EJECUTAR_SCRIPT",EJECUTAR_SCRIPT,1);
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"INICIAR_PROCESO",INICIAR_PROCESO,1);
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"FINALIZAR_PROCESO",FINALIZAR_PROCESO,1);
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"DETENER_PLANIFICACION",DETENER_PLANIFICACION,0);
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"INICIAR_PLANIFICACION",INICIAR_PLANIFICACION,0);
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"MULTIPROGRAMACION",MULTIPROGRAMACION,1);
+}
+
 void init_kernel(char* path_config){
     init_log();
     iniciar_configuracion(path_config);
@@ -115,6 +141,7 @@ void init_kernel(char* path_config){
     init_pthread_mutex();
     init_recursos();
     init_variables_globales();
+    init_instrucciones_consola();
 }
 
 // void log_protegido_kernel(char* mensaje)

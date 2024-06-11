@@ -23,6 +23,10 @@ void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb){
 }
 
 void planificador_lp_new_ready(){
+
+    //verifico si la planificacion esta activa.
+    check_detener_planificador();   
+        
     log_warning(logger_kernel, "planificador_lp_new_ready");
     t_pcb* pcb_en_new = NULL;
 

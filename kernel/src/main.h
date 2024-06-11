@@ -15,6 +15,7 @@
 #include "gestion_conexiones.h"
 
 int conexiones;
+int planificacion_detenida = 1;
 
 t_log* logger_kernel;
 t_config* config_kernel;
@@ -58,6 +59,8 @@ t_list* lista_plan_exit;
 //-----
 t_list* lista_recursos;
 t_list* lista_archivos_abiertos;
+t_list* lista_instrucciones_permitidas;
+
 t_pcb* proceso_exec;
 
 //--- Estructuras -----
@@ -71,6 +74,7 @@ sem_t mlog, m_multiprogramacion, s_init_proceso_a_memoria, s_memoria_liberada_pc
 sem_t sem_pcb_desalojado;
 sem_t sem_plan_exec_libre;
 sem_t sem_plan_ready;
+sem_t sem_planificacion_activa;
 
 // ------ PTHREAD_MUTEX ------
 
@@ -78,6 +82,7 @@ sem_t sem_plan_ready;
 sem_t s_conexion_memoria_ok;
 sem_t s_conexion_cpu_i_ok;
 sem_t s_conexion_cpu_d_ok;
+sem_t s_conexion_interfaz;
 
 //mutex
 pthread_mutex_t mutex_conexiones;
@@ -89,6 +94,7 @@ pthread_mutex_t mutex_plan_exec;
 pthread_mutex_t mutex_plan_blocked;
 pthread_mutex_t mutex_plan_exit;
 pthread_mutex_t mutex_procesos_planificados;
+pthread_mutex_t mutex_detener_planificacion;
 //pcb
 pthread_mutex_t mutex_pid_proceso;
 //recursos
@@ -122,7 +128,6 @@ int conectarInterfaz();
 // int leer_consola();
 void inicializar_estructuras();
 void free_estructuras();
-
 
 /*----------------CONSOLA----------------*/
 void leerConsola();
