@@ -3,6 +3,7 @@
 static void identificar_conexion_y_derivar(int socket_cliente, int cod_op);
 static void atender_peticiones_kernel(void *void_args);
 static void atender_peticiones_cpu(void *void_args);
+static void _confirmar_memoria_liberada();
 static void _enviar_tamanio_a_cpu(int socket_cliente_cpu);
 
 // --------------------------------------------------------------------------//
@@ -128,7 +129,15 @@ static void atender_peticiones_kernel(void *void_args){
                 t_proceso* proceso = crear_proceso(pid,path);
                 list_add(lista_procesos_en_memoria, proceso);
                 confirmar_proceso_creado(); 
-                break;    
+                break;
+             case LIBERAR_ESTRUCTURAS_MEMORIA:
+                log_protegido_mem(string_from_format("[ATENDER KERNEL]: LIBERAR_ESTRUCTURAS_MEMORIA"));
+                pid=0; desplazamiento = 0; size = 0;
+                buffer = recibir_buffer(&size, *socket);
+                memcpy(&pid, buffer, sizeof(int));
+                log_warning(logger_memoria, "falta implementar liberar estructuras memoria");
+                _confirmar_memoria_liberada();
+                break;
             case -1:
                 log_error(logger_memoria,"El KERNEL se desconecto");
                 exit(EXIT_FAILURE);
@@ -155,6 +164,16 @@ static void _enviar_tamanio_a_cpu(int socket_cliente_cpu)
     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(TAM_PAGINA),sizeof(int));
     enviar_paquete(paquete_a_enviar, socket_cliente_cpu);
     eliminar_paquete(paquete_a_enviar);
+}
+
+static void _confirmar_memoria_liberada(){
+    log_warning(logger_memoria, "VER SI ES NECESARIO UN RETARDO");
+    t_paquete* paquete = crear_paquete(LIBERAR_ESTRUCTURAS_MEMORIA_OK);    
+    char* mensajeOK = "OK";
+
+    agregar_a_paquete(paquete, mensajeOK, strlen(mensajeOK)+1);
+    enviar_paquete(paquete, socket_cliente_kernel);
+    eliminar_paquete(paquete);
 }
 
 // --------------------------------------------------------------------------//
