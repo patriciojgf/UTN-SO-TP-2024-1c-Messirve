@@ -1,7 +1,9 @@
 #ifndef INIT_ESTRUC_MEM_H
 #define INIT_ESTRUC_MEM_H
 
-#include "configuracion_memoria.h"
+#include <configuracion_memoria.h>
+#include <mem_estructuras.h>
+#include <commons/error.h>
 
 void log_protegido_mem(char* mensaje);
 void init_memoria(char* path_config);

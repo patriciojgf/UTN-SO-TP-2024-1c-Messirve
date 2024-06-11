@@ -47,4 +47,6 @@ int conectarKernel(int* socket_kernel);
 int conectarCpu(int* socket_cpu);
 int conectarIO(int* socket_io);
 
+t_tabla_pagina tabla_pagina;
+
 #endif // MAIN_H

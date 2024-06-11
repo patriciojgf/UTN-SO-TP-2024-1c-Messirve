@@ -78,7 +78,14 @@ typedef struct {
     t_list* l_bloqueados; //esta lista la vamos a usar para saber que procesos estan bloqueados por este recurso
     t_pcb* pcb_asignado; //instancias asignadas
     pthread_mutex_t mutex_bloqueados;
-}t_recurso;
+} t_recurso;
+
+typedef struct {
+    int marco; 
+    bool presencia;
+    bool modificado;
+}t_tabla_pagina;
+
 
 void inicializar_registros(t_registros_cpu* registros);
 

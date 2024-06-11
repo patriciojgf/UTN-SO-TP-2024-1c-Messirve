@@ -39,7 +39,6 @@ typedef struct {
 
 // extern void log_protegido_mem(char* mensaje);
 
-
-
+extern t_tabla_pagina tabla_pagina;
 
 #endif /* MEM_ESTRUCTURAS_H_ */
