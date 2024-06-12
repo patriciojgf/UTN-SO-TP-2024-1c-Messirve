@@ -64,7 +64,8 @@ void atender_peticiones_dispatch(){
     log_protegido_cpu(string_from_format("[ATENDER DISPATCH]: ---- ESPERANDO OPERACION ----"));
     while(1){
         int cod_op = recibir_operacion(socket_cliente_dispatch);
-        switch(cod_op){
+        switch(cod_op)
+        {
             case PCB:
                 log_protegido_cpu(string_from_format("[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----"));
                 int size=0;
@@ -72,6 +73,13 @@ void atender_peticiones_dispatch(){
                 _recibir_nuevo_contexto(buffer);
                 flag_ejecucion = true;             
                 _ejecutar_proceso();
+            case -1:
+                log_error(logger_cpu,"Se desconecto MEMORIA");
+                exit(EXIT_FAILURE);
+            default:
+                log_warning(logger_cpu, "Operacion desconocida:");
+                log_warning(logger_cpu, "%d",cod_op);
+                exit(EXIT_FAILURE);
         }
     }
 }
@@ -80,7 +88,8 @@ void atender_peticiones_memoria(){
     log_protegido_cpu(string_from_format("[ATENDER MEMORIA]: ---- ESPERANDO OPERACION ----"));
     while(1){
         int cod_op = recibir_operacion(socket_memoria);
-        switch(cod_op){
+        switch(cod_op)
+        {
             case FETCH_INSTRUCCION_RESPUESTA:
 
                 if (instruccion_actual != NULL) {
@@ -107,6 +116,13 @@ void atender_peticiones_memoria(){
                 TAM_PAG = tam_pag;
                 log_protegido_cpu(string_from_format("TAM_PAG: %d", TAM_PAG));
             break;
+            case -1:
+                log_error(logger_cpu,"Se desconecto MEMORIA");
+                exit(EXIT_FAILURE);
+            default:
+                log_warning(logger_cpu, "Operacion desconocida:");
+                log_warning(logger_cpu, "%d",cod_op);
+                exit(EXIT_FAILURE);
         }
     }
 }
