@@ -45,11 +45,18 @@ static void iniciar_espacio_de_usuario()
     }
 }
 
-//TODO: revisar cant_paginas y donde se va a ejecutar esta funcion
+/*TODO
+*
+* revisar cant_paginas 
+* revisar donde se va a ejecutar esta funcion
+* agregar #include <math.h> donde corresponda
+* 
+*/
 static void iniciar_tabla_de_pagina(int size_proceso, t_proceso* proceso)
 {
     int tam_pagina = TAM_PAGINA; 
-    int cant_paginas = ceil((size_proceso/tam_pagina)); //TODO: ver que onda con cant_paginas
+    // int cant_paginas = ceil((size_proceso/tam_pagina)); //TODO: ver que onda con cant_paginas
+    int cant_paginas = TAM_MEMORIA/tam_pagina;
 
     proceso->tabla_de_paginas = list_create();
 

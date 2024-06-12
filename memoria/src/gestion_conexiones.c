@@ -176,6 +176,19 @@ static void _confirmar_memoria_liberada(){
     eliminar_paquete(paquete);
 }
 
+static int _get_marco(int pid)
+{
+    t_proceso* proceso = get_proceso_memoria(pid);
+    t_tabla_pagina* tdp = list_get(proceso->tabla_de_paginas, pid);
+
+    if(tdp->presencia)
+    {
+        return tdp->marco;
+    }
+
+    return -1;
+}
+
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES AUXILIARES POR MODULO ---- FIN --------------------//
 // --------------------------------------------------------------------------//
