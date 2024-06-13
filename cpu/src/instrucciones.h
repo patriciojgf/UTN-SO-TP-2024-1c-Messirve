@@ -13,6 +13,11 @@ extern bool flag_ejecucion, flag_interrupt;
 extern t_log* logger_cpu;
 extern t_contexto* contexto_cpu;
 
+typedef struct {
+    void* direccion;
+    size_t tamano;  // Tamaño del registro en bytes
+} info_registro_cpu;
+
 // char* fetch_instruccion();
 void ejecutar_proceso();
 char* recibir_instruccion(int socket_cliente);

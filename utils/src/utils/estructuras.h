@@ -14,7 +14,6 @@
 
 
 typedef struct{
-	// uint32_t AX,BX,CX,DX; 
     uint32_t PC;
     uint8_t AX;
     uint8_t BX;

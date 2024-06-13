@@ -12,6 +12,7 @@ static void _sum(t_instruccion* instruccion);
 static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
+static info_registro_cpu _get_direccion_registro(char* string_registro);
 //
 
 
@@ -20,27 +21,40 @@ extern t_registros_cpu registros_cpu;
 
 //---------------------------------------------------------------------------------------------------------------------//
 
-
-uint8_t* _get_direccion_registro(char* string_registro){
-    uint8_t* registro;
-    
-    if (!strcmp(string_registro, "AX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.AX);
+static info_registro_cpu _get_direccion_registro(char* string_registro) {
+    info_registro_cpu info = {0, 0};
+    if (!strcmp(string_registro, "AX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.AX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "BX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.BX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "CX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.CX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "DX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.DX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "EAX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.EAX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "EBX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.EBX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "ECX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.ECX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "EDX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.EDX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "SI")) {
+        info.direccion = &(contexto_cpu->registros_cpu.SI);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "DI")) {
+        info.direccion = &(contexto_cpu->registros_cpu.DI);
+        info.tamano = sizeof(uint32_t);
     }
-    if (!strcmp(string_registro, "BX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.BX);
-    }
-    if (!strcmp(string_registro, "CX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.CX);
-    }
-    if (!strcmp(string_registro, "DX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.DX);
-    }
-    return registro;
+    return info;
 }
 
 char* recibir_instruccion(int socket_cliente){
@@ -316,36 +330,67 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 // }
 
 static void _set(t_instruccion* instruccion){
-	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
-	*dir_registro = atoi(list_get(instruccion->parametros, 1));
+    char* nombre_registro = list_get(instruccion->parametros, 0);
+    char* valor_string = list_get(instruccion->parametros, 1);
+    uint32_t nuevo_valor = (uint32_t)atoi(valor_string); // Convierte el valor string a uint32_t una sola vez
+
+    info_registro_cpu reg_info = _get_direccion_registro(nombre_registro);
+
+    // Mostrar el valor actual del registro antes de la modificación
+    if (reg_info.tamano == sizeof(uint8_t)) {
+        *(uint8_t*)reg_info.direccion = (uint8_t)nuevo_valor; // Asigna el nuevo valor
+    } else if (reg_info.tamano == sizeof(uint32_t)) {
+        *(uint32_t*)reg_info.direccion = nuevo_valor; // Asigna el nuevo valor
+    }
 }
+
 
 static void _sum(t_instruccion* instruccion){
     char *registro_destino = list_get(instruccion->parametros, 0);
     char *registro_origen = list_get(instruccion->parametros, 1);
+    info_registro_cpu registro_des_info = _get_direccion_registro(registro_destino);
+    info_registro_cpu registro_ori_info = _get_direccion_registro(registro_origen);
 
-    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
-    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // dreccion del registro origen
-    
-    uint8_t aux = *registro_des + *registro_ori;
-    
-    *registro_des = aux;	
+    // Tratar todo como uint8_t para simplificar
+    uint8_t valor_destino = *(uint8_t*)registro_des_info.direccion;
+    uint8_t valor_origen = *(uint8_t*)registro_ori_info.direccion;
+
+    uint8_t resultado = valor_destino + valor_origen; // Suma como uint8_t
+
+    // Asignar el resultado al registro de destino
+    if (registro_des_info.tamano == sizeof(uint32_t)) {
+        *(uint32_t*)registro_des_info.direccion = resultado; // Promoción automática a uint32_t
+    } else {
+        *(uint8_t*)registro_des_info.direccion = resultado;
+    }
 }
 
 static void _sub(t_instruccion* instruccion){
     char *registro_destino = list_get(instruccion->parametros, 0);
-    char *registro_origen = list_get(instruccion->parametros, 1);    
-    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
-    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // direccion del registro origen    
-    uint8_t aux = *registro_des - *registro_ori;    
-    *registro_des = aux;
+    char *registro_origen = list_get(instruccion->parametros, 1);
+    info_registro_cpu registro_des_info = _get_direccion_registro(registro_destino);
+    info_registro_cpu registro_ori_info = _get_direccion_registro(registro_origen);
+    // Tratar todo como uint8_t para simplificar
+    uint8_t valor_destino = *(uint8_t*)registro_des_info.direccion;
+    uint8_t valor_origen = *(uint8_t*)registro_ori_info.direccion;
+    uint8_t resultado = valor_destino - valor_origen; // Resta como uint8_t
+    // Asignar el resultado al registro de destino
+    if (registro_des_info.tamano == sizeof(uint32_t)) {
+        *(uint32_t*)registro_des_info.direccion = resultado; // Promoción automática a uint32_t
+    } else {
+        *(uint8_t*)registro_des_info.direccion = resultado;
+    }			 
 }
 
 static void _jnz(t_instruccion* instruccion){
-	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
-	if(*dir_registro != 0){
-		contexto_cpu->program_counter = atoi(list_get(instruccion->parametros, 1));
-	}
+    char* registro_nombre = (char*)list_get(instruccion->parametros, 0);  // Asumiendo que esto devuelve un nombre de registro en forma de cadena
+    info_registro_cpu dir_registro_info = _get_direccion_registro(registro_nombre);
+    uint32_t registro_valor = *(uint32_t*)dir_registro_info.direccion;
+    if (registro_valor != 0) {
+        uint32_t nueva_pc = atoi(list_get(instruccion->parametros, 1));
+        contexto_cpu->program_counter = nueva_pc;
+        contexto_cpu->registros_cpu.PC = nueva_pc;
+    }
 }
 
 
