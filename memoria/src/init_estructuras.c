@@ -58,19 +58,20 @@ static void eliminar_espacio_de_usuario()
 * agregar #include <math.h> donde corresponda
 * 
 */
-static void iniciar_tabla_de_pagina(int size_proceso, t_proceso* proceso)
+static void iniciar_tabla_de_pagina(t_proceso* proceso)
 {
+    log_protegido_mem("Inicializando tabla de pagina");
     int tam_pagina = TAM_PAGINA; 
     // int cant_paginas = ceil((size_proceso/tam_pagina)); //TODO: ver que onda con cant_paginas
     int cant_paginas = TAM_MEMORIA/tam_pagina;
 
-    proceso->tabla_de_paginas = list_create();
+    // proceso->tabla_de_paginas = list_create(); => se inicializa en crear_proceso
 
     for(int i = 0; i < cant_paginas; i++)
     {
         t_tabla_pagina* tdp = malloc(sizeof(t_tabla_pagina));
         tdp->marco = 0; 
-        tdp->modificado = 0; 
+        tdp->modificado = 0;
         tdp->presencia = 0;
 
         list_add(proceso->tabla_de_paginas, tdp);
