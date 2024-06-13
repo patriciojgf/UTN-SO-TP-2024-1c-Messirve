@@ -1,5 +1,7 @@
 #include <consola.h>
 
+static void ejecutar_script(const char* path);
+
 static void listar_los_pid_por_lista(){
     log_info(logger_kernel, "!------------------------!");
     log_info(logger_kernel, "Listado de PID por ESTADO");
@@ -18,6 +20,8 @@ static void listar_los_pid_por_lista(){
     log_info(logger_kernel, "EXIT: %s", listado_pids(lista_plan_exit));
     log_info(logger_kernel, "!------------------------!");
 }
+
+
 
 static void _detener_planificacion(){
     if(planificacion_detenida == 1){
@@ -104,6 +108,11 @@ static void _ejecutar_comando_validado(char* leido) {
     }
     // Evaluar en el SWITCH CASE
     switch (instruccion->cod_identificador) {
+        case EJECUTAR_SCRIPT:{
+            ejecutar_script(comando_consola[1]);
+            break;
+    break;
+        }
         case INICIAR_PROCESO: {
             t_pcb* pcb_inicializado = crear_pcb(comando_consola[1]);
             log_info(logger_kernel, "El id del pcb es: %d", pcb_inicializado->pid);
@@ -183,4 +192,34 @@ void cambiar_multiprogramacion(int nuevo_grado_mult)
     }
     GRADO_MULTIPROGRAMACION = nuevo_grado_mult;
     pthread_mutex_unlock(&mutex_grado_multiprogramacion);  // Liberar el mutex
+}
+
+static void ejecutar_script(const char* path) {
+    FILE* archivo = fopen(path, "r");
+    if (!archivo) {
+        log_error(logger_kernel, "No se pudo abrir el archivo de script: %s", path);
+        return;
+    }
+
+    char* linea = NULL;
+    size_t longitud = 0;
+    ssize_t leido;
+
+    while ((leido = getline(&linea, &longitud, archivo)) != -1) {
+        // Elimina el salto de línea al final de la línea leída
+        if (linea[leido - 1] == '\n') {
+            linea[leido - 1] = '\0';
+        }
+        
+        // Procesa la línea como si fuera un comando ingresado en la consola
+        if (_check_instruccion(linea)) {
+            _ejecutar_comando_validado(linea);
+        } else {
+            printf("Comando inválido o incorrecto en el script\n");
+        }
+        sleep(1);
+    }
+
+    free(linea); // Liberar la línea leída
+    fclose(archivo); // Cerrar el archivo
 }
