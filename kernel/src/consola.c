@@ -1,5 +1,24 @@
 #include <consola.h>
 
+static void listar_los_pid_por_lista(){
+    log_info(logger_kernel, "!------------------------!");
+    log_info(logger_kernel, "Listado de PID por ESTADO");
+    log_info(logger_kernel, "NEW: %s", listado_pids(lista_plan_new));
+    log_info(logger_kernel, "READY: %s", listado_pids(lista_plan_ready));
+    if(ALGORITMO_PLANIFICACION==VRR){
+        log_info(logger_kernel, "READY Prioridad: %s", listado_pids(lista_plan_ready_vrr));
+    }
+    if(proceso_exec==NULL){
+        log_info(logger_kernel, "EXEC: []");
+    }
+    else{
+        log_info(logger_kernel, "EXEC: [%d]", proceso_exec->pid);
+    }    
+    log_info(logger_kernel, "BLOCKED: %s", listado_pids(lista_plan_blocked));
+    log_info(logger_kernel, "EXIT: %s", listado_pids(lista_plan_exit));
+    log_info(logger_kernel, "!------------------------!");
+}
+
 static void _detener_planificacion(){
     if(planificacion_detenida == 1){
         log_info(logger_kernel, "DETENER_PLANIFICACION ya se encuentra activo");
@@ -110,15 +129,16 @@ static void _ejecutar_comando_validado(char* leido) {
             break;
         case MULTIPROGRAMACION: {
             int nuevo_grado_mult = atoi(comando_consola[1]);
-            int grado_multiprogramacion_viejo = GRADO_MULTIPROGRAMACION;
+            // int grado_multiprogramacion_viejo = GRADO_MULTIPROGRAMACION;
             cambiar_multiprogramacion(nuevo_grado_mult);
             //log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo, nuevo_grado_mult));
             // log_info(logger_kernel, "Proximamente hace su magia...");
             break;
         }
-        case PROCESO_ESTADO:
-            // public_imprimir_procesos_por_estado_v1();
-            // break;
+        case PROCESO_ESTADO:{
+            listar_los_pid_por_lista();    
+            break;
+        }
         default:
             log_warning(logger_kernel, "Operación no soportada.");
             break;
@@ -130,7 +150,6 @@ static void _ejecutar_comando_validado(char* leido) {
 void procesar_comandos_consola() {
     // Leer el primer comando.
     char* leido = readline("> ");
-
     // Continuar leyendo mientras la línea no esté vacía.
     while (leido != NULL && strcmp(leido, "") != 0) {
         // Validar y procesar el comando si es válido.
@@ -140,12 +159,10 @@ void procesar_comandos_consola() {
         } else {
             printf("Comando inválido o incorrecto\n");
         }
-
         // Liberar la memoria asignada a la línea leída y leer la siguiente.
         free(leido);
         leido = readline("> ");
     }
-
     // Liberar la última lectura si es nula o vacía.
     if (leido) {
         free(leido);
@@ -154,20 +171,16 @@ void procesar_comandos_consola() {
 
 void cambiar_multiprogramacion(int nuevo_grado_mult)
 {
-    if(nuevo_grado_mult < GRADO_MULTIPROGRAMACION)
-    {
-        for(int i = nuevo_grado_mult; i < GRADO_MULTIPROGRAMACION; i++)
-        {
-            sem_wait(&m_multiprogramacion); 
+    pthread_mutex_lock(&mutex_grado_multiprogramacion);  // Asegurar acceso atómico a GRADO_MULTIPROGRAMACION
+    if (nuevo_grado_mult < GRADO_MULTIPROGRAMACION) {
+        for (int i = GRADO_MULTIPROGRAMACION; i > nuevo_grado_mult; i--) {
+            sem_wait(&sem_multiprogramacion);  // Reducir la capacidad permitida de multiprogramación
+        }
+    } else if (nuevo_grado_mult > GRADO_MULTIPROGRAMACION) {
+        for (int i = GRADO_MULTIPROGRAMACION; i < nuevo_grado_mult; i++) {
+            sem_post(&sem_multiprogramacion);  // Aumentar la capacidad permitida de multiprogramación
         }
     }
-    else
-    {
-        for(int i = nuevo_grado_mult; i > GRADO_MULTIPROGRAMACION; i++)
-        {
-            sem_post(&m_multiprogramacion); 
-        }
-    }
-
     GRADO_MULTIPROGRAMACION = nuevo_grado_mult;
+    pthread_mutex_unlock(&mutex_grado_multiprogramacion);  // Liberar el mutex
 }

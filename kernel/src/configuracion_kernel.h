@@ -1,11 +1,11 @@
 #ifndef CONFIG_KERNEL_H
 #define CONFIG_KERNEL_H
+#include <utils/conexiones.h>
+#include <utils/logconfig.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <utils/logconfig.h>
-#include <utils/conexiones.h>
 #include <semaphore.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -33,16 +33,6 @@ typedef struct
     t_codigo_consola cod_identificador; //identificador de la instruccion
     int cantidad_parametros; //cantidad de parametros que tiene la instruccion
 } t_instruccion_consola;
-
-// //---- Estructura para guardar informacion sobre la interfaz ----//
-// typedef struct{
-//     int socket;
-//     char* tipo_io;
-//     char* nombre_io;
-//     t_list* cola_procesos; // Lista para encolar procesos que esperan IO_GEN_SLEEP
-// 	pthread_mutex_t mutex_cola_block;
-//     sem_t semaforo;// Semaforo para controlar el acceso a la cola de procesos
-// } t_interfaz;
 
 extern int conexiones;
 
@@ -75,8 +65,7 @@ extern t_log* logger_kernel; //main.h
 extern t_config* config_kernel; //main.h
 
 //semaforos
-extern sem_t mlog; //main.h
-extern sem_t m_multiprogramacion;
+extern sem_t sem_multiprogramacion;
 extern sem_t s_init_proceso_a_memoria; //se crearon las estructuras de memoria
 extern sem_t s_memoria_liberada_pcb; //se liberaron las estructuras de memoria 
 
@@ -90,6 +79,7 @@ extern sem_t s_conexion_interfaz; //para la primer interfaz
 extern sem_t sem_pcb_desalojado;
 extern sem_t sem_plan_exec_libre;
 extern sem_t sem_plan_ready;
+extern sem_t sem_plan_new;
 extern sem_t sem_planificacion_activa;
 
 //mutex
@@ -103,6 +93,7 @@ extern pthread_mutex_t mutex_plan_blocked;
 extern pthread_mutex_t mutex_plan_exit;
 extern pthread_mutex_t mutex_procesos_planificados; 
 extern pthread_mutex_t mutex_detener_planificacion;
+extern pthread_mutex_t mutex_grado_multiprogramacion;
 //pcb
 extern pthread_mutex_t mutex_pid_proceso;
 //recursos

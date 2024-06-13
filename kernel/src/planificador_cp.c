@@ -8,6 +8,23 @@ static void _quantum_wait(t_pcb* pcb);
 
 /*------------------------------------------------------------------------------------------------------*/
 
+char* estado_string(t_estado estado) {
+    switch (estado) {
+        case estado_NEW:
+            return "NEW";
+        case estado_READY:
+            return "READY";
+        case estado_EXEC:
+            return "EXEC";
+        case estado_BLOCKED:
+            return "BLOCKED";
+        case estado_EXIT:
+            return "EXIT";
+        default:
+            return "UNKNOWN";
+    }
+}
+
 void check_detener_planificador(){
     pthread_mutex_lock(&mutex_detener_planificacion);
     if(planificacion_detenida == 1){
@@ -19,6 +36,7 @@ void check_detener_planificador(){
 
 
 void planificador_cp(){
+    proceso_exec = NULL;
     //log_protegido_kernel(string_from_format("[planificador_cp]"));
     while(1){
         sem_wait(&sem_plan_ready);
@@ -56,7 +74,10 @@ void planificador_cp(){
                 if(pcb_ready != NULL){
                     pcb_ready->estado_anterior = pcb_ready->estado_actual;
                     pcb_ready->estado_actual = estado_EXEC;
+                    
                     proceso_exec = pcb_ready;
+                    //Log obligatorio
+                    log_info(logger_kernel, "Cambio de Estado: PID: %d - Estado Anterior: %s - Estado Actual: %s", proceso_exec->pid, estado_string(proceso_exec->estado_anterior), estado_string(proceso_exec->estado_actual));
                     enviar_contexto_dispatch(proceso_exec); //envio el pcb a CPU
                     if(ALGORITMO_PLANIFICACION==RR){
                         _esperar_liberar_quantum(proceso_exec);
@@ -80,34 +101,6 @@ void planificador_cp(){
         //log_protegido_kernel(string_from_format("[planificador_cp] desbloqueo mutex_plan_exec"));
         pthread_mutex_unlock(&mutex_plan_exec); //bloqueo el acceso al proceso_exec hasta que quede planificado el nuevo
     }
-}
-
-void desbloquar_proceso(int pid){
-    //log_protegido_kernel(string_from_format("[desbloquar_proceso] - PID %d", pid));
-    pthread_mutex_lock(&mutex_plan_blocked);
-
-    t_pcb* pcb_desbloqueado = buscar_pcb_por_pid(pid, lista_plan_blocked);    
-    if(pcb_desbloqueado != NULL){
-        //log_protegido_kernel(string_from_format("Desbloqueo - PID %d con PC %d", pcb_desbloqueado->pid, pcb_desbloqueado->program_counter));
-        pcb_desbloqueado->estado_anterior = pcb_desbloqueado->estado_actual;
-        pcb_desbloqueado->estado_actual = estado_READY;
-        list_remove_element(lista_plan_blocked, pcb_desbloqueado);
-
-        pthread_mutex_lock(&mutex_plan_ready);
-        list_add(lista_plan_ready, pcb_desbloqueado);
-        pthread_mutex_unlock(&mutex_plan_ready);
-        sem_post(&sem_plan_ready);
-
-        pthread_mutex_unlock(&mutex_plan_blocked);
-
-        //planificador_cp();
-        //sem_post(&sem_plan_exec_libre); //activo el planificador de corto plazo
-    }
-    else{
-        pthread_mutex_unlock(&mutex_plan_blocked);
-        log_warning(logger_kernel, "No se encontro el proceso a desbloquear");
-    }
-
 }
 
 

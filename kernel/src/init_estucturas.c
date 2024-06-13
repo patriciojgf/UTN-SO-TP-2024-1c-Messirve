@@ -67,8 +67,7 @@ static void init_listas_planificacion(){
 }
 
 static void init_semaforos(){
-    sem_init(&mlog,0,1);
-    sem_init(&m_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
+    sem_init(&sem_multiprogramacion, 0, GRADO_MULTIPROGRAMACION);
     sem_init(&s_init_proceso_a_memoria,0,0);
     sem_init(&s_conexion_memoria_ok,0,0);
     sem_init(&s_conexion_cpu_d_ok,0,0);
@@ -76,6 +75,7 @@ static void init_semaforos(){
     sem_init(&sem_pcb_desalojado,0,0);
     sem_init(&sem_plan_exec_libre,0,1);
     sem_init(&sem_plan_ready,0,0);
+    sem_init(&sem_plan_new,0,0);
     sem_init(&sem_planificacion_activa,0,0);
 }
 
@@ -91,7 +91,8 @@ static void init_pthread_mutex(){
     pthread_mutex_init(&mutex_pid_proceso,NULL);
     pthread_mutex_init(&mutex_lista_interfaz,NULL);
     pthread_mutex_init(&mutex_id_ejecucion,NULL);  
-    pthread_mutex_init(&mutex_lista_recursos,NULL);  
+    pthread_mutex_init(&mutex_lista_recursos,NULL);
+    pthread_mutex_init(&mutex_grado_multiprogramacion,NULL); 
 }
 
 static void init_recursos(){
@@ -131,6 +132,7 @@ static void init_instrucciones_consola(){
     agrego_instruccion_permitida(lista_instrucciones_permitidas,"DETENER_PLANIFICACION",DETENER_PLANIFICACION,0);
     agrego_instruccion_permitida(lista_instrucciones_permitidas,"INICIAR_PLANIFICACION",INICIAR_PLANIFICACION,0);
     agrego_instruccion_permitida(lista_instrucciones_permitidas,"MULTIPROGRAMACION",MULTIPROGRAMACION,1);
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"PROCESO_ESTADO",PROCESO_ESTADO,0);
 }
 
 void init_kernel(char* path_config){
@@ -143,10 +145,3 @@ void init_kernel(char* path_config){
     init_variables_globales();
     init_instrucciones_consola();
 }
-
-// void log_protegido_kernel(char* mensaje)
-// {
-// 	sem_wait(&mlog);
-// 	log_info(logger_kernel, "%s", mensaje);
-// 	sem_post(&mlog);
-// }

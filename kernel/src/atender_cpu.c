@@ -5,35 +5,30 @@ static t_interfaz* _obtener_interfaz(char* nombre);
 
 /*---------------------------------------------------------*/
 void atender_cpu_exit(t_pcb* pcb, char* motivo_exit){
-
-    log_info(logger_kernel, "[CPU EXIT] PID <%d> Motivo <%s>", pcb->pid, motivo_exit);            
-    //verifico si la planificacion esta activa.
+ 
     check_detener_planificador();   
+    
+    mover_proceso_a_exit(pcb);
+    //log obligatorio
+    log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->pid, motivo_exit);  
     
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
-    //sem_post(&sem_pcb_desalojado);
     sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
 
-    liberar_recursos_pcb(pcb);
-    liberar_estructuras_memoria(pcb);
+    // liberar_recursos_pcb(pcb);
+    // liberar_estructuras_memoria(pcb);
 
-    pthread_mutex_lock(&mutex_plan_exit);
-    list_add(lista_plan_exit, pcb);
-    pthread_mutex_unlock(&mutex_plan_exit);
+    // pthread_mutex_lock(&mutex_plan_exit);
+    // list_add(lista_plan_exit, pcb);
+    // pthread_mutex_unlock(&mutex_plan_exit);
     
-    pthread_mutex_lock(&mutex_procesos_planificados);
-    cantidad_procesos_planificados--;
-    pthread_mutex_unlock(&mutex_procesos_planificados);
-
-    pthread_t hilo_plp; 
-    pthread_create(&hilo_plp, NULL, (void*)planificador_lp_new_ready, NULL);
-    pthread_detach(hilo_plp);
+    // sem_post(&sem_multiprogramacion);
 }
 
 void atender_cpu_int_signal(t_pcb* pcb){
-    atender_cpu_exit(pcb, string_from_format("Recurso no encontrado"));
+    atender_cpu_exit(pcb, string_from_format("INVALID_RESOURCE"));
 }
 
 void atender_cpu_signal(t_pcb* pcb, t_recurso* recurso){
@@ -42,24 +37,23 @@ void atender_cpu_signal(t_pcb* pcb, t_recurso* recurso){
     // log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s>", pcb->pid, recurso->nombre);    
     if (recurso != NULL) {
         // pthread_mutex_lock(&mutex_plan_exec);
-        log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> INSTANCIAS <%d>", pcb->pid, recurso->nombre, recurso->instancias);
         pthread_mutex_lock(&recurso->mutex_bloqueados);
         recurso->instancias++;
         if (recurso->instancias <= 0 && list_size(recurso->l_bloqueados) > 0) {
-            log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> DESBLOQUEANDO", pcb->pid, recurso->nombre);
             // Asigno el recurso al pcb
             t_pcb* pcb_desbloqueado = list_remove(recurso->l_bloqueados, 0);
             list_add(pcb_desbloqueado->recursos_asignados, recurso);
 
-            // Mover el PCB desbloqueado a la lista de listos (READY)
-            log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> DESBLOQUEADO", pcb->pid, recurso->nombre);
-            pthread_mutex_lock(&mutex_plan_ready);
-            list_add(lista_plan_ready, pcb_desbloqueado);
-            pthread_mutex_unlock(&mutex_plan_ready);
-            log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> DESBLOQUEADO", pcb->pid, recurso->nombre);
-            sem_post(&sem_plan_ready);
+            pthread_mutex_lock(&mutex_plan_blocked);
+            list_remove_element(lista_plan_blocked, pcb_desbloqueado);
+            pthread_mutex_unlock(&mutex_plan_blocked);
 
-            log_info(logger_kernel, "[ATENDER CPU SIGNAL] <PROCESO DESBLOQUEADO> PID <%d> por SIGNAL en recurso <%s>", pcb_desbloqueado->pid, recurso->nombre);
+            // Mover el PCB desbloqueado a la lista de listos (READY)
+            // pthread_mutex_lock(&mutex_plan_ready);
+            // list_add(lista_plan_ready, pcb_desbloqueado);
+            // pthread_mutex_unlock(&mutex_plan_ready);
+            // sem_post(&sem_plan_ready);
+            mover_proceso_a_ready(pcb_desbloqueado);
         }
         else{
             log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> NO DESBLOQUEANDO", pcb->pid, recurso->nombre);
@@ -98,28 +92,24 @@ void atender_cpu_wait(t_pcb* pcb, t_instruccion* instruccion){
         recurso_encontrado->instancias--;
         if(recurso_encontrado->instancias < 0){// recurso sin instancias 
             //agrego el pcb a los bloqueados de ese recurso
-            log_info(logger_kernel, "[ATENDER CPU WAIT] lock mutex_bloqueados");
             pthread_mutex_lock(&recurso_encontrado->mutex_bloqueados);
             list_add(recurso_encontrado->l_bloqueados, pcb);
             pthread_mutex_unlock(&recurso_encontrado->mutex_bloqueados);
-            log_info(logger_kernel, "[ATENDER CPU WAIT] unlock mutex_bloqueados");
 
             //agrego el pcb a la lista general de bloqueados
 
-            log_info(logger_kernel, "[ATENDER CPU WAIT] lock mutex_plan_blocked");
-            pthread_mutex_lock(&mutex_plan_blocked);
-            list_add(lista_plan_blocked, pcb);
-            pthread_mutex_unlock(&mutex_plan_blocked);
-            log_info(logger_kernel, "[ATENDER CPU WAIT] unlock mutex_plan_blocked");
+            // pthread_mutex_lock(&mutex_plan_blocked);
+            // list_add(lista_plan_blocked, pcb);
+            // pthread_mutex_unlock(&mutex_plan_blocked);
+            // pcb->estado_anterior = pcb->estado_actual
+            // pcb->estado_actual = estado_BLOCKED;
+            mover_proceso_a_blocked(pcb, recurso_encontrado->nombre);
 
             //libero el cupo para planificar 
-            log_info(logger_kernel, "[ATENDER CPU WAIT] lock mutex_plan_exec");
             pthread_mutex_lock(&mutex_plan_exec);
             proceso_exec = NULL;
             pthread_mutex_unlock(&mutex_plan_exec);
-            log_info(logger_kernel, "[ATENDER CPU WAIT] unlock mutex_plan_exec");
             sem_post(&sem_plan_exec_libre);
-            log_info(logger_kernel, "[ATENDER CPU WAIT] PID <%d> Recurso <%s> SIN INSTANCIAS", pcb->pid, nombre_recurso_wait);
 
         }
         else{// recurso existente y con instancias disponibles
@@ -128,10 +118,11 @@ void atender_cpu_wait(t_pcb* pcb, t_instruccion* instruccion){
             list_add(proceso_exec->recursos_asignados, recurso_encontrado);
             
             //muevo el proceso a ready
-            pthread_mutex_lock(&mutex_plan_ready);
-            list_add(lista_plan_ready, pcb);
-            pthread_mutex_unlock(&mutex_plan_ready);
-            sem_post(&sem_plan_ready);          
+            // pthread_mutex_lock(&mutex_plan_ready);
+            // list_add(lista_plan_ready, pcb);
+            // pthread_mutex_unlock(&mutex_plan_ready);
+            // sem_post(&sem_plan_ready);   
+            mover_proceso_a_ready(pcb);       
 
             //libero el espacio para ejecutar
             pthread_mutex_lock(&mutex_plan_exec);
@@ -143,25 +134,21 @@ void atender_cpu_wait(t_pcb* pcb, t_instruccion* instruccion){
         }
     }
     else{
-        atender_cpu_exit(pcb, string_from_format("Recurso %s no encontrado", nombre_recurso_wait));
+        atender_cpu_exit(pcb, "INVALID_RESOURCE");
     }
 }
 
 void atender_cpu_fin_quantum(t_pcb* pcb){
-    //log_protegido_kernel(string_from_format("[atender_cpu_fin_quantum]: pid: %d", pcb->pid));
+    // pthread_mutex_lock(&mutex_plan_ready);
+    // list_add(lista_plan_ready, pcb);
+    // pthread_mutex_unlock(&mutex_plan_ready);
+    // sem_post(&sem_plan_ready);
+    mover_proceso_a_ready(pcb);
+
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
-    //log_protegido_kernel(string_from_format("[atender_cpu_fin_quantum]: mutex_plan_exec"));
-    //sem_post(&sem_pcb_desalojado);
     sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
-
-    pthread_mutex_lock(&mutex_plan_ready);
-    list_add(lista_plan_ready, pcb);
-    pthread_mutex_unlock(&mutex_plan_ready);
-    //log_protegido_kernel(string_from_format("[atender_cpu_fin_quantum]: mutex_plan_ready"));
-    sem_post(&sem_plan_ready);
-
 }
 
 void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
@@ -175,9 +162,11 @@ void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
         pedido->pcb = pcb;
         pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
         sem_init(&pedido->semaforo_pedido_ok,0,0);
-        pthread_mutex_lock(&mutex_plan_blocked);
-        list_add(lista_plan_blocked, pcb);
-        pthread_mutex_unlock(&mutex_plan_blocked);
+
+        // pthread_mutex_lock(&mutex_plan_blocked);
+        // list_add(lista_plan_blocked, pcb);
+        // pthread_mutex_unlock(&mutex_plan_blocked);
+        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
 
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
@@ -251,73 +240,6 @@ static t_interfaz* _obtener_interfaz(char* nombre){
 /*--------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------*/
 /*AUXILIARES INTERFAZ - FIN*/
-/*--------------------------------------------------------------------------------------------------*/
-/*--------------------------------------------------------------------------------------------------*/
-
-
-/*--------------------------------------------------------------------------------------------------*/
-/*--------------------------------------------------------------------------------------------------*/
-/* AUXILIARES RECURSOS */
-/*--------------------------------------------------------------------------------------------------*/
-/*--------------------------------------------------------------------------------------------------*/
-t_recurso* obtener_recurso(char* recurso){
-    pthread_mutex_lock(&mutex_lista_recursos);
-	for(int i = 0; i<list_size(lista_recursos); i++){
-		t_recurso* recurso_encontrado = list_get(lista_recursos,i);
-		if(strcmp(recurso, recurso_encontrado->nombre) == 0){
-            pthread_mutex_unlock(&mutex_lista_recursos);
-			return recurso_encontrado;
-		}
-	}
-    pthread_mutex_unlock(&mutex_lista_recursos);
-	return NULL;
-}
-
-void liberar_estructuras_memoria(t_pcb* pcb){
-    //verifico si la planificacion esta activa.
-    check_detener_planificador();   
-
-    // Envio peticion a memoria para liberar las estructuras de un proceso.
-    t_paquete* paquete = crear_paquete(LIBERAR_ESTRUCTURAS_MEMORIA);
-    agregar_datos_sin_tamaño_a_paquete(paquete, &pcb->pid, sizeof(int));
-    enviar_paquete(paquete, socket_memoria);
-    eliminar_paquete(paquete);
-    sem_wait(&s_memoria_liberada_pcb);
-}
-
-void liberar_recursos_pcb(t_pcb* pcb){    
-    //verifico si la planificacion esta activa.
-    check_detener_planificador();   
-    // Liberar cualquier recurso que realmente haya sido asignado al PCB.
-    while (!list_is_empty(pcb->recursos_asignados)) {
-        t_recurso* recurso_asignado = list_remove(pcb->recursos_asignados, 0);
-        atender_cpu_signal(pcb, recurso_asignado); 
-    }
-    list_destroy(pcb->recursos_asignados);
-    pcb->recursos_asignados = NULL; // Asegurar que la referencia en el PCB no apunte a una lista ya destruida.
-
-
-    // Quita el PCB de la lista de bloqueados de cada recurso.
-    pthread_mutex_lock(&mutex_lista_recursos);
-    for (int i = 0; i < list_size(lista_recursos); i++) {
-        t_recurso* recurso = list_get(lista_recursos, i);
-        
-        // Si el pcb esta en la lista de bloqueados del recurso, se quita y se suma instancia disponible.
-        pthread_mutex_lock(&recurso->mutex_bloqueados);
-        if (list_remove_element(recurso->l_bloqueados, pcb)) {
-            pthread_mutex_unlock(&recurso->mutex_bloqueados);
-            // atender_cpu_signal(pcb, recurso);
-            recurso->instancias++;            
-        }
-        else{
-            pthread_mutex_unlock(&recurso->mutex_bloqueados);
-        }
-    }
-    pthread_mutex_unlock(&mutex_lista_recursos);
-}
-/*--------------------------------------------------------------------------------------------------*/
-/*--------------------------------------------------------------------------------------------------*/
-/* AUXILIARES FIN */
 /*--------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------*/
 

@@ -1,63 +1,136 @@
 #include "planificador_lp.h"
 
-void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb){
-    log_warning(logger_kernel, "planificador_lp_nuevo_proceso");
-    if(nuevo_pcb != NULL){
-        //Agrego PCB a NEW
+/*-------------------------------------------*/
+//Nuevo planificador
 
-        pthread_mutex_lock(&mutex_plan_new);
-        log_warning(logger_kernel, "la cantidad de elemenos en lista_plan_new es %d", list_size(lista_plan_new));
-        list_add(lista_plan_new, nuevo_pcb);
-        pthread_mutex_unlock(&mutex_plan_new);
+// Función para mover PCB a READY
+// Se usa en el planificador LP y cuando los procesos se desbloqueen
+void mover_proceso_a_ready(t_pcb* pcb) {
+        pcb->estado_anterior = pcb->estado_actual;
+        pcb->estado_actual = estado_READY;
+        
+        //Log obligatorio
+        log_info(logger_kernel, "Cambio de Estado: PID: %d - Estado Anterior: %s - Estado Actual: %s", pcb->pid, estado_string(pcb->estado_anterior), estado_string(pcb->estado_actual));
+        
 
-        log_warning(logger_kernel, "lista_plan_new");
-		nuevo_pcb->estado_actual = estado_NEW;
-        log_warning(logger_kernel, "estado_actual");
-        log_warning(logger_kernel, "mutex_plan_new");
-		
-        log_info(logger_kernel, "Se crea el proceso %d en NEW", nuevo_pcb->pid);
-    }
-    pthread_t hilo_planificador; //ver si esta bien aca
-    pthread_create(&hilo_planificador, NULL, (void*)planificador_lp_new_ready, NULL);
-    pthread_detach(hilo_planificador);
+        pthread_mutex_lock(&mutex_plan_ready);  
+        pthread_mutex_lock(&mutex_plan_ready_vrr);
+
+        //valido si estamos en VRR
+        if (ALGORITMO_PLANIFICACION==VRR && pcb->quantum < QUANTUM) {
+            list_add(lista_plan_ready_vrr, pcb);
+            log_info(logger_kernel,"Cola Ready Prioridad: %s", listado_pids(lista_plan_ready_vrr));
+        }
+        else{ 
+            list_add(lista_plan_ready, pcb);
+            log_info(logger_kernel,"Cola Ready: %s", listado_pids(lista_plan_ready));
+        }
+        // cantidad_procesos_planificados++;  // Incrementar contador de procesos planificados
+        sem_post(&sem_plan_ready);
+
+        pthread_mutex_unlock(&mutex_plan_ready_vrr);       
+        pthread_mutex_unlock(&mutex_plan_ready);
+        
 }
 
-void planificador_lp_new_ready(){
+void mover_proceso_a_exit(t_pcb* pcb){
+    liberar_recursos_pcb(pcb);
+    liberar_estructuras_memoria(pcb);
 
-    //verifico si la planificacion esta activa.
-    check_detener_planificador();   
+    pcb->estado_anterior = pcb->estado_actual;
+    pcb->estado_actual = estado_EXIT;
+    log_info(logger_kernel, "Cambio de Estado: PID: %d - Estado Anterior: %s - Estado Actual: %s", pcb->pid, estado_string(pcb->estado_anterior), estado_string(pcb->estado_actual));
         
-    log_warning(logger_kernel, "planificador_lp_new_ready");
-    t_pcb* pcb_en_new = NULL;
+    pthread_mutex_lock(&mutex_plan_exit);
+    list_add(lista_plan_exit, pcb);
+    pthread_mutex_unlock(&mutex_plan_exit);
+    
+    sem_post(&sem_multiprogramacion);
+}
 
-    pthread_mutex_lock(&mutex_procesos_planificados); //cantidad de procesos en el circuito
-    pthread_mutex_lock(&mutex_plan_new); //mutex para lista NEW
-    if(GRADO_MULTIPROGRAMACION > cantidad_procesos_planificados && !list_is_empty(lista_plan_new)){        
-        pcb_en_new = list_remove(lista_plan_new, 0); //Busco el primer proceso en NEW por FIFO
+void mover_proceso_a_blocked(t_pcb* pcb, char* motivo){
+    pcb->estado_anterior = pcb->estado_actual;
+    pcb->estado_actual = estado_BLOCKED;
+    pthread_mutex_lock(&mutex_plan_blocked);
+    list_add(lista_plan_blocked, pcb);
 
-        if(pcb_en_new != NULL){
-            //Agregar el pedido de inicializar, y esperar respuesta de memoria
-            log_warning(logger_kernel, "Agregar envio de proceso a memoria para inicializar estructuras");
-            enviar_proceso_a_memoria(pcb_en_new, pcb_en_new->path);
-            sem_wait(&s_init_proceso_a_memoria);
-            log_warning(logger_kernel, "Me llego el semaforo s_init_proceso_a_memoria");
-            //Agrego PCB a READY
-            pthread_mutex_lock(&mutex_plan_ready);
-            //cambio estado a READY
-            //pcb_en_new->estado = READY;
-            list_add(lista_plan_ready, pcb_en_new);
-            log_info(logger_kernel, "Se mueve el proceso %d de NEW a READY", pcb_en_new->pid);
-            cantidad_procesos_planificados++; //Aumento la cantidad de procesos en el circuito
-            sem_post(&sem_plan_ready);
-            pthread_mutex_unlock(&mutex_plan_ready);
-        }
+    //Log obligatorio
+    log_info(logger_kernel, "PID: <%d> - Bloqueado por: <%s>", pcb->pid, motivo);
+
+    //Log obligatorio
+    log_info(logger_kernel, "Cambio de Estado: PID: %d - Estado Anterior: %s - Estado Actual: %s", pcb->pid, estado_string(pcb->estado_anterior), estado_string(pcb->estado_actual));
+    
+    pthread_mutex_unlock(&mutex_plan_blocked);
+}
+
+
+void desbloquar_proceso(int pid){
+    pthread_mutex_lock(&mutex_plan_blocked);
+    t_pcb* pcb_desbloqueado = buscar_pcb_por_pid(pid, lista_plan_blocked);    
+    if(pcb_desbloqueado != NULL){
+        // pcb_desbloqueado->estado_anterior = pcb_desbloqueado->estado_actual;
+        // pcb_desbloqueado->estado_actual = estado_READY;
+        list_remove_element(lista_plan_blocked, pcb_desbloqueado);
+        mover_proceso_a_ready(pcb_desbloqueado);
+        // pthread_mutex_lock(&mutex_plan_ready);
+        // list_add(lista_plan_ready, pcb_desbloqueado);
+        // pthread_mutex_unlock(&mutex_plan_ready);
+        // sem_post(&sem_plan_ready);
+
+        pthread_mutex_unlock(&mutex_plan_blocked);
+
+        //planificador_cp();
+        //sem_post(&sem_plan_exec_libre); //activo el planificador de corto plazo
     }
-    pthread_mutex_unlock(&mutex_plan_new);
-    pthread_mutex_unlock(&mutex_procesos_planificados);
+    else{
+        pthread_mutex_unlock(&mutex_plan_blocked);
+        log_warning(logger_kernel, "No se encontro el proceso a desbloquear");
+    }
 
-    pthread_t hilo_planificador_cp; //ver si esta bien aca
-    pthread_create(&hilo_planificador_cp, NULL, (void*)planificador_cp, NULL);
-    pthread_detach(hilo_planificador_cp);
+}
+
+void planificador_lp_new_ready() {
+    while (1) {
+        sem_wait(&sem_plan_new);            // Esperar a que haya nuevos procesos en la cola NEW.
+        sem_wait(&sem_multiprogramacion);   // Esperar a que haya capacidad bajo el límite de multiprogramación.
+        check_detener_planificador();       // Verificar si la planificación debe pausarse.
+        log_warning(logger_kernel, "planificador_lp_new_ready");
+
+        // pthread_mutex_lock(&mutex_procesos_planificados); // Bloquear el mutex de procesos planificados.
+        pthread_mutex_lock(&mutex_plan_new); // Bloquear el mutex de la lista NEW.
+
+        t_pcb* pcb_en_new = NULL;        
+        if (!list_is_empty(lista_plan_new)) {
+            pcb_en_new = list_remove(lista_plan_new, 0); // Obtener el primer proceso en NEW por FIFO.
+            enviar_proceso_a_memoria(pcb_en_new, pcb_en_new->path);
+            sem_wait(&s_init_proceso_a_memoria);  // Esperar confirmación de memoria
+            mover_proceso_a_ready(pcb_en_new);
+        }
+        else {
+            sem_post(&sem_multiprogramacion);
+            // pthread_mutex_unlock(&mutex_procesos_planificados); // Desbloquear el mutex de procesos planificados.
+            log_warning(logger_kernel,"Fallo en planificaicon new-ready, no hay proceso en new");
+        }
+
+        pthread_mutex_unlock(&mutex_plan_new); // Desbloquear el mutex de la lista NEW.
+        // pthread_mutex_unlock(&mutex_procesos_planificados); // Desbloquear el mutex de procesos planificados.
+    }
+}
+
+
+void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb) {
+    if (nuevo_pcb != NULL) {
+        pthread_mutex_lock(&mutex_plan_new);
+        list_add(lista_plan_new, nuevo_pcb);
+        nuevo_pcb->estado_actual = estado_NEW;
+        log_info(logger_kernel, "Se crea el proceso %d en NEW", nuevo_pcb->pid);
+        sem_post(&sem_plan_new);
+        pthread_mutex_unlock(&mutex_plan_new);
+
+        // pthread_t hilo_planificador;
+        // pthread_create(&hilo_planificador, NULL, (void*)planificador_lp_new_ready, NULL);
+        // pthread_detach(hilo_planificador);
+    }
 }
 
 void enviar_proceso_a_memoria(t_pcb* pcb, char* path){
@@ -68,3 +141,98 @@ void enviar_proceso_a_memoria(t_pcb* pcb, char* path){
     enviar_paquete(paquete_a_enviar, socket_memoria);
     eliminar_paquete(paquete_a_enviar);
 }
+
+
+
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/
+/* AUXILIARES RECURSOS */
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/
+t_recurso* obtener_recurso(char* recurso){
+    pthread_mutex_lock(&mutex_lista_recursos);
+	for(int i = 0; i<list_size(lista_recursos); i++){
+		t_recurso* recurso_encontrado = list_get(lista_recursos,i);
+		if(strcmp(recurso, recurso_encontrado->nombre) == 0){
+            pthread_mutex_unlock(&mutex_lista_recursos);
+			return recurso_encontrado;
+		}
+	}
+    pthread_mutex_unlock(&mutex_lista_recursos);
+	return NULL;
+}
+
+void liberar_estructuras_memoria(t_pcb* pcb){
+    //verifico si la planificacion esta activa.
+    check_detener_planificador();   
+
+    // Envio peticion a memoria para liberar las estructuras de un proceso.
+    t_paquete* paquete = crear_paquete(LIBERAR_ESTRUCTURAS_MEMORIA);
+    agregar_datos_sin_tamaño_a_paquete(paquete, &pcb->pid, sizeof(int));
+    enviar_paquete(paquete, socket_memoria);
+    eliminar_paquete(paquete);
+    sem_wait(&s_memoria_liberada_pcb);
+}
+
+void liberar_recursos_pcb(t_pcb* pcb){    
+    //verifico si la planificacion esta activa.
+    check_detener_planificador();   
+    // Liberar cualquier recurso que realmente haya sido asignado al PCB.
+    while (!list_is_empty(pcb->recursos_asignados)) {
+        t_recurso* recurso_asignado = list_remove(pcb->recursos_asignados, 0);
+        atender_cpu_signal(pcb, recurso_asignado); 
+    }
+    list_destroy(pcb->recursos_asignados);
+    pcb->recursos_asignados = NULL; // Asegurar que la referencia en el PCB no apunte a una lista ya destruida.
+
+
+    // Quita el PCB de la lista de bloqueados de cada recurso.
+    pthread_mutex_lock(&mutex_lista_recursos);
+    for (int i = 0; i < list_size(lista_recursos); i++) {
+        t_recurso* recurso = list_get(lista_recursos, i);
+        
+        // Si el pcb esta en la lista de bloqueados del recurso, se quita y se suma instancia disponible.
+        pthread_mutex_lock(&recurso->mutex_bloqueados);
+        if (list_remove_element(recurso->l_bloqueados, pcb)) {
+            pthread_mutex_unlock(&recurso->mutex_bloqueados);
+            // atender_cpu_signal(pcb, recurso);
+            recurso->instancias++;            
+        }
+        else{
+            pthread_mutex_unlock(&recurso->mutex_bloqueados);
+        }
+    }
+    pthread_mutex_unlock(&mutex_lista_recursos);
+}
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/
+/* AUXILIARES FIN */
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/
+
+
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/
+/* AUXILIARES ESTADOS */
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/
+char* listado_pids(t_list* lista){
+    char* pids = string_new();
+    string_append(&pids, "[");
+    for(int i = 0; i<list_size(lista); i++){
+        t_pcb* pcb = list_get(lista, i);
+        char* pid = string_itoa(pcb->pid);
+        string_append(&pids, pid);
+        free(pid);
+        if(i != list_size(lista)-1){
+            string_append(&pids, ",");
+        }
+    }
+    string_append(&pids, "]");
+    return pids;
+}
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/
+/* AUXILIARES ESTADOS */
+/*--------------------------------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------------*/

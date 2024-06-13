@@ -161,10 +161,9 @@ void atender_peticiones_dispatch(){
 				
 				switch(motivo){
 					case EXIT:
-						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));						
 						sem_post(&sem_pcb_desalojado);
-						atender_cpu_exit(proceso_exec,"Instruccion EXIT");
+						atender_cpu_exit(proceso_exec,"SUCCESS");
 						break;
 					case IO_GEN_SLEEP:
 						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid);

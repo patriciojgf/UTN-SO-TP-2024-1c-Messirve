@@ -22,6 +22,15 @@ int main(int argc, char **argv) {
 	pthread_create(&hilo_gestionar_conexion_io, NULL, (void*) gestionar_conexion_io, NULL);
 	pthread_detach(hilo_gestionar_conexion_io);
 
+	pthread_t hilo_planificador;
+	pthread_create(&hilo_planificador, NULL, (void*)planificador_lp_new_ready, NULL);
+	pthread_detach(hilo_planificador);
+
+	//ver si esta bien
+	pthread_t hilo_planificador_cp; //ver si esta bien aca
+	pthread_create(&hilo_planificador_cp, NULL, (void*)planificador_cp, NULL);
+	pthread_detach(hilo_planificador_cp);       	
+
 	
 	log_info(logger_kernel,"[main IO]: leerConsola");
 	pthread_t t5;

@@ -1,9 +1,9 @@
 #ifndef GES_CONEXIONES_H_
 #define GES_CONEXIONES_H_
 
-#include <configuracion_kernel.h>
 #include "init_estructuras.h"
 #include "atender_cpu.h"
+#include "configuracion_kernel.h"
 
 
 void init_conexiones();
