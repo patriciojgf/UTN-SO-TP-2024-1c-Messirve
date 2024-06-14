@@ -22,10 +22,8 @@ void init_conexiones(){
 /*SERVER IO*/
 void gestionar_conexion_io(){
 	while(1) {
-		log_protegido_kernel(string_from_format("[GESTION IO]: Esperando cliente"));
 		//genero nueva conexion para cada IO
 		int socket_io_nuevo = esperar_cliente(socket_servidor_io);
-		log_protegido_kernel(string_from_format("[GESTION IO]: Recibi operacion"));
 
 		//hago handshake y guardo el tipo de io.
 		int cod_tipo_io = handshake_server(socket_io_nuevo);
@@ -52,6 +50,7 @@ void gestionar_conexion_io(){
 		pthread_t hilo_interfaz;
 		pthread_create(&hilo_interfaz, NULL, (void *) _gestionar_nueva_interfaz, info_interfaz);
 		pthread_detach(hilo_interfaz);
+		sem_post(&s_conexion_interfaz);
 	}	
 }
 
@@ -97,7 +96,7 @@ void gestionar_conexion_interrupt(){
 static void _gestionar_nueva_interfaz(void *void_args) {
     t_interfaz *interfaz_nueva = (t_interfaz *)void_args;
     _agregar_a_lista_interfaces(interfaz_nueva);
-    log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Nueva interfaz %s conectada\n", interfaz_nueva->nombre_io));
+    // //log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Nueva interfaz %s conectada\n", interfaz_nueva->nombre_io));
 
     // Utilizar strcmp para comparar cadenas
     if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDIN") == 0) {
@@ -114,24 +113,32 @@ static void _gestionar_nueva_interfaz(void *void_args) {
     }
 }
 
-
 /*----------------------Memoria---------------------------------------------------*/
 void atender_peticiones_memoria(){
 	while(1){
 		int cod_op = recibir_operacion(socket_memoria);
 		void* buffer_recibido;
-		log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: Recibi operacion"));
+		int size = 0;
+		// //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: Recibi operacion"));
 		switch(cod_op){
 			case INICIAR_PROCESO_MEMORIA_OK:
-		        log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: INICIAR PROCESO"));
-                int size=0;
+		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: INICIAR PROCESO"));
+                size=0;
                 buffer_recibido = recibir_buffer(&size, socket_memoria);
 				sem_post(&s_init_proceso_a_memoria);
 				free(buffer_recibido);
-		        log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: INICIAR PROCESO REALIZADO"));
+		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: INICIAR PROCESO REALIZADO"));
 				break;	
+			case LIBERAR_ESTRUCTURAS_MEMORIA_OK:
+		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: FINALIZAR PROCESO"));
+				size=0;
+				buffer_recibido = recibir_buffer(&size, socket_memoria);
+				sem_post(&s_memoria_liberada_pcb);
+				free(buffer_recibido);
+		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: FINALIZAR PROCESO REALIZADO"));
+				break;
 			default:
-		        log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: Operacion no reconocida"));
+		        // //log_protegido_kernel(string_from_format("[ATENDER MEMORIA]: Operacion no reconocida"));
 				exit(EXIT_FAILURE);
 		}
 	}
@@ -140,26 +147,73 @@ void atender_peticiones_memoria(){
 void atender_peticiones_dispatch(){
 	while(1){
 		int cod_op = recibir_operacion(socket_dispatch);
-		log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: Recibi operacion"));
+		log_info(logger_kernel,"[ATENDER DISPATCH]:recibir_operacion]");
+		// //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: Recibi operacion"));
 		switch (cod_op) {
 			case CONTEXTO_EJECUCION:
-		        log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: CONTEXTO_EJECUCION"));
+				log_info(logger_kernel,"[ATENDER DISPATCH]:CONTEXTO_EJECUCION]");
+		        // //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: CONTEXTO_EJECUCION"));
 				int motivo;
 				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
 				instrucciones->parametros =list_create();
-				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
+				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);	
+
+				pthread_mutex_lock(&mutex_finalizar_proceso);
+				if(proceso_finalizando && (motivo != INT_FINALIZAR_PROCESO)){
+					log_info(logger_kernel,"[ATENDER DISPATCH]:Recibi operacion pero estoy esperando FINALIZAR_PROCESO");
+					pthread_mutex_unlock(&mutex_finalizar_proceso);	
+					continue;	
+				}
+				pthread_mutex_unlock(&mutex_finalizar_proceso);				
 				switch(motivo){
+					case INT_FINALIZAR_PROCESO:	
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_FINALIZAR_PROCESO", proceso_exec->pid);
+						atender_cpu_int_finalizar_proceso(proceso_exec);
+						pthread_mutex_lock(&mutex_finalizar_proceso);
+        				proceso_finalizando = false;
+        				pthread_mutex_unlock(&mutex_finalizar_proceso);
+						break;
 					case EXIT:
-						log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));
-						atender_cpu_exit(proceso_exec,instrucciones);
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid);
+						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));						
+						sem_post(&sem_pcb_desalojado);
+						atender_cpu_exit(proceso_exec,"SUCCESS");
 						break;
 					case IO_GEN_SLEEP:
-						log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid));
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid);
+						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_gen_sleep(proceso_exec,instrucciones);
 						break;
+					case FIN_QUANTUM:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);
+						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid));
+						sem_post(&sem_pcb_desalojado);
+						atender_cpu_fin_quantum(proceso_exec);
+						break;
+					case WAIT:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - WAIT", proceso_exec->pid);
+						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - WAIT", proceso_exec->pid));
+						sem_post(&sem_pcb_desalojado);
+						atender_cpu_wait(proceso_exec,instrucciones);
+						break;
+					case SIGNAL:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - SIGNAL", proceso_exec->pid);
+						//sem_post(&sem_pcb_desalojado); //no se desaloja
+						atender_cpu_signal(proceso_exec,obtener_recurso(list_get(instrucciones->parametros, 0)));
+						break;
+					case INT_SIGNAL:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_SIGNAL", proceso_exec->pid);
+						atender_cpu_int_signal(proceso_exec);
+						break;
+
 					default:
                 		log_error(logger_kernel, "[CONTEXTO_EJECUCION]: motivo no reconocido <%d> \n", cod_op);
 				}
+				//liberar memoria instrucciones
+				for (int i=0; i < instrucciones->cantidad_parametros; i++){
+					free(list_get(instrucciones->parametros, i));
+				}
+				free(instrucciones->parametros);
 				break;
             default:
                 log_error(logger_kernel, "ERROR EN PETICION DISPATCH: Operacion N* %d desconocida\n", cod_op);
@@ -169,18 +223,17 @@ void atender_peticiones_dispatch(){
 }
 
 void atender_peticiones_interrupt(){
-	log_protegido_kernel(string_from_format("[ATENDER INTERRUPT]: por ahora solo se conectarme"));
+	//log_protegido_kernel(string_from_format("[ATENDER INTERRUPT]: conectado."));
 }
 /*------------------------INTERFACES-----------------------------------------*/
 /*GENERICAS*/
 static void _atender_peticiones_io_gen(t_interfaz *interfaz){		
 		while(1){
-    		log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
+    		// //log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 			int cod_op = recibir_operacion(interfaz->socket);
 			switch (cod_op){
-				case IO_GEN_SLEEP:	
-					log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- IO_GEN_SLEEP ----", interfaz->nombre_io));
-			
+				case IO_GEN_SLEEP:	    
+    				log_info(logger_kernel,"[ATENDER PETICION IO GEN]: SLEEP TERMINADO ");
 					t_pedido_sleep* pedido = list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido->semaforo_pedido_ok);
 					//free(pedido);
@@ -198,7 +251,7 @@ static void _atender_peticiones_io_gen(t_interfaz *interfaz){
 }	
 
 // static void _enviar_peticiones_io_gen(t_interfaz *interfaz){
-//     log_protegido_kernel(string_from_format("[ENVIAR PETICION INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
+//     //log_protegido_kernel(string_from_format("[ENVIAR PETICION INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 // 	while (1) {
 // 		//espero que haya algun pedido creado
 //         sem_wait(&interfaz->semaforo);
@@ -257,14 +310,13 @@ static void _agregar_a_lista_interfaces(t_interfaz *interfaz_nueva) {
 }
 
 static void _handshake_cliente_kernel(int socket, char* nombre_destino){
-	log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Inicio Handshake con %s\n", nombre_destino));
+	//log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Inicio Handshake con %s\n", nombre_destino));
     int resultado_hs = handshake_cliente(HANDSHAKE_KERNEL,socket);
     switch(resultado_hs){
         case HANDSHAKE_OK:
-            log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
+            //log_protegido_kernel(string_from_format("[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
             break;
         default:
-			sleep(120);
             log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion N* %d desconocida\n", resultado_hs);
             exit(EXIT_FAILURE);
             break;
@@ -274,7 +326,7 @@ static void _handshake_cliente_kernel(int socket, char* nombre_destino){
 
 /*----------------------Dispatch---------------------------------------------------*/
 static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
-		log_protegido_kernel(string_from_format("[_recibir_contexto_cpu]"));
+		// //log_protegido_kernel(string_from_format("[_recibir_contexto_cpu]"));
 		int size;
 		void* buffer = recibir_buffer(&size, socket_dispatch);
 		int desplazamiento = 0;		
@@ -328,3 +380,11 @@ static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instru
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES AUXILIARES---------- FIN -------------------------//
 // --------------------------------------------------------------------------//
+
+void envio_interrupcion(int pid, int motivo){
+	//log_protegido_kernel(string_from_format("[envio_interrupcion]"));
+	t_paquete* paquete_interrupcion= crear_paquete(motivo);
+	agregar_datos_sin_tamaño_a_paquete(paquete_interrupcion,&pid,sizeof(int));
+	enviar_paquete(paquete_interrupcion,socket_interrupt);
+	eliminar_paquete(paquete_interrupcion);	
+}

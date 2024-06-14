@@ -34,11 +34,20 @@ static void iniciar_semaforos(){
     sem_init(&mlog,0,1);
     sem_init(&s_instruccion_actual,0,0);
     sem_init(&sem_control_peticion_marco_a_memoria, 0, 0);
+    sem_init(&s_signal_kernel,0,0);
+    sem_init(&s_fetch_espere_instruccion,0,0);
+    sem_init(&sem_check_recibiendo_interrupcion,0,0);
+}
+
+static void iniciar_mutex(){
+    pthread_mutex_init(&mutex_ejecucion_proceso,NULL);
+    pthread_mutex_init(&mutex_check_recibiendo_interrupcion,NULL);
 }
 
 static void iniciar_estructuras(){
     flag_ejecucion=false;
     flag_interrupt=false;
+    contexto_cpu= malloc(sizeof(t_contexto));
 }
 
 void init_cpu(char* path_config){
@@ -51,4 +60,5 @@ void init_cpu(char* path_config){
     iniciar_tlb();
     log_tlb();
     log_protegido_cpu(string_from_format("CPU iniciado correctamente"));
+    iniciar_mutex();
 }

@@ -14,7 +14,6 @@
 
 
 typedef struct{
-	// uint32_t AX,BX,CX,DX; 
     uint32_t PC;
     uint8_t AX;
     uint8_t BX;
@@ -46,8 +45,6 @@ typedef struct
     t_list* parametros; //lista de parametros sin contar el identificador
 }t_instruccion;
 
-
-
 //PCB.h
 
 typedef enum estado {
@@ -76,7 +73,6 @@ typedef struct {
     char* nombre;
     int instancias;
     t_list* l_bloqueados; //esta lista la vamos a usar para saber que procesos estan bloqueados por este recurso
-    t_pcb* pcb_asignado; //instancias asignadas
     pthread_mutex_t mutex_bloqueados;
 } t_recurso;
 

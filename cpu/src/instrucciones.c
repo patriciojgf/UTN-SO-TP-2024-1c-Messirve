@@ -7,12 +7,12 @@ static u_int8_t _cantidad_parametros(u_int8_t identificador);
 static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_parametros);
 static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros);
 //instrucciones
-static void _io_gen_sleep(t_instruccion* instruccion);
 static void _set(t_instruccion* instruccion);
 static void _sum(t_instruccion* instruccion);
 static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
+static info_registro_cpu _get_direccion_registro(char* string_registro);
 //
 
 
@@ -21,112 +21,40 @@ extern t_registros_cpu registros_cpu;
 
 //---------------------------------------------------------------------------------------------------------------------//
 
-void fetch_instruccion(){
-	log_protegido_cpu(string_from_format("PID: <%d> - FETCH - Program Counter: <%d>", contexto_cpu->pid, contexto_cpu->program_counter));
-	t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
-	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
-	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
-	enviar_paquete(paquete, socket_memoria);
-	//char* instruccion = _recibir_instruccion(socket_memoria);
-    sem_wait(&s_instruccion_actual);
-	//char* instruccion_actual
-	contexto_cpu->program_counter++;
-	eliminar_paquete(paquete);
-	// return instruccion_actual;
-}
-
-// t_instruccion* decodificar_instruccion(char* instruccion){
-t_instruccion* decodificar_instruccion(){
-	t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
-	//Se separa la instruccion en un array de strings
-	// char** instruccion_separada = string_split(instruccion, " ");
-	char** instruccion_separada = string_split(instruccion_actual, " ");
-	//Se obtiene el identificador de la instruccion
-	u_int8_t identificador = _get_identificador(instruccion_separada[0]);
-
-	for (int i=0; i < string_array_size(instruccion_separada);i++){
-		free(instruccion_separada[i]);
-	}
-	free(instruccion_separada);
-	printf("Identificador: %d\n", identificador);
-
-	inst_decodificada->identificador = identificador;
-	inst_decodificada->cantidad_parametros = _cantidad_parametros(identificador);
-	// inst_decodificada->parametros = _parametros_instruccion(instruccion, inst_decodificada->cantidad_parametros);
-	inst_decodificada->parametros = _parametros_instruccion(instruccion_actual, inst_decodificada->cantidad_parametros);
-	free(instruccion_actual);
-	return inst_decodificada;
-}
-
-uint8_t* _get_direccion_registro(char* string_registro){
-    uint8_t* registro;
-    
-    if (!strcmp(string_registro, "AX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.AX);
+static info_registro_cpu _get_direccion_registro(char* string_registro) {
+    info_registro_cpu info = {0, 0};
+    if (!strcmp(string_registro, "AX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.AX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "BX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.BX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "CX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.CX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "DX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.DX);
+        info.tamano = sizeof(uint8_t);
+    } else if (!strcmp(string_registro, "EAX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.EAX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "EBX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.EBX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "ECX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.ECX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "EDX")) {
+        info.direccion = &(contexto_cpu->registros_cpu.EDX);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "SI")) {
+        info.direccion = &(contexto_cpu->registros_cpu.SI);
+        info.tamano = sizeof(uint32_t);
+    } else if (!strcmp(string_registro, "DI")) {
+        info.direccion = &(contexto_cpu->registros_cpu.DI);
+        info.tamano = sizeof(uint32_t);
     }
-    if (!strcmp(string_registro, "BX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.BX);
-    }
-    if (!strcmp(string_registro, "CX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.CX);
-    }
-    if (!strcmp(string_registro, "DX"))
-    {
-        registro = &(contexto_cpu->registros_cpu.DX);
-    }
-    return registro;
-}
-
-t_instruccion* execute_instruccion(t_instruccion* instruccion){
-	log_info(logger_cpu, "identificador de instruccion: %d", instruccion->identificador);
-	switch (instruccion->identificador){
-		case EXIT:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			_f_exit(instruccion);
-			break;
-		case SET:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			_set(instruccion);
-			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			break;
-		case SUM:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			_sum(instruccion);
-			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			break;
-		case SUB:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			_sub(instruccion);
-			// log_info(logger_cpu, "Nuevo valor de AX: %d", contexto_cpu->registros_cpu.AX);
-			// log_info(logger_cpu, "Nuevo valor de BX: %d", contexto_cpu->registros_cpu.BX);
-			break;
-		case JNZ:
-			// log_info(logger_cpu, "Valor de CX: %d", contexto_cpu->registros_cpu.CX);
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			// log_info(logger_cpu, "Valor de program_counter: %d", contexto_cpu->program_counter);
-			_jnz(instruccion);
-			// log_info(logger_cpu, "Valor de nuevo program_counter: %d", contexto_cpu->program_counter);
-			break;
-		case IO_GEN_SLEEP:
-			_mostrar_parametros(instruccion, instruccion->cantidad_parametros);
-			_io_gen_sleep(instruccion);
-			break;
-		default:
-			log_protegido_cpu("Instruccion desconocida. ");
-			break;
-	}
-	return instruccion;
+    return info;
 }
 
 char* recibir_instruccion(int socket_cliente){
@@ -328,30 +256,31 @@ static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_para
 }
 
 static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros){
+	//log_protegido_cpu("_mostrar_parametros ");
 	char* nombre_instruccion = _get_nombre_instruccion(instruccion->identificador);
 	// if(cantidad_parametros == 0){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s>",pid,nombre_instruccion);
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 1){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);		
 	// }else if(cantidad_parametros == 2){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 3){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 4){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }else if(cantidad_parametros == 5){
 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3),list_get(instruccion->parametros,4));
-	// 	log_protegido_cpu(mensaje_log);
+	// 	//log_protegido_cpu(mensaje_log);
 	// 	free(mensaje_log);
 	// }
 	// free(nombre_instruccion);
@@ -369,13 +298,14 @@ static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_pa
     mensaje_log = string_from_format("%s>", mensaje_log);
     
     // Loggea el mensaje
-    log_protegido_cpu(mensaje_log);
+    //log_protegido_cpu(mensaje_log);
     
 	log_warning(logger_cpu, "Necesito hacer un free aca?");
 }
 
 void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
-	log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
+	log_info(logger_cpu,"[DEVUELVO CONTEXTO]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);                
+	//log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
@@ -386,48 +316,81 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 	agregar_datos_sin_tamaño_a_paquete(paquete, &motivo, sizeof(int));
 	enviar_paquete(paquete, socket_cliente_dispatch);
 	eliminar_paquete(paquete);
+	//free(contexto_cpu);
 }
 
 
 /*------------_INSTRUCCIONES---------------------------------------*/
 
-static void _io_gen_sleep(t_instruccion* instruccion)
-{
-	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
-    flag_ejecucion = false;
-}
+//esto se hace directamente en el case del exe
+// static void _io_gen_sleep(t_instruccion* instruccion)
+// {
+// 	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
+//     flag_ejecucion = false;
+// }
 
 static void _set(t_instruccion* instruccion){
-	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
-	*dir_registro = atoi(list_get(instruccion->parametros, 1));
+    char* nombre_registro = list_get(instruccion->parametros, 0);
+    char* valor_string = list_get(instruccion->parametros, 1);
+    uint32_t nuevo_valor = (uint32_t)atoi(valor_string); // Convierte el valor string a uint32_t una sola vez
+
+    info_registro_cpu reg_info = _get_direccion_registro(nombre_registro);
+
+    // Mostrar el valor actual del registro antes de la modificación
+    if (reg_info.tamano == sizeof(uint8_t)) {
+        *(uint8_t*)reg_info.direccion = (uint8_t)nuevo_valor; // Asigna el nuevo valor
+    } else if (reg_info.tamano == sizeof(uint32_t)) {
+        *(uint32_t*)reg_info.direccion = nuevo_valor; // Asigna el nuevo valor
+    }
 }
+
 
 static void _sum(t_instruccion* instruccion){
     char *registro_destino = list_get(instruccion->parametros, 0);
     char *registro_origen = list_get(instruccion->parametros, 1);
+    info_registro_cpu registro_des_info = _get_direccion_registro(registro_destino);
+    info_registro_cpu registro_ori_info = _get_direccion_registro(registro_origen);
 
-    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
-    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // dreccion del registro origen
-    
-    uint8_t aux = *registro_des + *registro_ori;
-    
-    *registro_des = aux;	
+    // Tratar todo como uint8_t para simplificar
+    uint8_t valor_destino = *(uint8_t*)registro_des_info.direccion;
+    uint8_t valor_origen = *(uint8_t*)registro_ori_info.direccion;
+
+    uint8_t resultado = valor_destino + valor_origen; // Suma como uint8_t
+
+    // Asignar el resultado al registro de destino
+    if (registro_des_info.tamano == sizeof(uint32_t)) {
+        *(uint32_t*)registro_des_info.direccion = resultado; // Promoción automática a uint32_t
+    } else {
+        *(uint8_t*)registro_des_info.direccion = resultado;
+    }
 }
 
 static void _sub(t_instruccion* instruccion){
     char *registro_destino = list_get(instruccion->parametros, 0);
-    char *registro_origen = list_get(instruccion->parametros, 1);    
-    uint8_t* registro_des =  _get_direccion_registro(registro_destino); // direccion del registro destino
-    uint8_t* registro_ori =  _get_direccion_registro(registro_origen); // direccion del registro origen    
-    uint8_t aux = *registro_des - *registro_ori;    
-    *registro_des = aux;
+    char *registro_origen = list_get(instruccion->parametros, 1);
+    info_registro_cpu registro_des_info = _get_direccion_registro(registro_destino);
+    info_registro_cpu registro_ori_info = _get_direccion_registro(registro_origen);
+    // Tratar todo como uint8_t para simplificar
+    uint8_t valor_destino = *(uint8_t*)registro_des_info.direccion;
+    uint8_t valor_origen = *(uint8_t*)registro_ori_info.direccion;
+    uint8_t resultado = valor_destino - valor_origen; // Resta como uint8_t
+    // Asignar el resultado al registro de destino
+    if (registro_des_info.tamano == sizeof(uint32_t)) {
+        *(uint32_t*)registro_des_info.direccion = resultado; // Promoción automática a uint32_t
+    } else {
+        *(uint8_t*)registro_des_info.direccion = resultado;
+    }			 
 }
 
 static void _jnz(t_instruccion* instruccion){
-	uint8_t *dir_registro = _get_direccion_registro(list_get(instruccion->parametros, 0));
-	if(*dir_registro != 0){
-		contexto_cpu->program_counter = atoi(list_get(instruccion->parametros, 1));
-	}
+    char* registro_nombre = (char*)list_get(instruccion->parametros, 0);  // Asumiendo que esto devuelve un nombre de registro en forma de cadena
+    info_registro_cpu dir_registro_info = _get_direccion_registro(registro_nombre);
+    uint32_t registro_valor = *(uint32_t*)dir_registro_info.direccion;
+    if (registro_valor != 0) {
+        uint32_t nueva_pc = atoi(list_get(instruccion->parametros, 1));
+        contexto_cpu->program_counter = nueva_pc;
+        contexto_cpu->registros_cpu.PC = nueva_pc;
+    }
 }
 
 
@@ -436,4 +399,146 @@ static void _f_exit(t_instruccion *inst){
 	devolver_contexto_a_dispatch(EXIT, inst);
 }
 
+//CONTEXTO
+void ejecutar_proceso(){
+    // Continúa ejecutando mientras la bandera de ejecución esté activa.
+    while (flag_ejecucion) {
 
+		// Bloqueo el "hilo" del proceso, no quiero pedir esperar un fetch de memoria al mismo tiempo 
+		// que estoy tratando un fin de QUANTUM
+		pthread_mutex_lock(&mutex_ejecucion_proceso);
+
+        // Enviar solicitud de instrucción.
+        t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
+        int pid_a_enviar = contexto_cpu->pid;
+        int pc_a_enviar = contexto_cpu->program_counter;
+        agregar_datos_sin_tamaño_a_paquete(paquete, &pid_a_enviar, sizeof(int));
+        agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
+        enviar_paquete(paquete, socket_memoria);
+        eliminar_paquete(paquete);
+        log_info(logger_cpu,"[EJECUTAR PROCESO]: -- HICE FETCH -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+        sem_wait(&s_instruccion_actual);
+
+        // Decodificar la instrucción actual.
+        char** instruccion_separada = string_split(instruccion_actual, " ");
+        u_int8_t identificador = _get_identificador(instruccion_separada[0]);
+        //log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción decodificada: %s", nombre_instruccion);
+
+        t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
+        inst_decodificada->identificador = identificador;
+        inst_decodificada->cantidad_parametros = _cantidad_parametros(identificador);
+        inst_decodificada->parametros = _parametros_instruccion(instruccion_actual, inst_decodificada->cantidad_parametros);
+
+        // Ejecutar la instrucción.
+
+		int motivo_desalojo = -1;
+
+        switch (inst_decodificada->identificador) {
+            case EXIT: _f_exit(inst_decodificada); break;
+            case SET: _set(inst_decodificada); break;
+            case SUM: _sum(inst_decodificada); break;
+            case SUB: _sub(inst_decodificada); break;
+            case JNZ: _jnz(inst_decodificada); break;
+            // case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
+			case IO_GEN_SLEEP:
+				motivo_desalojo = IO_GEN_SLEEP;
+				break;
+			case WAIT:
+				motivo_desalojo = WAIT;
+				break;
+			case SIGNAL:
+				int motivo = SIGNAL;
+				int mensajeOk = 0;
+				int size = 0;
+				t_paquete* paquete_signal = crear_paquete(CONTEXTO_EJECUCION);
+				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->pid, sizeof(int));
+				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->program_counter, sizeof(int));
+				empaquetar_registros_cpu(paquete_signal, contexto_cpu->registros_cpu);
+				empaquetar_instruccion_cpu(paquete_signal, inst_decodificada);
+				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &motivo, sizeof(int));
+				enviar_paquete(paquete_signal, socket_cliente_dispatch);
+				eliminar_paquete(paquete_signal);
+				// sem_wait(&s_signal_kernel);
+				//recibo respuesta del dispatch
+				int codigo_op = recibir_operacion(socket_cliente_dispatch);
+				log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL codigo_op <%d>",codigo_op);
+				void* buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
+				memcpy((&mensajeOk),buffer_recibido,sizeof(int));
+				log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL mensajeOk <%d>",mensajeOk);
+				free(buffer_recibido);
+				if(!mensajeOk){
+					motivo_desalojo=INT_SIGNAL;
+					log_info(logger_cpu,"[EJECUTAR PROCESO]: -- PID <%d> - PC<%d> - SIGNAL NO OK",contexto_cpu->pid,contexto_cpu->program_counter);
+				}
+				break;
+            default: 
+                log_error(logger_cpu,"[Ejecutar Proceso]: Instrucción no reconocida.");
+				exit(EXIT_FAILURE);
+                break;
+        }
+        contexto_cpu->program_counter++;
+		contexto_cpu->registros_cpu.PC = contexto_cpu->program_counter;
+		log_info(logger_cpu,"pthread_mutex_unlock(&mutex_ejecucion_proceso)1");
+		pthread_mutex_unlock(&mutex_ejecucion_proceso);
+
+		check_recibiendo_interrupcion();
+
+		pthread_mutex_lock(&mutex_ejecucion_proceso);
+		log_info(logger_cpu,"pthread_mutex_lock(&mutex_ejecucion_proceso)2");
+		//Desalojos por instrucciones ejecutadas
+		if(motivo_desalojo > -1){
+			flag_ejecucion = false;
+			devolver_contexto_a_dispatch(motivo_desalojo, inst_decodificada);
+		}
+        // Verificar interrupciones.
+        if (flag_interrupt && flag_ejecucion) {
+            //log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
+            devolver_contexto_a_dispatch(motivo_interrupt, inst_decodificada);
+            flag_ejecucion = false;
+        }
+        flag_interrupt = false;
+
+        // Limpiar recursos.
+        for (int i = 0; i < list_size(inst_decodificada->parametros); i++) {
+            char* parametro = list_get(inst_decodificada->parametros, i);
+            free(parametro);
+        }
+        list_destroy(inst_decodificada->parametros);
+        free(inst_decodificada);
+        free(instruccion_actual);
+		instruccion_actual=NULL; 
+		pthread_mutex_unlock(&mutex_ejecucion_proceso);
+		log_info(logger_cpu,"pthread_mutex_unlock(&mutex_ejecucion_proceso)2");
+
+        //log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción completada y recursos liberados.");
+    }
+}
+
+
+
+// AUXILIARES
+void check_recibiendo_interrupcion(){
+    pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
+    if(llego_interrupcion == 1){
+        sem_wait(&sem_check_recibiendo_interrupcion);
+    }
+    pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
+}
+
+void ejecutando_interrupcion_fin(){
+    if(llego_interrupcion == 0){
+    }
+    else{
+        llego_interrupcion = 0;
+        sem_post(&sem_check_recibiendo_interrupcion);
+    }    
+}
+
+void ejecutando_interrupcion(){
+    if(llego_interrupcion == 1){
+    }
+    else{
+        llego_interrupcion = 1;
+        check_recibiendo_interrupcion();
+    }
+}

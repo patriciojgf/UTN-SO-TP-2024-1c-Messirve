@@ -15,19 +15,9 @@
 #include "kernel_pcb.h"
 #include "planificador_lp.h"
 #include "init_estructuras.h"
-    
-extern sem_t mlog;
-extern t_log* logger_kernel;
 
-typedef struct comando
-{
-    int cod_op;
-    t_list* parametros; 
-}t_comando;
 
-void cambiar_multiprogramacion(int nuevo_grado_mult, sem_t m_multiprogramacion);
-void leer_consola(sem_t m_multiprogramacion);
-void imprimir_comandos_permitidos();
-void interpretar(t_comando* comando, char* leido);
-void _setup_parametros(t_comando* comando, char** leido_separado, int cod_op);
+void procesar_comandos_consola();
+void cambiar_multiprogramacion(int nuevo_grado_mult);
+
 #endif

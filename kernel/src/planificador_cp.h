@@ -3,13 +3,13 @@
 
 #include <pthread.h>
 #include <semaphore.h>
+#include "gestion_conexiones.h"
 #include "kernel_pcb.h"
-#include "configuracion_kernel.h"
-#include "init_estructuras.h"
 
 // ------ PTHREAD_MUTEX ------
 extern pthread_mutex_t mutex_plan_new;
 extern pthread_mutex_t mutex_plan_ready;
+extern pthread_mutex_t mutex_plan_ready_vrr;
 extern pthread_mutex_t mutex_plan_exec;
 extern pthread_mutex_t mutex_plan_blocked;
 extern pthread_mutex_t mutex_plan_exit;
@@ -27,8 +27,10 @@ extern t_log* logger_kernel;
 
 //funciones
 void planificador_cp();
-void desbloquar_proceso(int pid);
+void fuerzo_ejecucion_proceso(t_pcb* pcb);
 t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb);
+void check_detener_planificador();
+char* estado_string(t_estado estado);
 
 
 #endif /* PLANIFICADOR_CP_H_ */

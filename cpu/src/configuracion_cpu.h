@@ -24,16 +24,26 @@
 
 extern t_log* logger_cpu;
 extern t_config* config_cpu;
+extern bool llego_interrupcion;
 
 //semaforos
 extern sem_t mlog;
 extern sem_t s_instruccion_actual;
+extern sem_t s_signal_kernel;
+extern sem_t s_fetch_espere_instruccion;
+extern sem_t sem_check_recibiendo_interrupcion;
 
+//mutex
+extern pthread_mutex_t mutex_ejecucion_proceso;
+extern pthread_mutex_t mutex_check_recibiendo_interrupcion;
+
+//flags
 extern bool flag_ejecucion,flag_interrupt;
 
 //contexto
 extern char* instruccion_actual;
 extern int motivo_interrupt;
+extern int pid_interrupt;
 
 //------IP y PUERTOS----------
 extern char* IP_MEMORIA;

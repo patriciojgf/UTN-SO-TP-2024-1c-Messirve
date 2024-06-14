@@ -13,11 +13,18 @@ extern bool flag_ejecucion, flag_interrupt;
 extern t_log* logger_cpu;
 extern t_contexto* contexto_cpu;
 
+typedef struct {
+    void* direccion;
+    size_t tamano;  // Tamaño del registro en bytes
+} info_registro_cpu;
+
+//interrupciones
+void ejecutando_interrupcion();
+void ejecutando_interrupcion_fin();
+void check_recibiendo_interrupcion();
+
 // char* fetch_instruccion();
-void fetch_instruccion();
-// t_instruccion* decodificar_instruccion(char* instruccion);
-t_instruccion* decodificar_instruccion();
-t_instruccion* execute_instruccion(t_instruccion* instruccion);
+void ejecutar_proceso();
 char* recibir_instruccion(int socket_cliente);
 void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion);
 

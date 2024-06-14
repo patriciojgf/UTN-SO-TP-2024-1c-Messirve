@@ -4,6 +4,8 @@
 #include <configuracion_cpu.h>
 #include <mmu.h>
 
+extern t_contexto* contexto_cpu;
+
 void init_cpu(char* path_config);
 void log_protegido_cpu(char* mensaje);
 

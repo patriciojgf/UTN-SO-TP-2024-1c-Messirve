@@ -133,7 +133,17 @@ void agregar_a_paquete(t_paquete* paquete, void* valor, int tamanio){
 void agregar_datos_sin_tamaño_a_paquete(t_paquete *paquete, void *valor, int bytes)
 {
 	t_buffer *buffer = paquete->buffer;
-	buffer->stream = realloc(buffer->stream, buffer->size + bytes);
+
+	// buffer->stream = realloc(buffer->stream, buffer->size + bytes);
+
+	void* temp = realloc(buffer->stream, buffer->size + bytes);
+	if (temp == NULL) {
+		// Manejar el error de memoria aquí, por ejemplo, loguearlo y terminar la función.
+		exit(EXIT_FAILURE);
+	}
+	buffer->stream = temp;
+
+
 	memcpy(buffer->stream + buffer->size, valor, bytes);
 	buffer->size += bytes;
 }

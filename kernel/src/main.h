@@ -15,6 +15,8 @@
 #include "gestion_conexiones.h"
 
 int conexiones;
+int planificacion_detenida = 1;
+bool proceso_finalizando = false;
 
 t_log* logger_kernel;
 t_config* config_kernel;
@@ -25,6 +27,7 @@ t_pcb* proceso_en_exec;
 sem_t planificadores;
 int GRADO_MULTIPROGRAMACION;
 t_planificacion ALGORITMO_PLANIFICACION;
+int QUANTUM;
 
 
 
@@ -45,15 +48,20 @@ pthread_t hilo_gestionar_memoria;
 pthread_t hilo_gestionar_dispatch;
 pthread_t hilo_gestionar_interrupt;
 
+pthread_t hilo_esperar_quantum;
+
 // ------ Listas ------
 t_list* lista_plan_new;
 t_list* lista_plan_ready;
+t_list* lista_plan_ready_vrr; //main.h
 // t_list* lista_plan_execute;
 t_list* lista_plan_blocked;
 t_list* lista_plan_exit;
 //-----
 t_list* lista_recursos;
 t_list* lista_archivos_abiertos;
+t_list* lista_instrucciones_permitidas;
+
 t_pcb* proceso_exec;
 
 //--- Estructuras -----
@@ -63,7 +71,13 @@ char** INSTANCIAS_RECURSOS;
 
 //armo estructura lista de tipo t_interfaz para guardar todas las que llegan
 t_list* lista_interfaz_socket;
-sem_t mlog, m_multiprogramacion, s_init_proceso_a_memoria;
+sem_t sem_multiprogramacion;
+sem_t s_init_proceso_a_memoria, s_memoria_liberada_pcb;
+sem_t sem_pcb_desalojado;
+sem_t sem_plan_exec_libre;
+sem_t sem_plan_ready;
+sem_t sem_plan_new;
+sem_t sem_planificacion_activa;
 
 // ------ PTHREAD_MUTEX ------
 
@@ -71,20 +85,31 @@ sem_t mlog, m_multiprogramacion, s_init_proceso_a_memoria;
 sem_t s_conexion_memoria_ok;
 sem_t s_conexion_cpu_i_ok;
 sem_t s_conexion_cpu_d_ok;
+sem_t s_conexion_interfaz;
 
 //mutex
 pthread_mutex_t mutex_conexiones;
 //Listas planificador
 pthread_mutex_t mutex_plan_new;
 pthread_mutex_t mutex_plan_ready;
+pthread_mutex_t mutex_plan_ready_vrr;
 pthread_mutex_t mutex_plan_exec;
 pthread_mutex_t mutex_plan_blocked;
 pthread_mutex_t mutex_plan_exit;
 pthread_mutex_t mutex_procesos_planificados;
+pthread_mutex_t mutex_detener_planificacion;
+pthread_mutex_t mutex_grado_multiprogramacion;
+pthread_mutex_t mutex_finalizar_proceso;
 //pcb
 pthread_mutex_t mutex_pid_proceso;
+//recursos
+pthread_mutex_t mutex_lista_recursos;
 //listas interfaces conectadas
 pthread_mutex_t mutex_lista_interfaz;
+
+//RR
+pthread_mutex_t mutex_id_ejecucion;
+int var_id_ejecucion;
 
 //pcb
 int pid_proceso = 0;
@@ -108,7 +133,6 @@ int conectarInterfaz();
 // int leer_consola();
 void inicializar_estructuras();
 void free_estructuras();
-
 
 /*----------------CONSOLA----------------*/
 void leerConsola();

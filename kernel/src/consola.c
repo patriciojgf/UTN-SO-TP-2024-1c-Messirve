@@ -1,215 +1,225 @@
 #include <consola.h>
 
-void leer_consola(sem_t m_multiprogramacion)
-{
-    printf("Leyendo consola...\n");
-    char* leido;
-    leido = readline(">");
+static void ejecutar_script(const char* path);
 
-    while(!string_equals_ignore_case(leido, "EXIT") /*|| !string_equals_ignore_case(leido, "SALIR")*/)
-    {			
-        t_comando* comando = malloc(sizeof(t_comando));
-        comando->parametros=list_create();
+static void listar_los_pid_por_lista(){
+    log_info(logger_kernel, "!------------------------!");
+    log_info(logger_kernel, "Listado de PID por ESTADO");
+    log_info(logger_kernel, "NEW: %s", listado_pids(lista_plan_new));
+    log_info(logger_kernel, "READY: %s", listado_pids(lista_plan_ready));
+    if(ALGORITMO_PLANIFICACION==VRR){
+        log_info(logger_kernel, "READY Prioridad: %s", listado_pids(lista_plan_ready_vrr));
+    }
+    if(proceso_exec==NULL){
+        log_info(logger_kernel, "EXEC: []");
+    }
+    else{
+        log_info(logger_kernel, "EXEC: [%d]", proceso_exec->pid);
+    }    
+    log_info(logger_kernel, "BLOCKED: %s", listado_pids(lista_plan_blocked));
+    log_info(logger_kernel, "EXIT: %s", listado_pids(lista_plan_exit));
+    log_info(logger_kernel, "!------------------------!");
+}
 
-        add_history(leido);
 
-        interpretar(comando, leido);
-        printf("el codigo es: %d\n", comando->cod_op);
-        switch (comando->cod_op)
-        {
-            case HELPER: 
-                imprimir_comandos_permitidos();
+
+static void _detener_planificacion(){
+    if(planificacion_detenida == 1){
+        log_info(logger_kernel, "DETENER_PLANIFICACION ya se encuentra activo");
+    }
+    else{
+        planificacion_detenida = 1;
+        check_detener_planificador();
+    }
+}
+
+static void _iniciar_planificacion(){
+    if(planificacion_detenida == 0){
+        log_info(logger_kernel, "INICIAR_PLANIFICACION ya se encuentra activo");
+    }
+    else{
+        planificacion_detenida = 0;
+        sem_post(&sem_planificacion_activa);
+        log_info(logger_kernel, "_iniciar_planificacion:sem_planificacion_activa");
+    }    
+}
+
+static bool _check_instruccion(char* leido) {
+    // Divide la cadena de entrada en partes utilizando espacios como delimitadores.
+    char** comando_consola = string_split(leido, " ");
+    
+    // Calcula la cantidad de parámetros obteniendo el tamaño del array - 1 (excluyendo el nombre del comando).
+    int cantidad_de_parametros = string_array_size(comando_consola) - 1;
+    
+    // Inicializa la variable para determinar si el comando es válido.
+    bool comando_valido = false;
+
+    // Crea un iterador para la lista de instrucciones definidas.
+    t_list_iterator* iterador_carousel = list_iterator_create(lista_instrucciones_permitidas);
+    
+    // Itera a través de cada instrucción disponible para encontrar una coincidencia.
+    while (list_iterator_has_next(iterador_carousel)) {
+        t_instruccion_consola* instruccion = list_iterator_next(iterador_carousel);
+        
+        // Compara el nombre de la instrucción con el primer elemento del comando dividido.
+        if (strcmp(instruccion->nombre , comando_consola[0]) == 0) {
+            // Comprueba si la cantidad de parámetros coincide con la definición de la instrucción.
+            if (instruccion->cantidad_parametros == cantidad_de_parametros) {
+                // Marca el comando como válido y detiene la iteración ya que se encontró una coincidencia completa.
+                comando_valido = true;
+                printf("> ");
                 break;
-
-            case INICIAR_PLANIFICACION:
-                log_info(logger_kernel, "Proximamente Iniciando planificación...");
-                break;
-
-            case DETENER_PLANIFICACION:
-                log_info(logger_kernel, "Proximamente Se detiene la planificación...");
-                break;
-
-            case MULTIPROGRAMACION:
-                int nuevo_grado_mult = atoi(list_get(comando->parametros,0));
-				int grado_multiprogramacion_viejo = GRADO_MULTIPROGRAMACION;
-                cambiar_multiprogramacion(nuevo_grado_mult, m_multiprogramacion);
-                log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo, nuevo_grado_mult));
-                // log_info(logger_kernel, "Proximamente hace su magia...");
-                break;
-
-            case INICIAR_PROCESO:
-                t_pcb* pcb_inicializado = crear_pcb(list_get(comando->parametros, 0));
-                log_info(logger_kernel, "El id del pcb es: %d", pcb_inicializado->pid);
-                pthread_t hilo_iniciar_proceso;
-                pthread_create(&hilo_iniciar_proceso, NULL, (void*)planificador_lp_nuevo_proceso, pcb_inicializado);
-                pthread_detach(hilo_iniciar_proceso);
-
-                log_info(logger_kernel, "Proximamente Iniciando proceso...");
-                break;
-
-            case FINALIZAR_PROCESO:
-                log_info(logger_kernel, "Proximamente Finalizando proceso...");
-                break;
-
-            case PROCESO_ESTADO:
-                log_info(logger_kernel, "Proximamente Estado del proceso...");
-                break;
-
-            case EJECUTAR_SCRIPT:
-                log_info(logger_kernel, "Proximamente Ejecutando script...");
-                break;
-
-            default:
-                log_error(logger_kernel, "No se pudo ejecutar: %s", leido);
-                break;
-        }
-
-        free(leido);
-
-        if (comando->parametros != NULL)
-        {	
-            for (int i = 0; i < list_size(comando->parametros); i++)
-            {
-                free(list_get(comando->parametros, i));
+            } else {
+                // Registra un aviso si el comando fue reconocido pero el número de parámetros no coincide.
+                log_warning(logger_kernel, "Número de parámetros incorrecto para el comando %s", comando_consola[0]);
             }
         }
-
-        list_destroy(comando->parametros);
-        free(comando);
-
-        leido = readline(">");
     }
 
-    if(string_equals_ignore_case(leido, "EXIT") || string_equals_ignore_case(leido, "SALIR")){
-        kill(0, SIGINT);
+    // Si después de la iteración el comando no es válido, registra un error.
+    if (!comando_valido) {
+        log_error(logger_kernel, "Comando no reconocido o parámetros incorrectos: %s", leido);
     }
 
-    free(leido);
-    pthread_exit(NULL);
+    // Destruye el iterador para liberar recursos.
+    list_iterator_destroy(iterador_carousel);
     
+    // Libera el array de cadenas generado por `string_split`.
+    string_array_destroy(comando_consola);
+
+    // Retorna true si el comando es válido, false de lo contrario.
+    return comando_valido;
 }
 
-// Ejecutar Script de Instrucciones: Se encargará de abrir un archivo de instrucciones el cual se encontrará en la máquina donde corra el Kernel contendrá 
-// alguna de las siguientes 5 Instrucciones y que las deberá ejecutar una a una hasta finalizar el archivo.
-// Nomenclatura: EJECUTAR_SCRIPT [PATH]
+static void _ejecutar_comando_validado(char* leido) {
+    char** comando_consola = string_split(leido, " ");
 
-// Iniciar proceso: Se encargará de ejecutar un nuevo proceso en base a un archivo dentro del file system de linux que se encontrará en la máquina donde 
-// corra la Memoria. Dicho mensaje se encargará de la creación del proceso (PCB) y dejará el mismo en el estado NEW.
-// Nomenclatura: INICIAR_PROCESO [PATH]
+    // Función para buscar la instrucción en la lista.
+    bool _buscar_instruccion_consola(t_instruccion_consola* instruccion) {
+        return strcmp(instruccion->nombre , comando_consola[0]) == 0;
+    }
 
-// Finalizar proceso: Se encargará de finalizar un proceso que se encuentre dentro del sistema. Este mensaje se encargará de realizar las mismas operaciones 
-// como si el proceso llegara a EXIT por sus caminos habituales (deberá liberar recursos, archivos y memoria).
-// Nomenclatura: FINALIZAR_PROCESO [PID]
+    // Encontrar la instrucción correspondiente.
+    t_instruccion_consola* instruccion = list_find(lista_instrucciones_permitidas, (void*) _buscar_instruccion_consola);
 
-// Detener planificación: Este mensaje se encargará de pausar la planificación de corto y largo plazo. El proceso que se encuentra en ejecución NO es desalojado, 
-// pero una vez que salga de EXEC se va a pausar el manejo de su motivo de desalojo. De la misma forma, los procesos bloqueados van a pausar su transición a la cola de Ready.
-// Nomenclatura: DETENER_PLANIFICACION
-
-// Iniciar planificación: Este mensaje se encargará de retomar (en caso que se encuentre pausada) la planificación de corto y largo plazo. En caso que la 
-// planificación no se encuentre pausada, se debe ignorar el mensaje.
-// Nomenclatura: INICIAR_PLANIFICACION
-
-// Modificar el grado de multiprogramación del módulo: Se cambiará el grado de multiprogramación del sistema reemplazandolo por el valor indicado.
-// Nomenclatura: MULTIPROGRAMACION [VALOR]
-
-// Listar procesos por estado: Se encargará de mostrar por consola el listado de los estados con los procesos que se encuentran dentro de cada uno de ellos.
-// Nomenclatura: PROCESO_ESTADO
-
-void _setup_parametros(t_comando* comando, char** leido_separado, int cod_op)
-{
-    if(string_array_size(leido_separado) != 2)
-    {
-        error_show("Parametros incorrectos."); 
+    if (instruccion == NULL) {
+        log_error(logger_kernel, "Instrucción no reconocida: %s", comando_consola[0]);
+        string_array_destroy(comando_consola);
         return;
     }
-    comando->cod_op = cod_op;
-    char* parametro = malloc(strlen(leido_separado[1])+1);
-    strcpy(parametro, leido_separado[1]);
-    list_add(comando->parametros, parametro);
-}
-
-void imprimir_comandos_permitidos()
-{
-	printf("============= COMANDOS AUTORIZADOS ============\n");
-	printf("EJECUTAR_SCRIPT [PATH]\n");
-	printf("INICIAR_PROCESO [PATH]\n");
-	printf("FINALIZAR_PROCESO [PID]\n");
-	printf("DETENER_PLANIFICACION\n");
-	printf("INICIAR_PLANIFICACION\n");
-	printf("MULTIPROGRAMACION [VALOR]\n");
-	printf("PROCESO_ESTADO\n");
-	printf("===============================================\n");
-}
-
-void interpretar(t_comando* comando, char* leido)
-{
-	char**leido_separado = string_split(leido, " ");
-
-	comando->cod_op = 500;
-
-    if(string_equals_ignore_case(leido_separado[0], "HELPER")){
-        comando->cod_op = HELPER;
+    // Evaluar en el SWITCH CASE
+    switch (instruccion->cod_identificador) {
+        case EJECUTAR_SCRIPT:{
+            ejecutar_script(comando_consola[1]);
+            break;
+    break;
+        }
+        case INICIAR_PROCESO: {
+            t_pcb* pcb_inicializado = crear_pcb(comando_consola[1]);
+            log_info(logger_kernel, "El id del pcb es: %d", pcb_inicializado->pid);
+            pthread_t hilo_iniciar_proceso;
+            pthread_create(&hilo_iniciar_proceso, NULL, (void*)planificador_lp_nuevo_proceso, pcb_inicializado);
+            pthread_detach(hilo_iniciar_proceso);
+            break;
+        }
+        case FINALIZAR_PROCESO: {
+            finalizar_proceso(atoi(comando_consola[1]));
+            break;
+        }
+        case DETENER_PLANIFICACION:
+            pthread_t hilo_deneter_planificacion;
+            pthread_create(&hilo_deneter_planificacion, NULL, (void*)_detener_planificacion, NULL);
+            pthread_detach(hilo_deneter_planificacion);            
+            break;
+        case INICIAR_PLANIFICACION:
+            pthread_t hilo_iniciar_planificacion;
+            pthread_create(&hilo_iniciar_planificacion, NULL, (void*)_iniciar_planificacion, NULL);
+            pthread_detach(hilo_iniciar_planificacion);     
+            break;
+        case MULTIPROGRAMACION: {
+            int nuevo_grado_mult = atoi(comando_consola[1]);
+            // int grado_multiprogramacion_viejo = GRADO_MULTIPROGRAMACION;
+            cambiar_multiprogramacion(nuevo_grado_mult);
+            //log_protegido_kernel(string_from_format("Grado Anterior: <%d> - Grado Actual: <%d>",grado_multiprogramacion_viejo, nuevo_grado_mult));
+            // log_info(logger_kernel, "Proximamente hace su magia...");
+            break;
+        }
+        case PROCESO_ESTADO:{
+            listar_los_pid_por_lista();    
+            break;
+        }
+        default:
+            log_warning(logger_kernel, "Operación no soportada.");
+            break;
     }
 
-	if(string_equals_ignore_case(leido_separado[0],"INICIAR_PLANIFICACION")){ // Nomenclatura: INICIAR_PLANIFICACION
-		comando->cod_op = INICIAR_PLANIFICACION;
-	}
-
-	if(string_equals_ignore_case(leido_separado[0],"DETENER_PLANIFICACION")) // Nomenclatura: DETENER_PLANIFICACION
-	{
-		comando->cod_op = DETENER_PLANIFICACION;
-	}
-
-	if(string_equals_ignore_case(leido_separado[0],"MULTIPROGRAMACION")) // Nomenclatura: MULTIPROGRAMACION [VALOR]
-	{
-        _setup_parametros(comando, leido_separado, MULTIPROGRAMACION);
-	}
-
-	if(string_equals_ignore_case(leido_separado[0],"INICIAR_PROCESO")) // Nomenclatura: INICIAR_PROCESO [PATH]
-	{
-        _setup_parametros(comando, leido_separado, INICIAR_PROCESO);
-	}
-
-	if(string_equals_ignore_case(leido_separado[0],"FINALIZAR_PROCESO")) // Nomenclatura: FINALIZAR_PROCESO [PID]
-	{
-        _setup_parametros(comando, leido_separado, FINALIZAR_PROCESO);
-	}
-
-	if(string_equals_ignore_case(leido_separado[0],"PROCESO_ESTADO")) // Nomenclatura: PROCESO_ESTADO
-	{
-		comando->cod_op = PROCESO_ESTADO;
-	}
-
-    if (string_equals_ignore_case(leido_separado[0], "EJECUTAR_SCRIPT")) // Nomenclatura: EJECUTAR_SCRIPT [PATH]
-    {
-        _setup_parametros(comando, leido_separado, EJECUTAR_SCRIPT);
-    }
-    
-
-    for (int i = 0; leido_separado[i] != NULL; i++)
-    {
-        free(leido_separado[i]);
-    }
-    
-	free(leido_separado);
+    string_array_destroy(comando_consola);
 }
 
-void cambiar_multiprogramacion(int nuevo_grado_mult, sem_t m_multiprogramacion)
+void procesar_comandos_consola() {
+    // Leer el primer comando.
+    char* leido = readline("> ");
+    // Continuar leyendo mientras la línea no esté vacía.
+    while (leido != NULL && strcmp(leido, "") != 0) {
+        // Validar y procesar el comando si es válido.
+        if (_check_instruccion(leido)) {
+            printf("Comando válido\n");
+            _ejecutar_comando_validado(leido);
+        } else {
+            printf("Comando inválido o incorrecto\n");
+        }
+        // Liberar la memoria asignada a la línea leída y leer la siguiente.
+        free(leido);
+        leido = readline("> ");
+    }
+    // Liberar la última lectura si es nula o vacía.
+    if (leido) {
+        free(leido);
+    }
+}
+
+void cambiar_multiprogramacion(int nuevo_grado_mult)
 {
-    if(nuevo_grado_mult < GRADO_MULTIPROGRAMACION)
-    {
-        for(int i = nuevo_grado_mult; i < GRADO_MULTIPROGRAMACION; i++)
-        {
-            sem_wait(&m_multiprogramacion); 
+    pthread_mutex_lock(&mutex_grado_multiprogramacion);  // Asegurar acceso atómico a GRADO_MULTIPROGRAMACION
+    if (nuevo_grado_mult < GRADO_MULTIPROGRAMACION) {
+        for (int i = GRADO_MULTIPROGRAMACION; i > nuevo_grado_mult; i--) {
+            sem_wait(&sem_multiprogramacion);  // Reducir la capacidad permitida de multiprogramación
+        }
+    } else if (nuevo_grado_mult > GRADO_MULTIPROGRAMACION) {
+        for (int i = GRADO_MULTIPROGRAMACION; i < nuevo_grado_mult; i++) {
+            sem_post(&sem_multiprogramacion);  // Aumentar la capacidad permitida de multiprogramación
         }
     }
-    else
-    {
-        for(int i = nuevo_grado_mult; i > GRADO_MULTIPROGRAMACION; i++)
-        {
-            sem_post(&m_multiprogramacion); 
-        }
-    }
-
     GRADO_MULTIPROGRAMACION = nuevo_grado_mult;
+    pthread_mutex_unlock(&mutex_grado_multiprogramacion);  // Liberar el mutex
+}
+
+static void ejecutar_script(const char* path) {
+    FILE* archivo = fopen(path, "r");
+    if (!archivo) {
+        log_error(logger_kernel, "No se pudo abrir el archivo de script: %s", path);
+        return;
+    }
+
+    char* linea = NULL;
+    size_t longitud = 0;
+    ssize_t leido;
+
+    while ((leido = getline(&linea, &longitud, archivo)) != -1) {
+        // Elimina el salto de línea al final de la línea leída
+        if (linea[leido - 1] == '\n') {
+            linea[leido - 1] = '\0';
+        }
+        
+        // Procesa la línea como si fuera un comando ingresado en la consola
+        if (_check_instruccion(linea)) {
+            _ejecutar_comando_validado(linea);
+        } else {
+            printf("Comando inválido o incorrecto en el script\n");
+        }
+        sleep(1);
+    }
+
+    free(linea); // Liberar la línea leída
+    fclose(archivo); // Cerrar el archivo
 }
