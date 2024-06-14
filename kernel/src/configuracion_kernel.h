@@ -94,6 +94,7 @@ extern pthread_mutex_t mutex_plan_exit;
 extern pthread_mutex_t mutex_procesos_planificados; 
 extern pthread_mutex_t mutex_detener_planificacion;
 extern pthread_mutex_t mutex_grado_multiprogramacion;
+extern pthread_mutex_t mutex_finalizar_proceso;
 //pcb
 extern pthread_mutex_t mutex_pid_proceso;
 //recursos
@@ -110,6 +111,8 @@ extern int pid_proceso;
 
 //planificacion
 extern int planificacion_detenida;
+extern bool proceso_finalizando;
+
 extern int GRADO_MULTIPROGRAMACION;
 extern int cantidad_procesos_planificados;
 extern t_planificacion ALGORITMO_PLANIFICACION; //main.h

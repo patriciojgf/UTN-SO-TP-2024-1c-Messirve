@@ -69,7 +69,58 @@ void atender_peticiones_interrupt(){
         int size=0;
         void* buffer;
         switch(cod_op){
+            case INT_FINALIZAR_PROCESO:
+                log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO mutex_ejecucion_proceso");
+                log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
+
+                pthread_t hilo_llego_interrupcion;
+                pthread_create(&hilo_llego_interrupcion, NULL, (void*)ejecutando_interrupcion, NULL);
+                pthread_detach(hilo_llego_interrupcion);                
+
+                log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
+                pthread_mutex_lock(&mutex_ejecucion_proceso);
+
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                size=0;
+                buffer = recibir_buffer(&size, socket_cliente_interrupt);
+                motivo_interrupt=INT_FINALIZAR_PROCESO;
+                memcpy(&(pid_interrupt), buffer , sizeof(int)); 
+
+                if(contexto_cpu->pid==pid_interrupt){
+                    log_warning(logger_cpu,"flag_interrupt=true");
+                    flag_interrupt=true;
+                    if(flag_ejecucion == false){
+                        log_warning(logger_cpu,"if(flag_ejecucion == false)");
+                        // typedef struct
+                        // {
+                        //     int identificador; //identificador de la instruccion
+                        //     int cantidad_parametros; //cantidad de parametros que tiene la instruccion
+                        //     t_list* parametros; //lista de parametros sin contar el identificador
+                        // }t_instruccion;
+                        // Crear instruccion dummy                 
+                        t_instruccion* inst_decodificada = malloc(sizeof(t_instruccion));
+                        inst_decodificada->parametros =list_create();
+                        inst_decodificada->identificador = -1;
+                        inst_decodificada->cantidad_parametros = 0;
+                        devolver_contexto_a_dispatch(motivo_interrupt, inst_decodificada);
+                        free(inst_decodificada);
+                    }
+                }
+                else{
+                    log_warning(logger_cpu,"flag_interrupt=false");
+                    log_warning(logger_cpu,"pid: %d",pid_interrupt);
+                    log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
+                }
+                free(buffer);
+                ejecutando_interrupcion_fin();
+                pthread_mutex_unlock(&mutex_ejecucion_proceso);
+                break;
             case FIN_QUANTUM:
+                log_info(logger_cpu,"[ATENDER INTERRUPT]:FIN_QUANTUM hilo_llego_interrupcion");
+                pthread_t hilo_llego_interrupcion_f_q;
+                pthread_create(&hilo_llego_interrupcion_f_q, NULL, (void*)ejecutando_interrupcion, NULL);
+                pthread_detach(hilo_llego_interrupcion_f_q);       
+
 		        pthread_mutex_lock(&mutex_ejecucion_proceso);
                 log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 log_warning(logger_cpu,"fin de quantum");
@@ -91,6 +142,7 @@ void atender_peticiones_interrupt(){
 
                 }
                 free(buffer);
+                ejecutando_interrupcion_fin();
 		        pthread_mutex_unlock(&mutex_ejecucion_proceso);
                 break;
             case INT_SIGNAL:

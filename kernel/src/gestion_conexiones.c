@@ -147,27 +147,40 @@ void atender_peticiones_memoria(){
 void atender_peticiones_dispatch(){
 	while(1){
 		int cod_op = recibir_operacion(socket_dispatch);
+		log_info(logger_kernel,"[ATENDER DISPATCH]:recibir_operacion]");
 		// //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: Recibi operacion"));
 		switch (cod_op) {
 			case CONTEXTO_EJECUCION:
+				log_info(logger_kernel,"[ATENDER DISPATCH]:CONTEXTO_EJECUCION]");
 		        // //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: CONTEXTO_EJECUCION"));
 				int motivo;
 				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
 				instrucciones->parametros =list_create();
-				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);
-				
-				//verifico si la planificacion esta activa.
-				check_detener_planificador();
-				
+				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);	
+
+				pthread_mutex_lock(&mutex_finalizar_proceso);
+				if(proceso_finalizando && (motivo != INT_FINALIZAR_PROCESO)){
+					log_info(logger_kernel,"[ATENDER DISPATCH]:Recibi operacion pero estoy esperando FINALIZAR_PROCESO");
+					pthread_mutex_unlock(&mutex_finalizar_proceso);	
+					continue;	
+				}
+				pthread_mutex_unlock(&mutex_finalizar_proceso);				
 				switch(motivo){
+					case INT_FINALIZAR_PROCESO:	
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_FINALIZAR_PROCESO", proceso_exec->pid);
+						atender_cpu_int_finalizar_proceso(proceso_exec);
+						pthread_mutex_lock(&mutex_finalizar_proceso);
+        				proceso_finalizando = false;
+        				pthread_mutex_unlock(&mutex_finalizar_proceso);
+						break;
 					case EXIT:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));						
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_exit(proceso_exec,"SUCCESS");
 						break;
 					case IO_GEN_SLEEP:
 						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid);
-						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid));
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_gen_sleep(proceso_exec,instrucciones);
 						break;
@@ -175,7 +188,7 @@ void atender_peticiones_dispatch(){
 						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid));
 						sem_post(&sem_pcb_desalojado);
-						atender_cpu_fin_quantum(proceso_exec);	
+						atender_cpu_fin_quantum(proceso_exec);
 						break;
 					case WAIT:
 						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - WAIT", proceso_exec->pid);
@@ -373,5 +386,5 @@ void envio_interrupcion(int pid, int motivo){
 	t_paquete* paquete_interrupcion= crear_paquete(motivo);
 	agregar_datos_sin_tamaño_a_paquete(paquete_interrupcion,&pid,sizeof(int));
 	enviar_paquete(paquete_interrupcion,socket_interrupt);
-	eliminar_paquete(paquete_interrupcion);
+	eliminar_paquete(paquete_interrupcion);	
 }

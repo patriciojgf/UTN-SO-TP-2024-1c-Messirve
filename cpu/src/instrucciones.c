@@ -477,10 +477,14 @@ void ejecutar_proceso(){
                 break;
         }
         contexto_cpu->program_counter++;
+		contexto_cpu->registros_cpu.PC = contexto_cpu->program_counter;
+		log_info(logger_cpu,"pthread_mutex_unlock(&mutex_ejecucion_proceso)1");
 		pthread_mutex_unlock(&mutex_ejecucion_proceso);
 
+		check_recibiendo_interrupcion();
 
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
+		log_info(logger_cpu,"pthread_mutex_lock(&mutex_ejecucion_proceso)2");
 		//Desalojos por instrucciones ejecutadas
 		if(motivo_desalojo > -1){
 			flag_ejecucion = false;
@@ -504,7 +508,37 @@ void ejecutar_proceso(){
         free(instruccion_actual);
 		instruccion_actual=NULL; 
 		pthread_mutex_unlock(&mutex_ejecucion_proceso);
+		log_info(logger_cpu,"pthread_mutex_unlock(&mutex_ejecucion_proceso)2");
 
         //log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción completada y recursos liberados.");
+    }
+}
+
+
+
+// AUXILIARES
+void check_recibiendo_interrupcion(){
+    pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
+    if(llego_interrupcion == 1){
+        sem_wait(&sem_check_recibiendo_interrupcion);
+    }
+    pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
+}
+
+void ejecutando_interrupcion_fin(){
+    if(llego_interrupcion == 0){
+    }
+    else{
+        llego_interrupcion = 0;
+        sem_post(&sem_check_recibiendo_interrupcion);
+    }    
+}
+
+void ejecutando_interrupcion(){
+    if(llego_interrupcion == 1){
+    }
+    else{
+        llego_interrupcion = 1;
+        check_recibiendo_interrupcion();
     }
 }

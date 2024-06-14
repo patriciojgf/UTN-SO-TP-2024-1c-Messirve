@@ -16,6 +16,7 @@
 
 int conexiones;
 int planificacion_detenida = 1;
+bool proceso_finalizando = false;
 
 t_log* logger_kernel;
 t_config* config_kernel;
@@ -98,6 +99,7 @@ pthread_mutex_t mutex_plan_exit;
 pthread_mutex_t mutex_procesos_planificados;
 pthread_mutex_t mutex_detener_planificacion;
 pthread_mutex_t mutex_grado_multiprogramacion;
+pthread_mutex_t mutex_finalizar_proceso;
 //pcb
 pthread_mutex_t mutex_pid_proceso;
 //recursos

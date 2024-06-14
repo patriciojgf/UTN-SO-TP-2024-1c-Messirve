@@ -88,7 +88,8 @@ typedef enum
 	IO_FS_READ,
 	EXIT,
 	FIN_QUANTUM,
-	INT_SIGNAL
+	INT_SIGNAL,
+	INT_FINALIZAR_PROCESO
 /*INSTRUCCIONES - FIN*/
     /*agregar el resto*/
 }op_code;

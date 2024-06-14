@@ -40,6 +40,7 @@ static void _iniciar_planificacion(){
     else{
         planificacion_detenida = 0;
         sem_post(&sem_planificacion_activa);
+        log_info(logger_kernel, "_iniciar_planificacion:sem_planificacion_activa");
     }    
 }
 
@@ -122,9 +123,8 @@ static void _ejecutar_comando_validado(char* leido) {
             break;
         }
         case FINALIZAR_PROCESO: {
-            // char* copia_del_pid = string_duplicate(comando_consola->parametros, 1));
-            
-            // break;
+            finalizar_proceso(atoi(comando_consola[1]));
+            break;
         }
         case DETENER_PLANIFICACION:
             pthread_t hilo_deneter_planificacion;

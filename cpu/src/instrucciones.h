@@ -18,6 +18,11 @@ typedef struct {
     size_t tamano;  // Tamaño del registro en bytes
 } info_registro_cpu;
 
+//interrupciones
+void ejecutando_interrupcion();
+void ejecutando_interrupcion_fin();
+void check_recibiendo_interrupcion();
+
 // char* fetch_instruccion();
 void ejecutar_proceso();
 char* recibir_instruccion(int socket_cliente);

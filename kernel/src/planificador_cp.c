@@ -43,7 +43,7 @@ void planificador_cp(){
         sem_wait(&sem_plan_exec_libre); //espero que haya lugar para ejecutar     
         
         //verifico si la planificacion esta activa.
-        check_detener_planificador();           
+        check_detener_planificador();
 
         pthread_mutex_lock(&mutex_plan_ready);
         pthread_mutex_lock(&mutex_plan_ready_vrr);
@@ -56,7 +56,6 @@ void planificador_cp(){
                     //valido si hay prioridad
                     if(!list_is_empty(lista_plan_ready_vrr)){
                         pcb_ready = list_remove(lista_plan_ready_vrr, 0); //saco el pcb de ready para pasarlo a exec
-                        log_info(logger_kernel,"[PLANIFICADOR_CP] - hay PCB en lista ready vrr - quantum restante: %d",pcb_ready->quantum);
                     }
                     else{
                         pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
@@ -105,7 +104,6 @@ void planificador_cp(){
 
 
 t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb){
-        
 	t_pcb* un_pcb;
 	bool __buscar_pcb(t_pcb* void_pcb){
 		if(void_pcb->pid == pid_buscado){
@@ -154,28 +152,19 @@ t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb){
 // }
 
 static void _quantum_wait(t_pcb* pcb){
-    log_warning(logger_kernel,"_quantum_wait");
-    log_warning(logger_kernel,"_quantum disponible: %d", pcb->quantum);
     usleep(pcb->quantum*1000);
-    log_warning(logger_kernel,"fin de quantum");
-    //log_protegido_kernel(string_from_format("[_quantum_wait] - PID %d", pcb->pid));
     envio_interrupcion(pcb->pid, FIN_QUANTUM);
 }
 
 static void _esperar_liberar_quantum(t_pcb* pcb){
-    log_warning(logger_kernel,"hilo_esperar_quantum");
-    //armo hilo pthread_create llamando a _quantum_wait y pasandole pcb como parametro
     pthread_create(&hilo_esperar_quantum, NULL, (void*)_quantum_wait, pcb);
     pthread_detach(hilo_esperar_quantum);
 
     sem_wait(&sem_pcb_desalojado);
-    
-    log_warning(logger_kernel,"libero quantum, ya se desalojo el proceso");
     pthread_cancel(hilo_esperar_quantum);
 }
 
 static void _esperar_vrr(t_pcb* pcb){
-    log_warning(logger_kernel,"_esperar_vrr");
     t_temporal* quantum_usado = temporal_create();
     _esperar_liberar_quantum(pcb);
     temporal_stop(quantum_usado);

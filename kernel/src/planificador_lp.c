@@ -6,6 +6,8 @@
 // Función para mover PCB a READY
 // Se usa en el planificador LP y cuando los procesos se desbloqueen
 void mover_proceso_a_ready(t_pcb* pcb) {
+        log_info(logger_kernel, "mover_proceso_a_ready");
+        check_detener_planificador();
         pcb->estado_anterior = pcb->estado_actual;
         pcb->estado_actual = estado_READY;
         
@@ -19,10 +21,12 @@ void mover_proceso_a_ready(t_pcb* pcb) {
         //valido si estamos en VRR
         if (ALGORITMO_PLANIFICACION==VRR && pcb->quantum < QUANTUM) {
             list_add(lista_plan_ready_vrr, pcb);
+            //Log obligatorio
             log_info(logger_kernel,"Cola Ready Prioridad: %s", listado_pids(lista_plan_ready_vrr));
         }
         else{ 
             list_add(lista_plan_ready, pcb);
+            //Log obligatorio
             log_info(logger_kernel,"Cola Ready: %s", listado_pids(lista_plan_ready));
         }
         // cantidad_procesos_planificados++;  // Incrementar contador de procesos planificados
@@ -34,9 +38,11 @@ void mover_proceso_a_ready(t_pcb* pcb) {
 }
 
 void mover_proceso_a_exit(t_pcb* pcb){
+    check_detener_planificador();
     liberar_recursos_pcb(pcb);
-    liberar_estructuras_memoria(pcb);
-
+    if (!pcb->estado_actual == estado_NEW){
+        liberar_estructuras_memoria(pcb);
+    }
     pcb->estado_anterior = pcb->estado_actual;
     pcb->estado_actual = estado_EXIT;
     log_info(logger_kernel, "Cambio de Estado: PID: %d - Estado Anterior: %s - Estado Actual: %s", pcb->pid, estado_string(pcb->estado_anterior), estado_string(pcb->estado_actual));
@@ -44,15 +50,27 @@ void mover_proceso_a_exit(t_pcb* pcb){
     pthread_mutex_lock(&mutex_plan_exit);
     list_add(lista_plan_exit, pcb);
     pthread_mutex_unlock(&mutex_plan_exit);
-    
-    sem_post(&sem_multiprogramacion);
+    if (pcb->estado_anterior==estado_READY){
+        sem_wait(&sem_plan_ready);
+        sem_post(&sem_multiprogramacion);
+    }
+    if (pcb->estado_anterior==estado_EXEC||pcb->estado_anterior==estado_BLOCKED){
+        sem_post(&sem_multiprogramacion);
+    }
 }
 
 void mover_proceso_a_blocked(t_pcb* pcb, char* motivo){
+    log_info(logger_kernel, "mover_proceso_a_blocked");
+    check_detener_planificador();
+    log_info(logger_kernel, "mover_proceso_a_blocked");
     pcb->estado_anterior = pcb->estado_actual;
+    log_info(logger_kernel, "mover_proceso_a_blocked");
     pcb->estado_actual = estado_BLOCKED;
+    log_info(logger_kernel, "mover_proceso_a_blocked");
     pthread_mutex_lock(&mutex_plan_blocked);
+    log_info(logger_kernel, "mover_proceso_a_blocked");
     list_add(lista_plan_blocked, pcb);
+    log_info(logger_kernel, "mover_proceso_a_blocked");
 
     //Log obligatorio
     log_info(logger_kernel, "PID: <%d> - Bloqueado por: <%s>", pcb->pid, motivo);
@@ -134,6 +152,7 @@ void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb) {
 }
 
 void enviar_proceso_a_memoria(t_pcb* pcb, char* path){
+    log_info(logger_kernel, "enviar_proceso_a_memoria");
     t_paquete* paquete_a_enviar = crear_paquete(INICIAR_PROCESO_MEMORIA);
     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(pcb->pid),sizeof(int));
     agregar_a_paquete(paquete_a_enviar,path,strlen(path)+1);
@@ -164,7 +183,7 @@ t_recurso* obtener_recurso(char* recurso){
 
 void liberar_estructuras_memoria(t_pcb* pcb){
     //verifico si la planificacion esta activa.
-    check_detener_planificador();   
+    // check_detener_planificador();   
 
     // Envio peticion a memoria para liberar las estructuras de un proceso.
     t_paquete* paquete = crear_paquete(LIBERAR_ESTRUCTURAS_MEMORIA);
@@ -174,17 +193,7 @@ void liberar_estructuras_memoria(t_pcb* pcb){
     sem_wait(&s_memoria_liberada_pcb);
 }
 
-void liberar_recursos_pcb(t_pcb* pcb){    
-    //verifico si la planificacion esta activa.
-    check_detener_planificador();   
-    // Liberar cualquier recurso que realmente haya sido asignado al PCB.
-    while (!list_is_empty(pcb->recursos_asignados)) {
-        t_recurso* recurso_asignado = list_remove(pcb->recursos_asignados, 0);
-        atender_cpu_signal(pcb, recurso_asignado); 
-    }
-    list_destroy(pcb->recursos_asignados);
-    pcb->recursos_asignados = NULL; // Asegurar que la referencia en el PCB no apunte a una lista ya destruida.
-
+void liberar_recursos_pcb(t_pcb* pcb){  
 
     // Quita el PCB de la lista de bloqueados de cada recurso.
     pthread_mutex_lock(&mutex_lista_recursos);
@@ -203,6 +212,18 @@ void liberar_recursos_pcb(t_pcb* pcb){
         }
     }
     pthread_mutex_unlock(&mutex_lista_recursos);
+
+    log_info(logger_kernel,"liberar_recursos_pcb");  
+    // Liberar cualquier recurso que realmente haya sido asignado al PCB.
+    while (!list_is_empty(pcb->recursos_asignados)) {
+        log_info(logger_kernel,"(!list_is_empty(pcb->recursos_asignados))");  
+        t_recurso* recurso_asignado = list_remove(pcb->recursos_asignados, 0);
+        atender_cpu_signal(pcb, recurso_asignado); 
+    }
+    log_info(logger_kernel,"(list_destroy))");  
+    list_destroy(pcb->recursos_asignados);
+    pcb->recursos_asignados = NULL; // Asegurar que la referencia en el PCB no apunte a una lista ya destruida.
+
 }
 /*--------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------*/
@@ -230,6 +251,57 @@ char* listado_pids(t_list* lista){
     }
     string_append(&pids, "]");
     return pids;
+}
+
+void finalizar_proceso(int pid) {
+    log_info(logger_kernel, "Finalizando proceso PID %d", pid);
+
+    if (proceso_exec && proceso_exec->pid == pid) {
+
+        pthread_mutex_lock(&mutex_finalizar_proceso);
+        proceso_finalizando = true;
+        pthread_mutex_unlock(&mutex_finalizar_proceso);
+
+        sem_post(&sem_pcb_desalojado);
+        log_info(logger_kernel, "Finalizando proceso en ejecución PID %d", pid);
+        envio_interrupcion(pid, INT_FINALIZAR_PROCESO);
+        return;
+    }
+
+    t_pcb* pcb = NULL;
+    pthread_mutex_t* mutex_actual = NULL;
+    // t_list* lista_actual = NULL;
+
+    // Arreglo de listas y sus mutex para simplificar la búsqueda
+    t_list* listas[] = {lista_plan_new, lista_plan_ready, lista_plan_ready_vrr, lista_plan_blocked};
+    
+    pthread_mutex_t* mutexes[] = {&mutex_plan_new, &mutex_plan_ready, &mutex_plan_ready_vrr, &mutex_plan_blocked};
+
+    for (int i = 0; i < 4 ; i++) {
+        log_info(logger_kernel, "Buscando en lista %d", i);
+        // pthread_mutex_lock(mutexes[i]);
+        pcb = buscar_pcb_por_pid(pid, listas[i]);
+        log_info(logger_kernel, "Buscando en lista %d", i);
+        if (pcb != NULL) {
+            list_remove_element(listas[i], pcb); 
+            log_info(logger_kernel, "Buscando en lista %d", i);
+            mutex_actual = mutexes[i];
+            log_info(logger_kernel, "Buscando en lista %d", i);
+            // lista_actual = listas[i];
+            break;
+        }
+        // pthread_mutex_unlock(mutexes[i]);
+    }
+
+    if (pcb) {
+        pthread_mutex_unlock(mutex_actual);
+        mover_proceso_a_exit(pcb);
+        //log obligatorio
+        log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <INTERRUPTED_BY_USER>", pcb->pid);     
+
+    } else {
+        log_warning(logger_kernel, "No se encontró el proceso PID %d para finalizar", pid);
+    }
 }
 /*--------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------*/

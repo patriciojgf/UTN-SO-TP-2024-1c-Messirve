@@ -18,6 +18,7 @@ void mover_proceso_a_exit(t_pcb* pcb);
 t_recurso* obtener_recurso(char* recurso);
 void liberar_estructuras_memoria(t_pcb* pcb);
 void liberar_recursos_pcb(t_pcb* pcb);
+void finalizar_proceso(int pid);
 
 
 char* listado_pids(t_list* lista);

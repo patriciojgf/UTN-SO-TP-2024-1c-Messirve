@@ -4,18 +4,24 @@ static void _enviar_peticiones_io_gen(t_interfaz *interfaz);
 static t_interfaz* _obtener_interfaz(char* nombre);
 
 /*---------------------------------------------------------*/
+void atender_cpu_int_finalizar_proceso(t_pcb* pcb){
+    atender_cpu_exit(pcb, string_from_format("INTERRUPTED_BY_USER")); 
+}
+
+
 void atender_cpu_exit(t_pcb* pcb, char* motivo_exit){
  
     check_detener_planificador();   
-    
-    mover_proceso_a_exit(pcb);
-    //log obligatorio
-    log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->pid, motivo_exit);  
-    
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
     sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
+
+    mover_proceso_a_exit(pcb);
+    //log obligatorio
+    log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->pid, motivo_exit);  
+    
+
 
     // liberar_recursos_pcb(pcb);
     // liberar_estructuras_memoria(pcb);
@@ -215,9 +221,6 @@ static void _enviar_peticiones_io_gen(t_interfaz *interfaz){
     eliminar_paquete(paquete_pedido);
     //espero el ok
     sem_wait(&pedido->semaforo_pedido_ok);
-
-    //verifico si la planificacion esta activa.
-    check_detener_planificador();    
 
     list_remove(interfaz->cola_procesos, 0);
     desbloquar_proceso(pedido->pcb->pid);

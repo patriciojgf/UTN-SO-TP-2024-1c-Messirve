@@ -35,10 +35,12 @@ static void iniciar_semaforos(){
     sem_init(&s_instruccion_actual,0,0);
     sem_init(&s_signal_kernel,0,0);
     sem_init(&s_fetch_espere_instruccion,0,0);
+    sem_init(&sem_check_recibiendo_interrupcion,0,0);
 }
 
 static void iniciar_mutex(){
     pthread_mutex_init(&mutex_ejecucion_proceso,NULL);
+    pthread_mutex_init(&mutex_check_recibiendo_interrupcion,NULL);
 }
 
 static void iniciar_estructuras(){

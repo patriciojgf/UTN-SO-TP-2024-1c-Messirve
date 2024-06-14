@@ -16,6 +16,7 @@ void atender_cpu_fin_quantum(t_pcb* pcb);
 void atender_cpu_wait(t_pcb* proceso_exec, t_instruccion* instruccion);
 void atender_cpu_signal(t_pcb* pcb, t_recurso* recurso);
 void atender_cpu_int_signal(t_pcb* pcb);
+void atender_cpu_int_finalizar_proceso(t_pcb* pcb);
 
 
 #endif /*ATENDER_CPU_H*/

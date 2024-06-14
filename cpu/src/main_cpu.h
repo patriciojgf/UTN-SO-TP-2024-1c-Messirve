@@ -10,15 +10,18 @@
 //contexto
 t_contexto* contexto_cpu;
 char* instruccion_actual;
+bool llego_interrupcion = 0;
 
 //semaforos
 sem_t mlog;
 sem_t s_instruccion_actual;
 sem_t s_signal_kernel;
 sem_t s_fetch_espere_instruccion;
+sem_t sem_check_recibiendo_interrupcion;
 
 //mutex
 pthread_mutex_t mutex_ejecucion_proceso;
+pthread_mutex_t mutex_check_recibiendo_interrupcion;
 
 //conexiones
 int socket_memoria;
