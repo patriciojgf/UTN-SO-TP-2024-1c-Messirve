@@ -69,13 +69,14 @@ void atender_peticiones_interrupt(){
         int size=0;
         void* buffer;
         switch(cod_op){
-            case PCB:
-                log_protegido_cpu(string_from_format("[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----"));
-                int size=0;
-                void *buffer = recibir_buffer(&size, socket_cliente_dispatch);
-                _recibir_nuevo_contexto(buffer);
-                flag_ejecucion = true;             
-                _ejecutar_proceso();
+            //TODO: consultar si queda o se va
+            // case PCB:
+            //     log_protegido_cpu(string_from_format("[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----"));
+            //     int size=0;
+            //     void *buffer = recibir_buffer(&size, socket_cliente_dispatch);
+            //     _recibir_nuevo_contexto(buffer);
+            //     flag_ejecucion = true;             
+            //     _ejecutar_proceso();
             case INT_FINALIZAR_PROCESO:
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO mutex_ejecucion_proceso");
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
