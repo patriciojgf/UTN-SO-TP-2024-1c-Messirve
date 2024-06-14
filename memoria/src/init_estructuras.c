@@ -25,6 +25,8 @@ static void iniciar_configuracion(char* config_path){
     TAM_PAGINA = atoi(config_get_string_value(config_memoria,"TAM_PAGINA"));
     PATH_INSTRUCCIONES = config_get_string_value(config_memoria, "PATH_INSTRUCCIONES");
     RETARDO_RESPUESTA = atoi(config_get_string_value(config_memoria,"RETARDO_RESPUESTA"));
+
+    log_info(logger_memoria,"TAM_PAGINA: %d", TAM_PAGINA);
 }
 
 static void iniciar_semaforos(){
@@ -58,12 +60,18 @@ static void eliminar_espacio_de_usuario()
 * agregar #include <math.h> donde corresponda
 * 
 */
-static void iniciar_tabla_de_pagina(t_proceso* proceso)
+void iniciar_tabla_de_pagina(t_proceso* proceso)
 {
-    log_protegido_mem("Inicializando tabla de pagina");
+    log_info(logger_memoria, "Inicializando tabla de pagina");
+    // log_protegido_mem(string_from_format("PID: %d", proceso->id));
+    // log_info(logger_memoria, "PID: %d", proceso->id);
+    log_info(logger_memoria,"TAM_PAGINA: %d", TAM_PAGINA);
     int tam_pagina = TAM_PAGINA; 
+    log_info(logger_memoria, "tam_pagina: %d", tam_pagina);
+    
     // int cant_paginas = ceil((size_proceso/tam_pagina)); //TODO: ver que onda con cant_paginas
     int cant_paginas = TAM_MEMORIA/tam_pagina;
+    log_info(logger_memoria, "cant_paginas: %d", cant_paginas);   
 
     // proceso->tabla_de_paginas = list_create(); => se inicializa en crear_proceso
 
@@ -81,6 +89,12 @@ static void iniciar_tabla_de_pagina(t_proceso* proceso)
     log_protegido_mem(string_from_format("Creacion de Tabla de Paginas PID: <%d>", proceso->id));
 }
 
+//TODO: ver donde inicializar y si es necesario el static
+static t_bitarray* iniciar_bitmap(int cantidad_marcos)
+{
+    void* bitmap_memoria_usuario = malloc (cantidad_marcos/8);
+    return bitarray_create_with_mode(bitmap_memoria_usuario, cantidad_marcos/8, LSB_FIRST);
+}
 
 void init_memoria(char* path_config){
     init_log();

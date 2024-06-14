@@ -127,6 +127,7 @@ static void atender_peticiones_kernel(void *void_args){
                 path=malloc(size_path);
                 memcpy(path, buffer +desplazamiento, size_path);
                 t_proceso* proceso = crear_proceso(pid,path);
+                iniciar_tabla_de_pagina(proceso);
                 list_add(lista_procesos_en_memoria, proceso);
                 confirmar_proceso_creado(); 
                 break;
