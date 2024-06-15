@@ -393,6 +393,26 @@ static void _jnz(t_instruccion* instruccion){
     }
 }
 
+static void _mov_int(t_instruccion* instruccion)
+{
+	log_info(logger_cpu, "[CPU] Se lee la instrucción MOV IN");
+}
+
+static void _mov_out(t_instruccion* instruccion)
+{
+	log_info(logger_cpu, "[CPU] Se lee la instrucción MOV OUT");
+}
+
+static void _resize(t_instruccion* instruccion)
+{
+	log_info(logger_cpu, "[CPU] Se lee la instrucción RESIZE");
+}
+
+static void _copy_string(t_instruccion* instruccion)
+{
+	log_info(logger_cpu, "[CPU] Se lee la instrucción COPY STRING");
+}
+
 
 static void _f_exit(t_instruccion *inst){ 
     flag_ejecucion = false;
@@ -439,6 +459,10 @@ void ejecutar_proceso(){
             case SUM: _sum(inst_decodificada); break;
             case SUB: _sub(inst_decodificada); break;
             case JNZ: _jnz(inst_decodificada); break;
+			case MOV_IN: _mov_int(inst_decodificada); break;
+			case MOV_OUT: _mov_out(inst_decodificada); break;
+			case RESIZE: _resize(inst_decodificada); break;
+			case COPY_STRING: _copy_string(inst_decodificada); break;
             // case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
 			case IO_GEN_SLEEP:
 				motivo_desalojo = IO_GEN_SLEEP;

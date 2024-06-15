@@ -75,6 +75,8 @@ static void atender_peticiones_cpu(void *void_args){
     while(1){
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Esperando operación."));
         int code_op = recibir_operacion(*socket);
+        usleep(RETARDO_RESPUESTA * 1000);
+
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
         switch (code_op) {
             case MENSAJE:
@@ -86,7 +88,7 @@ static void atender_peticiones_cpu(void *void_args){
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&PC, buffer + sizeof(int), sizeof(int));
-                usleep(RETARDO_RESPUESTA * 1000);
+                // usleep(RETARDO_RESPUESTA * 1000);
                 //atender_fetch_instruccion(pid,PC);
                 //t_proceso* proceso = get_proceso_memoria(pid);
                 char* instruccion = get_instruccion_proceso(get_proceso_memoria(pid),PC);
@@ -111,6 +113,8 @@ static void atender_peticiones_kernel(void *void_args){
     while(1){
         //log_protegido_mem(string_from_format("[ATENDER KERNEL]: Esperando operación."));
         int code_op = recibir_operacion(*socket);
+        log_info(logger_memoria, "[MEMORIA]: RETARDO_RESPUESTA: %d", RETARDO_RESPUESTA);
+        usleep(RETARDO_RESPUESTA*1000);
         //log_protegido_mem(string_from_format("[ATENDER KERNEL]: Operación recibida."));
         switch (code_op) {
             case MENSAJE:
