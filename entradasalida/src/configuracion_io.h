@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <sys/socket.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #define LOG_NAME "io.log"
 #define PROCESS_NAME "IO"

@@ -5,7 +5,6 @@ static void init_log();
 //--------
 
 static void init_log(){
-    logger_io = iniciar_logger("io.log", "IO");
     log_error(logger_io,"init_log");
 }
 
@@ -34,21 +33,18 @@ static void iniciar_configuracion(char* config_path){
         PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
         IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");
         PUERTO_MEMORIA = config_get_string_value(config_io, "PUERTO_MEMORIA");
-        log_error(logger_io,"if(strcmp(TIPO_INTERFAZ, STDIN) == 0)");
     }
 }
 
 static void iniciar_semaforos(){
-    log_error(logger_io,"iniciar_semaforos");
     sem_init(&sem_io_stdin_read_ok,0,0);
 }
 
 static void iniciar_estructuras(){
-    lista_interfaz_socket = list_create();
+    // lista_interfaz_socket = list_create();
 }
 
 static void init_nombre_interfaz(char* nombre){
-    log_error(logger_io,"init_nombre_interfaz");
     if(nombre == NULL){
         log_error(logger_io, "No se ha ingresado el nombre de la interfaz");
         exit(EXIT_FAILURE);
@@ -58,13 +54,8 @@ static void init_nombre_interfaz(char* nombre){
 
 void init_io(char* path_config, char* nombre){
     init_log();
-    log_error(logger_io,"init_io");
     iniciar_configuracion(path_config);
-    log_error(logger_io,"init_io");
     iniciar_estructuras();
-    log_error(logger_io,"init_io");
     iniciar_semaforos();
-    log_error(logger_io,"init_io");
     init_nombre_interfaz(nombre);
-    log_error(logger_io,"init_io");
 }

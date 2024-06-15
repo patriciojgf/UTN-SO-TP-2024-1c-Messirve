@@ -31,8 +31,8 @@ void gestionar_conexion_memoria(){
     _handshake_cliente(socket_cliente_memoria, "MEMORIA");
     //log_protegido_io(string_from_format("[GESTION CON MEMORIA]: ---- MEMORIA CONECTADO ----"));
     _identifico_nombre(socket_cliente_memoria);
-    pthread_create(&hilo_gestionar_memoria, NULL, (void*) _atender_peticiones_memoria, NULL);
-	pthread_detach(hilo_gestionar_memoria);
+    // pthread_create(&hilo_gestionar_memoria, NULL, (void*) _atender_peticiones_memoria, NULL);
+	// pthread_detach(hilo_gestionar_memoria);
 }
 /*KERNEL*/
 void gestionar_conexion_kernel(){
@@ -86,42 +86,43 @@ static void _atender_peticiones_kernel(){
     log_error(logger_io,"_atender_peticiones_kernel");
     while(1){
         int cod_op = recibir_operacion(socket_cliente_kernel);
-        log_error(logger_io,"_atender_peticiones_kernel-recibir_operacion");
         switch(cod_op){
             case MENSAJE:
                 recibir_mensaje(socket_cliente_kernel, logger_io);
                 break;
             case IO_STDIN_READ:
-                log_error(logger_io,"_atender_peticiones_kernel-IO_STDIN_READ");
                 // Recibir la solicitud que contiene las direcciones de memoria y el tamaño a leer
                 t_solicitud_io* solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
-                log_error(logger_io,"_atender_peticiones_kernel-IO_STDIN_READ");
-
-                log_error(logger_io,"_atender_peticiones_kernel-recibir_solicitud_io");
                 if (solicitud_recibida_kernel == NULL) {
                     fprintf(stderr, "Error al recibir la solicitud IO\n");
                     continue;
-                }
-                // Calcular el tamaño total requerido para la entrada, basado en la solicitud
-                // uint32_t size_total = pedido_io_calcular_tamano_total(solicitud);                
+                }        
                 // Reservar memoria para la entrada y leer desde la consola
                 char* input_text = malloc(solicitud_recibida_kernel->size_solicitud + 1);  // +1 para el carácter nulo
-
-                log_error(logger_io,"solicitud_recibida_kernel datos <%s>",solicitud_recibida_kernel->datos_memoria[1].datos);
-
                 _lectura_consola(solicitud_recibida_kernel->size_solicitud, input_text);
                 // Llenar los datos de memoria en la solicitud con el texto leído
                 llenar_datos_memoria(solicitud_recibida_kernel, input_text);
                 // Enviar la solicitud completada hacia donde se necesite procesar
-                log_error(logger_io,"enviar_solicitud_io");
                 enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel);
                 // Limpiar
                 free(input_text);
-                
-                sem_wait(&sem_io_stdin_read_ok);
-                //envio el ok
-                int handshake_read = IO_STDIN_READ;
-                send(socket_cliente_kernel, &handshake_read, sizeof(handshake_read), 0);
+
+                //espero handshake ok
+                int cod_hand = recibir_operacion(socket_cliente_memoria);
+                int size_temp =0;
+                void* buffer_temp = recibir_buffer(&size_temp, socket_cliente_memoria);
+                free(buffer_temp);
+                //envio el ok a kernel
+                if (cod_hand == IO_STDIN_READ){
+                    int mensajeOK =1;
+                    t_paquete* paquete_para_kernel = crear_paquete(IO_STDIN_READ);
+                    agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                    enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
+                    eliminar_paquete(paquete_para_kernel);                   
+                }
+                else{
+                    log_error(logger_io,"falla en conexion con memoria");
+                }
                 break;
             case IO_GEN_SLEEP:
                 int size=0;
@@ -162,7 +163,7 @@ static void _atender_peticiones_kernel(){
 static void _lectura_consola(int size_lectura, char* buffer) {
     log_info(logger_io, "_lectura_consola - Solicitando entrada al usuario");
     char prompt[50];  // Asegúrate de que el buffer del prompt sea suficientemente grande
-    snprintf(prompt, sizeof(prompt), "Por favor, ingrese un texto de hasta %d caracteres y presione Enter: ", size_lectura);
+    snprintf(prompt, sizeof(prompt), "Ingrese un texto de hasta %d caracteres y presione Enter: ", size_lectura);
 
     char* input = readline(prompt);
     if (input) {

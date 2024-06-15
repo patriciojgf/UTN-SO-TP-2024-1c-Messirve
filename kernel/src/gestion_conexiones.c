@@ -236,8 +236,10 @@ void atender_peticiones_interrupt(){
 /*GENERICAS*/
 static void _atender_peticiones_io(t_interfaz *interfaz){		
 		while(1){
+			log_info(logger_kernel,"[_atender_peticiones_io]: nombre <%s>", interfaz->nombre_io);
     		// //log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 			int cod_op = recibir_operacion(interfaz->socket);
+			log_info(logger_kernel,"[_atender_peticiones_io]: cod_op <%d>", cod_op);
 			switch (cod_op){
 				case IO_GEN_SLEEP:	    
     				log_info(logger_kernel,"[ATENDER PETICION IO GEN]: SLEEP TERMINADO ");
@@ -246,8 +248,13 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					//free(pedido);
 					break;
 				case IO_STDIN_READ:
+					log_info(logger_kernel,"[ATENDER PETICION IO GEN]: IO_STDIN_READ TERMINADO ");
+					int size_temp =0;
+					void* buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
+					free(buffer_temp);
 					t_pedido_stdin* pedido_stdin = list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido_stdin->semaforo_pedido_ok);
+					break;
 				case -1:
 					log_error(logger_kernel,"[ATENDER INTERFAZ IO GEN %s]: Se desconecto la interfaz.",interfaz->nombre_io);
 					log_warning(logger_kernel, "ver si hay que eliminar la interfaz");

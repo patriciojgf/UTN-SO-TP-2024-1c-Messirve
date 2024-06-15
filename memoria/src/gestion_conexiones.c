@@ -87,11 +87,23 @@ static void atender_peticiones_stdin(void *void_args){
             log_warning(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[1].direccion_fisica);
             log_warning(logger_memoria,"los datos <%s>",solicitud->datos_memoria[1].datos);
 
-            int handshake = IO_STDIN_READ;
-            send(socket, &handshake, sizeof(handshake), 0);
+            // int handshake = IO_STDIN_READ;
+            // if (send(*socket, &handshake, sizeof(handshake), 0) == -1) {
+            //     log_error(logger_memoria,"atender_peticiones_stdin: Error al enviar handshake a stdin");
+            //     exit(EXIT_FAILURE);
+            // }
+            int mensajeOK =1;
+            t_paquete* paquete = crear_paquete(IO_STDIN_READ);
+            agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
+            enviar_paquete(paquete, *socket);
+            eliminar_paquete(paquete);            
+        }
+        else if (code_op == -1){
+            log_info(logger_memoria,"El IO_STDIN se desconecto");
+            break;
         }
         else {
-            log_error(logger_memoria,"atender_peticiones_stdin: Operacion no identificada, valor: %d", code_op);
+            log_error(logger_memoria,"atender_peticiones_stdin: Operacion desconocida");
             exit(EXIT_FAILURE);
         }
     }
