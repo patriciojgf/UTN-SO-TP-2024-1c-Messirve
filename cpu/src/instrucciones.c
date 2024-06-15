@@ -11,7 +11,7 @@ static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
 static info_registro_cpu _get_direccion_registro(char* string_registro);
-static t_solicitud_io* _io_stdin_read(t_instruccion* instruccion);
+static t_solicitud_io* _io_std(t_instruccion* instruccion);
 //
 
 
@@ -95,30 +95,9 @@ void ejecutar_proceso(){
 				// lea desde el STDIN (Teclado) un valor cuyo tamaño está delimitado por el valor 
 				// del Registro Tamaño y el mismo se guarde a partir de la Dirección Lógica almacenada 
 				// en el Registro Dirección.
-				// char *registro_direccion = list_get(inst_decodificada->parametros, 1);
-    			// char *registro_tamano = list_get(inst_decodificada->parametros, 2);
-				// info_registro_cpu registro_dir_info = _get_direccion_registro(registro_direccion);
-				// info_registro_cpu registro_tam_info = _get_direccion_registro(registro_tamano);
 
-				// log_warning(logger_cpu, "hay que traducir la direccion de memoria");
-				// uint8_t valor_direccion_logica = *(uint8_t*)registro_dir_info.direccion;
-				// uint8_t valor_tamano_a_escribir = *(uint8_t*)registro_tam_info.direccion;
-				// log_warning(logger_cpu, "hay que traducir la direccion de memoria");
-				// //tomar la direccion logica y calcular la o las fisicas necesarias para escribir el tamano especificado.
-				// //por cada direccion fisica hacer un "agregar_a_pedido_memoria" con esa direccion, el parametro "prueba1" puede tener
-				// //cualquier valor aca porque se va a completar con datos de la interfaz despues.
-
-				// log_warning(logger_cpu, "hay que traducir la direccion de memoria");
-				// uint32_t dir_prueba = 99; //cuadno este la traduccion cambiar
-				// uint32_t tam_prueba = 20; //esto seria el tamaño de pagina (max)
-
-				// pedido_io_stdin_read = crear_pedido_memoria(contexto_cpu->pid,tam_prueba);
-				// agregar_a_pedido_memoria(pedido_io_stdin_read, "prueba1",dir_prueba);
-				// agregar_a_pedido_memoria(pedido_io_stdin_read, "prueba2",dir_prueba);
 				//muevo la logica a una funcion propia
-				pedido_io_stdin_read=_io_stdin_read(inst_decodificada);
-				log_info(logger_cpu,"IO_STDIN_READ");
-				
+				pedido_io_stdin_read=_io_std(inst_decodificada);				
 				motivo_desalojo = IO_STDIN_READ;
 				break;
 			case WAIT:
@@ -226,7 +205,7 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 // 	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
 //     flag_ejecucion = false;
 // }
-static t_solicitud_io* _io_stdin_read(t_instruccion* instruccion){
+static t_solicitud_io* _io_std(t_instruccion* instruccion){
 		char *registro_direccion2 = list_get(instruccion->parametros, 1);
 		char *registro_tamano2 = list_get(instruccion->parametros, 2);
 		info_registro_cpu registro_dir_info2 = _get_direccion_registro(registro_direccion2);
@@ -240,11 +219,11 @@ static t_solicitud_io* _io_stdin_read(t_instruccion* instruccion){
 		uint32_t dir_prueba2 = 99; //cuadno este la traduccion cambiar
 		uint32_t tam_prueba2 = 20; //esto seria el tamaño de pagina (max)
 
-		t_solicitud_io* pedido_io_stdout_write;
-		pedido_io_stdout_write = crear_pedido_memoria(contexto_cpu->pid,tam_prueba2);
-		agregar_a_pedido_memoria(pedido_io_stdout_write, "prueba1",dir_prueba2);
-		agregar_a_pedido_memoria(pedido_io_stdout_write, "prueba2",dir_prueba2);
-		return pedido_io_stdout_write;
+		t_solicitud_io* pedido_io;
+		pedido_io = crear_pedido_memoria(contexto_cpu->pid,tam_prueba2);
+		agregar_a_pedido_memoria(pedido_io, "prueba1",dir_prueba2);
+		agregar_a_pedido_memoria(pedido_io, "prueba2",dir_prueba2);
+		return pedido_io;
 }
 
 static void _set(t_instruccion* instruccion){
