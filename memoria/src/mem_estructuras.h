@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "pthread.h"
 #include "semaphore.h"
+#include <commons/bitarray.h>
 #include <commons/log.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
@@ -40,5 +41,7 @@ typedef struct {
 // extern void log_protegido_mem(char* mensaje);
 
 extern t_tabla_pagina tabla_pagina;
+extern t_bitarray* bitmap;
+
 
 #endif /* MEM_ESTRUCTURAS_H_ */

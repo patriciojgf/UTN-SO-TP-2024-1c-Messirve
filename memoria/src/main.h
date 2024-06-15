@@ -48,5 +48,6 @@ int conectarCpu(int* socket_cpu);
 int conectarIO(int* socket_io);
 
 t_tabla_pagina tabla_pagina;
+t_bitarray* bitmap;
 
 #endif // MAIN_H

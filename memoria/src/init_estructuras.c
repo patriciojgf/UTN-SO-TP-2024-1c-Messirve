@@ -53,6 +53,13 @@ static void eliminar_espacio_de_usuario()
     free(memoria_espacio_usuario);
 }
 
+//TODO: ver donde inicializar y si es necesario el static
+static void iniciar_bitmap(int cantidad_marcos)
+{
+    void *bitmap_memoria_usuario = malloc(cantidad_marcos / 8);
+    bitmap = bitarray_create_with_mode(bitmap_memoria_usuario, cantidad_marcos / 8, LSB_FIRST);
+}
+
 /*TODO
 *
 * revisar cant_paginas 
@@ -73,6 +80,9 @@ void iniciar_tabla_de_pagina(t_proceso* proceso)
     int cant_paginas = TAM_MEMORIA/tam_pagina;
     log_info(logger_memoria, "cant_paginas: %d", cant_paginas);   
 
+    //TAM_PAG = TAM_MARCO
+    iniciar_bitmap(cant_paginas);
+
     // proceso->tabla_de_paginas = list_create(); => se inicializa en crear_proceso
 
     for(int i = 0; i < cant_paginas; i++)
@@ -87,13 +97,6 @@ void iniciar_tabla_de_pagina(t_proceso* proceso)
 
     // proceso_nuevo->cant_paginas = cant_paginas; //TODO: debería agregar cant_pagina a t_proceso
     log_protegido_mem(string_from_format("Creacion de Tabla de Paginas PID: <%d>", proceso->id));
-}
-
-//TODO: ver donde inicializar y si es necesario el static
-static t_bitarray* iniciar_bitmap(int cantidad_marcos)
-{
-    void* bitmap_memoria_usuario = malloc (cantidad_marcos/8);
-    return bitarray_create_with_mode(bitmap_memoria_usuario, cantidad_marcos/8, LSB_FIRST);
 }
 
 void init_memoria(char* path_config){
