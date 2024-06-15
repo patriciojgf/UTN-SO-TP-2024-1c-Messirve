@@ -4,17 +4,21 @@ static void _handshake_cliente(int socket, char* nombre_destino);
 static void _atender_peticiones_memoria();
 static void _atender_peticiones_kernel();
 static void _identifico_nombre(int socket);
+static void _lectura_consola(int size_lectura, char* buffer);
 // --------------------------------------------------------------------------//
 
 
 // --------------------------------------------------------------------------//
 // ------------- CONEXIONES E HILOS -----------------------------------------//
 // --------------------------------------------------------------------------//
-void init_conexiones(){    
-    if((socket_cliente_memoria = crear_conexion(IP_MEMORIA, PUERTO_MEMORIA)) <= 0){
-        log_error(logger_io, "[INIT CONEXIONES]: No se ha podido crear la conexion con memoria");
-        exit(EXIT_FAILURE);
-    }  
+void init_conexiones(){
+    
+    if(strcmp(TIPO_INTERFAZ, "GENERICA") != 0){
+        if((socket_cliente_memoria = crear_conexion(IP_MEMORIA, PUERTO_MEMORIA)) <= 0){
+            log_error(logger_io, "[INIT CONEXIONES]: No se ha podido crear la conexion con memoria");
+            exit(EXIT_FAILURE);
+        }
+    }
     if((socket_cliente_kernel = crear_conexion(IP_KERNEL, PUERTO_KERNEL)) <= 0){
         log_error(logger_io, "[INIT CONEXIONES]: No se ha podido crear la conexion con kernel");
         exit(EXIT_FAILURE);
@@ -23,18 +27,18 @@ void init_conexiones(){
 
 /*MEMORIA*/
 void gestionar_conexion_memoria(){
-    log_protegido_io(string_from_format("[GESTION CON MEMORIA]: ---- SOY CLIENTE ----"));
+    //log_protegido_io(string_from_format("[GESTION CON MEMORIA]: ---- SOY CLIENTE ----"));
     _handshake_cliente(socket_cliente_memoria, "MEMORIA");
-    log_protegido_io(string_from_format("[GESTION CON MEMORIA]: ---- MEMORIA CONECTADO ----"));
+    //log_protegido_io(string_from_format("[GESTION CON MEMORIA]: ---- MEMORIA CONECTADO ----"));
     _identifico_nombre(socket_cliente_memoria);
     pthread_create(&hilo_gestionar_memoria, NULL, (void*) _atender_peticiones_memoria, NULL);
 	pthread_detach(hilo_gestionar_memoria);
 }
 /*KERNEL*/
 void gestionar_conexion_kernel(){
-    log_protegido_io(string_from_format("[GESTION CON KERNEL]: ---- SOY CLIENTE ----"));
+    //log_protegido_io(string_from_format("[GESTION CON KERNEL]: ---- SOY CLIENTE ----"));
     _handshake_cliente(socket_cliente_kernel, "KERNEL");
-    log_protegido_io(string_from_format("[GESTION CON KERNEL]: ---- KERNEL CONECTADO ----"));
+    //log_protegido_io(string_from_format("[GESTION CON KERNEL]: ---- KERNEL CONECTADO ----"));
     _identifico_nombre(socket_cliente_kernel);
     pthread_create(&hilo_gestionar_kernel, NULL, (void*) _atender_peticiones_kernel, NULL);
 	pthread_join(hilo_gestionar_kernel, NULL);
@@ -57,13 +61,14 @@ void gestionar_conexion_kernel(){
 // --------------------------------------------------------------------------//
 
 static void _atender_peticiones_memoria(){
-    log_warning(logger_io,"FALTA IMPLEMENTAR ateneder peticiones memoria");
-    log_protegido_io(string_from_format("[ATENDER MEMORIA]: ---- ESPERANDO OPERACION ----"));
     while(1){
         int cod_op = recibir_operacion(socket_cliente_memoria);
         switch(cod_op){
             case MENSAJE:
                 recibir_mensaje(socket_cliente_memoria, logger_io);
+                break;
+            case IO_STDIN_READ:           
+                sem_post(&sem_io_stdin_read_ok);
                 break;
             case -1:
                 log_error(logger_io,"El MEMORIA se desconecto");
@@ -78,38 +83,60 @@ static void _atender_peticiones_memoria(){
 }
 
 static void _atender_peticiones_kernel(){
-    log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- ESPERANDO OPERACION ----"));
+    log_error(logger_io,"_atender_peticiones_kernel");
     while(1){
         int cod_op = recibir_operacion(socket_cliente_kernel);
+        log_error(logger_io,"_atender_peticiones_kernel-recibir_operacion");
         switch(cod_op){
             case MENSAJE:
                 recibir_mensaje(socket_cliente_kernel, logger_io);
                 break;
+            case IO_STDIN_READ:
+                log_error(logger_io,"_atender_peticiones_kernel-IO_STDIN_READ");
+                // Recibir la solicitud que contiene las direcciones de memoria y el tamaño a leer
+                t_solicitud_io* solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
+                log_error(logger_io,"_atender_peticiones_kernel-IO_STDIN_READ");
+
+                log_error(logger_io,"_atender_peticiones_kernel-recibir_solicitud_io");
+                if (solicitud_recibida_kernel == NULL) {
+                    fprintf(stderr, "Error al recibir la solicitud IO\n");
+                    continue;
+                }
+                // Calcular el tamaño total requerido para la entrada, basado en la solicitud
+                // uint32_t size_total = pedido_io_calcular_tamano_total(solicitud);                
+                // Reservar memoria para la entrada y leer desde la consola
+                char* input_text = malloc(solicitud_recibida_kernel->size_solicitud + 1);  // +1 para el carácter nulo
+
+                log_error(logger_io,"solicitud_recibida_kernel datos <%s>",solicitud_recibida_kernel->datos_memoria[1].datos);
+
+                _lectura_consola(solicitud_recibida_kernel->size_solicitud, input_text);
+                // Llenar los datos de memoria en la solicitud con el texto leído
+                llenar_datos_memoria(solicitud_recibida_kernel, input_text);
+                // Enviar la solicitud completada hacia donde se necesite procesar
+                log_error(logger_io,"enviar_solicitud_io");
+                enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel);
+                // Limpiar
+                free(input_text);
+                
+                sem_wait(&sem_io_stdin_read_ok);
+                //envio el ok
+                int handshake_read = IO_STDIN_READ;
+                send(socket_cliente_kernel, &handshake_read, sizeof(handshake_read), 0);
+                break;
             case IO_GEN_SLEEP:
-                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP ----"));
                 int size=0;
                 void *buffer = recibir_buffer(&size, socket_cliente_kernel);           
                 int tiempo_sleep;
                 memcpy(&tiempo_sleep, buffer, sizeof(int));
-                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP: tiempo %d ----",tiempo_sleep));
-                usleep(tiempo_sleep*1000);
-                //le doy el ok a kernel
-                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- VOY A ENVIAR EL CODIGO: %d ----",IO_GEN_SLEEP));
-                // t_paquete* paquete_pedido = crear_paquete(IO_GEN_SLEEP);
-                // enviar_paquete(paquete_pedido, socket_cliente_kernel);
+                usleep(tiempo_sleep*TIEMPO_UNIDAD_TRABAJO*1000);
                 int handshake = IO_GEN_SLEEP;
                 send(socket_cliente_kernel, &handshake, sizeof(handshake), 0);
-
-                log_protegido_io(string_from_format("[ATENDER KERNEL]: ---- OPERACION SLEEP: fin ----"));
-
                 break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");
-                // break;
                 exit(EXIT_FAILURE);
             default:
                 log_warning(logger_io, "Kernel: Operacion desconocida.");
-                // break;
                 exit(EXIT_FAILURE);
         }
     }
@@ -131,6 +158,27 @@ static void _atender_peticiones_kernel(){
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES AUXILIARES----------------------------------------//
 // --------------------------------------------------------------------------//
+
+static void _lectura_consola(int size_lectura, char* buffer) {
+    log_info(logger_io, "_lectura_consola - Solicitando entrada al usuario");
+    char prompt[50];  // Asegúrate de que el buffer del prompt sea suficientemente grande
+    snprintf(prompt, sizeof(prompt), "Por favor, ingrese un texto de hasta %d caracteres y presione Enter: ", size_lectura);
+
+    char* input = readline(prompt);
+    if (input) {
+        strncpy(buffer, input, size_lectura);
+        buffer[size_lectura] = '\0';  // Asegurarse de que el buffer esté correctamente terminado
+        free(input);  // readline aloja memoria con malloc, así que debemos liberarla
+
+        // Opcional: agregar a historial si la entrada no es vacía
+        if (buffer[0] != '\0') {
+            add_history(buffer);
+        }
+    }
+
+    log_info(logger_io, "_lectura_consola - Entrada recibida");
+}
+
 static void _identifico_nombre(int socket){
     t_paquete* paquete = crear_paquete(NUEVA_IO);
     agregar_a_paquete(paquete, nombre_interfaz, strlen(nombre_interfaz)+1);
@@ -158,7 +206,7 @@ static void _handshake_cliente(int socket, char* nombre_destino){
     int resultado_hs = handshake_cliente(_get_handshake(),socket);
     switch(resultado_hs){
         case HANDSHAKE_OK:
-            log_protegido_io(string_from_format("[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
+            //log_protegido_io(string_from_format("[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
             break;
         default:
             log_error(logger_io, "ERROR EN HANDSHAKE: Operacion N* %d desconocida\n", resultado_hs);

@@ -39,6 +39,11 @@ int socket_servidor, socket_cliente, socket_kernel, socket_cpu, socket_io;
 /*----PROCESOS e INSTRUCCIOENS----*/
 t_list* lista_procesos_en_memoria;
 t_list* lista_instrucciones;
+t_list* lista_interfaz_socket;
+
+
+////----mutex
+pthread_mutex_t mutex_lista_interfaz;
 
 /*----MEMORIA USUARIO-------------*/
 void *memoria_espacio_usuario;

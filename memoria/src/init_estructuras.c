@@ -1,13 +1,5 @@
 #include "init_estructuras.h"
 
-//-----------------------------------------------------------------------------//
-void log_protegido_mem(char *mensaje){
-    sem_wait(&mlog);
-    log_info(logger_memoria, "%s", mensaje);
-    sem_post(&mlog);
-    free(mensaje);
-}
-
 static void init_log(){
     logger_memoria = iniciar_logger("memoria.log", "MEMORIA");
 }
@@ -31,7 +23,12 @@ static void iniciar_semaforos(){
     sem_init(&mlog,0,1);
 }
 
+static void iniciar_mutex(){
+    pthread_mutex_init(&mutex_lista_interfaz,NULL);
+}
+
 static void iniciar_estructuras(){
+    lista_interfaz_socket = list_create();
     lista_procesos_en_memoria = list_create();
 }
 
@@ -41,4 +38,5 @@ void init_memoria(char* path_config){
     iniciar_configuracion(path_config);
     iniciar_estructuras();
     iniciar_semaforos();
+    iniciar_mutex();
 }

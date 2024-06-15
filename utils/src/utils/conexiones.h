@@ -119,7 +119,7 @@ typedef struct{
     int socket;
     int tipo_io;
     char* nombre_io;
-    t_list* cola_procesos; // Lista para encolar procesos que esperan IO_GEN_SLEEP
+    t_list* cola_procesos; // Lista para encolar procesos que esperando una interfaz
 	pthread_mutex_t mutex_cola_block;
     sem_t semaforo;// Semaforo para controlar el acceso a la cola de procesos
 } t_interfaz;
@@ -129,6 +129,11 @@ typedef struct {
     int tiempo_sleep; // Tiempo de sleep solicitado
 	sem_t semaforo_pedido_ok;
 } t_pedido_sleep;
+
+typedef struct {
+    t_pcb* pcb;      // Puntero al PCB del proceso
+	sem_t semaforo_pedido_ok;
+} t_pedido_stdin;
 
 int crear_conexion(char* ip, char* puerto);
 void enviar_mensaje(char* mensaje, int socket_cliente);
@@ -169,4 +174,12 @@ void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 int handshake_cliente(int hs_origen, int socket);
 int handshake_server(int socket);
 
+/*-------IO------------------*/
+t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud);
+void enviar_solicitud_io(int socket, t_solicitud_io* solicitud);
+t_solicitud_io* recibir_solicitud_io(int socket);
+t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud);
+void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, uint32_t direccion_fisica);
+void eliminar_pedido_memoria(t_solicitud_io* solicitud) ;
+void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text);
 #endif /* CONEXIONES_H_ */

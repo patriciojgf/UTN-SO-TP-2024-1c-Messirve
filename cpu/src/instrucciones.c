@@ -407,6 +407,7 @@ void ejecutar_proceso(){
 		// Bloqueo el "hilo" del proceso, no quiero pedir esperar un fetch de memoria al mismo tiempo 
 		// que estoy tratando un fin de QUANTUM
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
+		t_solicitud_io* pedido_io_stdin_read;
 
         // Enviar solicitud de instrucción.
         t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
@@ -442,6 +443,17 @@ void ejecutar_proceso(){
             // case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
 			case IO_GEN_SLEEP:
 				motivo_desalojo = IO_GEN_SLEEP;
+				break;
+			case IO_STDIN_READ:
+				log_warning(logger_cpu, "hay que traducir la direccion de memoria");
+				uint32_t dir_prueba = 99; //cuadno este la traduccion cambiar
+				uint32_t tam_prueba = 20; //esto seria el tamaño de pagina (max)
+
+				pedido_io_stdin_read = crear_pedido_memoria(contexto_cpu->pid,tam_prueba);
+				agregar_a_pedido_memoria(pedido_io_stdin_read, "prueba1",dir_prueba);
+				agregar_a_pedido_memoria(pedido_io_stdin_read, "prueba2",dir_prueba);
+				
+				motivo_desalojo = IO_STDIN_READ;
 				break;
 			case WAIT:
 				motivo_desalojo = WAIT;
@@ -489,6 +501,9 @@ void ejecutar_proceso(){
 		if(motivo_desalojo > -1){
 			flag_ejecucion = false;
 			devolver_contexto_a_dispatch(motivo_desalojo, inst_decodificada);
+			if (motivo_desalojo == IO_STDIN_READ){
+				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdin_read);
+			}
 		}
         // Verificar interrupciones.
         if (flag_interrupt && flag_ejecucion) {

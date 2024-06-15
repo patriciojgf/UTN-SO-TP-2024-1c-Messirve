@@ -14,3 +14,4 @@ void inicializar_registros(t_registros_cpu* registros)
         registros->SI = 0;
         registros->DI = 0;
 }
+

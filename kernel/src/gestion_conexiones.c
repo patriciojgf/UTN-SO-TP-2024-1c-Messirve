@@ -5,7 +5,7 @@ static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instru
 static void _handshake_cliente_kernel(int socket, char* nombre_destino);
 static char* _io_handshake_to_char(int handshake);
 static void _gestionar_nueva_interfaz(void *void_args);
-static void _atender_peticiones_io_gen(t_interfaz *interfaz);
+static void _atender_peticiones_io(t_interfaz *interfaz);
 static void _agregar_a_lista_interfaces(t_interfaz *interfaz_nueva);
 
 void init_conexiones(){
@@ -100,13 +100,13 @@ static void _gestionar_nueva_interfaz(void *void_args) {
 
     // Utilizar strcmp para comparar cadenas
     if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDIN") == 0) {
-        log_error(logger_kernel, "falta implementar STDIN");
+        _atender_peticiones_io(interfaz_nueva);
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDOUT") == 0) {
         log_error(logger_kernel, "falta implementar STDOUT");
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {
         log_error(logger_kernel, "falta implementar DIALFS");
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "GENERICA") == 0) {
-        _atender_peticiones_io_gen(interfaz_nueva);
+        _atender_peticiones_io(interfaz_nueva);
     } else {
         log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion de interfaz '%s' desconocida\n", _io_handshake_to_char(interfaz_nueva->tipo_io));
         exit(EXIT_FAILURE);
@@ -184,6 +184,11 @@ void atender_peticiones_dispatch(){
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_gen_sleep(proceso_exec,instrucciones);
 						break;
+					case IO_STDIN_READ:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_STDIN_READ", proceso_exec->pid);
+						sem_post(&sem_pcb_desalojado);
+						atender_cpu_io_stdin_read(proceso_exec,instrucciones);
+						break;
 					case FIN_QUANTUM:
 						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid));
@@ -226,8 +231,10 @@ void atender_peticiones_interrupt(){
 	//log_protegido_kernel(string_from_format("[ATENDER INTERRUPT]: conectado."));
 }
 /*------------------------INTERFACES-----------------------------------------*/
+/*STDIN*/
+
 /*GENERICAS*/
-static void _atender_peticiones_io_gen(t_interfaz *interfaz){		
+static void _atender_peticiones_io(t_interfaz *interfaz){		
 		while(1){
     		// //log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 			int cod_op = recibir_operacion(interfaz->socket);
@@ -238,6 +245,9 @@ static void _atender_peticiones_io_gen(t_interfaz *interfaz){
 					sem_post(&pedido->semaforo_pedido_ok);
 					//free(pedido);
 					break;
+				case IO_STDIN_READ:
+					t_pedido_stdin* pedido_stdin = list_get(interfaz->cola_procesos, 0);
+					sem_post(&pedido_stdin->semaforo_pedido_ok);
 				case -1:
 					log_error(logger_kernel,"[ATENDER INTERFAZ IO GEN %s]: Se desconecto la interfaz.",interfaz->nombre_io);
 					log_warning(logger_kernel, "ver si hay que eliminar la interfaz");
