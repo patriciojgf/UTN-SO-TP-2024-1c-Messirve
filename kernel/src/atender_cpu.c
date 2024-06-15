@@ -162,41 +162,23 @@ void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
     if(recibir_operacion(socket_dispatch) == IO_STDIN_READ){
         t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
-
-
-        //muestro en log solicitud_recibida_cpu->datos_memoria[i].datos
-        log_info(logger_kernel,"solicitud_recibida_cpu->pid son: %d", solicitud_recibida_cpu->pid);
-        log_info(logger_kernel,"solicitud_recibida_cpu->cantidad_accesos son: %d", solicitud_recibida_cpu->cantidad_accesos);
-        log_info(logger_kernel,"Los tamano son: %d", solicitud_recibida_cpu->datos_memoria[0].tamano);
-        log_info(logger_kernel,"Los datos0 son: %s", solicitud_recibida_cpu->datos_memoria[0].datos);
-        log_info(logger_kernel,"Los tamano son: %d", solicitud_recibida_cpu->datos_memoria[1].tamano);
-        log_info(logger_kernel,"Los datos1 son: %s", solicitud_recibida_cpu->datos_memoria[1].datos);
         
         t_pedido_stdin* pedido_en_espera = malloc(sizeof(t_pedido_stdin));
         pedido_en_espera->pcb = pcb;
         sem_init(&pedido_en_espera->semaforo_pedido_ok,0,0);
 
         mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid2 <%d>", solicitud_recibida_cpu->pid);
 
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
         pthread_mutex_unlock(&mutex_plan_exec);
         sem_post(&sem_plan_exec_libre);
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid3 <%d>", solicitud_recibida_cpu->pid);
 
 		pthread_mutex_lock(&interfaz->mutex_cola_block);
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid4 <%d>", solicitud_recibida_cpu->pid);
         list_add(interfaz->cola_procesos, pedido_en_espera);    
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid5 <%d>", solicitud_recibida_cpu->pid);
 		pthread_mutex_unlock(&interfaz->mutex_cola_block);
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid6 <%d>", solicitud_recibida_cpu->pid);
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid6 <%d> socket <%d>", solicitud_recibida_cpu->pid,interfaz->socket);
 
         enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu);
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid7 <%d>", solicitud_recibida_cpu->pid);
-        // eliminar_pedido_memoria(solicitud_recibida_cpu);
-        log_info(logger_kernel,"atender_cpu_io_stdin_read pid8 <%d>", solicitud_recibida_cpu->pid);
 
         sem_wait(&pedido_en_espera->semaforo_pedido_ok);
 

@@ -5,11 +5,10 @@ static void init_log();
 //--------
 
 static void init_log(){
-    log_error(logger_io,"init_log");
+    logger_io = iniciar_logger("io.log", "IO");
 }
 
 static void iniciar_configuracion(char* config_path){
-    log_error(logger_io,"iniciar_configuracion");
     config_io = iniciar_config(config_path);
     if(config_io == NULL){
         log_error(logger_io,"No se pudo leer el archivo de configuracion");

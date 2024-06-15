@@ -147,7 +147,6 @@ void atender_peticiones_memoria(){
 void atender_peticiones_dispatch(){
 	while(1){
 		int cod_op = recibir_operacion(socket_dispatch);
-		log_info(logger_kernel,"[ATENDER DISPATCH]:recibir_operacion]");
 		// //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: Recibi operacion"));
 		switch (cod_op) {
 			case CONTEXTO_EJECUCION:
@@ -236,10 +235,8 @@ void atender_peticiones_interrupt(){
 /*GENERICAS*/
 static void _atender_peticiones_io(t_interfaz *interfaz){		
 		while(1){
-			log_info(logger_kernel,"[_atender_peticiones_io]: nombre <%s>", interfaz->nombre_io);
     		// //log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 			int cod_op = recibir_operacion(interfaz->socket);
-			log_info(logger_kernel,"[_atender_peticiones_io]: cod_op <%d>", cod_op);
 			switch (cod_op){
 				case IO_GEN_SLEEP:	    
     				log_info(logger_kernel,"[ATENDER PETICION IO GEN]: SLEEP TERMINADO ");

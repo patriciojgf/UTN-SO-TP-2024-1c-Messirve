@@ -83,7 +83,6 @@ static void _atender_peticiones_memoria(){
 }
 
 static void _atender_peticiones_kernel(){
-    log_error(logger_io,"_atender_peticiones_kernel");
     while(1){
         int cod_op = recibir_operacion(socket_cliente_kernel);
         switch(cod_op){
@@ -161,11 +160,10 @@ static void _atender_peticiones_kernel(){
 // --------------------------------------------------------------------------//
 
 static void _lectura_consola(int size_lectura, char* buffer) {
-    log_info(logger_io, "_lectura_consola - Solicitando entrada al usuario");
-    char prompt[50];  // Asegúrate de que el buffer del prompt sea suficientemente grande
-    snprintf(prompt, sizeof(prompt), "Ingrese un texto de hasta %d caracteres y presione Enter: ", size_lectura);
+    // char prompt[50];  // Asegúrate de que el buffer del prompt sea suficientemente grande
+    // snprintf(prompt, sizeof(prompt), "Ingrese un texto de hasta %d caracteres y presione Enter: ", size_lectura);
 
-    char* input = readline(prompt);
+    char* input = readline("> ");;
     if (input) {
         strncpy(buffer, input, size_lectura);
         buffer[size_lectura] = '\0';  // Asegurarse de que el buffer esté correctamente terminado
@@ -176,8 +174,6 @@ static void _lectura_consola(int size_lectura, char* buffer) {
             add_history(buffer);
         }
     }
-
-    log_info(logger_io, "_lectura_consola - Entrada recibida");
 }
 
 static void _identifico_nombre(int socket){

@@ -50,6 +50,7 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
 			recibir_operacion(socket_cliente);
             int size = 0;
             void *buffer = recibir_buffer(&size, socket_cliente);
+            free(buffer);
 
             int *argumentos = malloc(sizeof(int));
 			*argumentos = socket_cliente;            
@@ -81,17 +82,14 @@ static void atender_peticiones_stdin(void *void_args){
         if (code_op == IO_STDIN_READ){
             t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
 
-            log_warning(logger_memoria,"falta implementar:");
-            log_warning(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[0].direccion_fisica);
-            log_warning(logger_memoria,"los datos <%s>",solicitud->datos_memoria[0].datos);
-            log_warning(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[1].direccion_fisica);
-            log_warning(logger_memoria,"los datos <%s>",solicitud->datos_memoria[1].datos);
+            //TODO logica de memoria que escribe 
+            log_info(logger_memoria,"falta implementar:");
+            for(int i=0; i<solicitud->cantidad_accesos; i++){
+                log_info(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
+                log_info(logger_memoria,"los datos <%s>",solicitud->datos_memoria[i].datos);
+            }
 
-            // int handshake = IO_STDIN_READ;
-            // if (send(*socket, &handshake, sizeof(handshake), 0) == -1) {
-            //     log_error(logger_memoria,"atender_peticiones_stdin: Error al enviar handshake a stdin");
-            //     exit(EXIT_FAILURE);
-            // }
+            //confirmo a entradasalida
             int mensajeOK =1;
             t_paquete* paquete = crear_paquete(IO_STDIN_READ);
             agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
