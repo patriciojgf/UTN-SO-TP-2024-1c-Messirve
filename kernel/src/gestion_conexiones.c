@@ -102,7 +102,7 @@ static void _gestionar_nueva_interfaz(void *void_args) {
     if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDIN") == 0) {
         _atender_peticiones_io(interfaz_nueva);
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDOUT") == 0) {
-        log_error(logger_kernel, "falta implementar STDOUT");
+        _atender_peticiones_io(interfaz_nueva);
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {
         log_error(logger_kernel, "falta implementar DIALFS");
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "GENERICA") == 0) {
@@ -188,6 +188,11 @@ void atender_peticiones_dispatch(){
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_stdin_read(proceso_exec,instrucciones);
 						break;
+					case IO_STDOUT_WRITE:
+						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_STDOUT_WRITE", proceso_exec->pid);
+						sem_post(&sem_pcb_desalojado);
+						atender_cpu_io_stdout_write(proceso_exec,instrucciones);
+						break;
 					case FIN_QUANTUM:
 						log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid));
@@ -237,6 +242,8 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 		while(1){
     		// //log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 			int cod_op = recibir_operacion(interfaz->socket);
+			int size_temp =0;
+			void* buffer_temp;
 			switch (cod_op){
 				case IO_GEN_SLEEP:	    
     				log_info(logger_kernel,"[ATENDER PETICION IO GEN]: SLEEP TERMINADO ");
@@ -246,11 +253,19 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					break;
 				case IO_STDIN_READ:
 					log_info(logger_kernel,"[ATENDER PETICION IO GEN]: IO_STDIN_READ TERMINADO ");
-					int size_temp =0;
-					void* buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
+					size_temp =0;
+					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
 					free(buffer_temp);
 					t_pedido_stdin* pedido_stdin = list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido_stdin->semaforo_pedido_ok);
+					break;
+				case IO_STDOUT_WRITE:
+					log_info(logger_kernel,"[ATENDER PETICION IO GEN]: IO_STDOUT_WRITE TERMINADO ");
+					size_temp =0;
+					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
+					free(buffer_temp);
+					t_pedido_stdin* pedido_stdiout= list_get(interfaz->cola_procesos, 0);
+					sem_post(&pedido_stdiout->semaforo_pedido_ok);
 					break;
 				case -1:
 					log_error(logger_kernel,"[ATENDER INTERFAZ IO GEN %s]: Se desconecto la interfaz.",interfaz->nombre_io);

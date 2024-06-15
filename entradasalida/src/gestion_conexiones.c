@@ -84,14 +84,53 @@ static void _atender_peticiones_memoria(){
 
 static void _atender_peticiones_kernel(){
     while(1){
+        t_solicitud_io* solicitud_recibida_kernel;
+        int mensajeOK =1;
+        t_paquete* paquete_para_kernel;
         int cod_op = recibir_operacion(socket_cliente_kernel);
         switch(cod_op){
             case MENSAJE:
                 recibir_mensaje(socket_cliente_kernel, logger_io);
                 break;
-            case IO_STDIN_READ:
+            case IO_STDOUT_WRITE:
+                log_info(logger_io,"IO_STDOUT_WRITE: Recibiendo solicitud de escritura de kernel");
                 // Recibir la solicitud que contiene las direcciones de memoria y el tamaño a leer
-                t_solicitud_io* solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
+                solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
+                log_info(logger_io,"IO_STDOUT_WRITE: solicitud_recibida_kernel");
+                if (solicitud_recibida_kernel == NULL) {
+                    fprintf(stderr, "Error al recibir la solicitud IO\n");
+                    continue;
+                }
+                enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel,IO_STDOUT_WRITE);
+                log_info(logger_io,"IO_STDOUT_WRITE: enviar_solicitud_io");
+
+                int cod_mensaje = recibir_operacion(socket_cliente_memoria);
+                int size_mensaje =0;
+                void* buffer_mensaje = recibir_buffer(&size_mensaje, socket_cliente_memoria);
+                
+                char* mensaje_recibido_de_memoria;
+                int size_mensaje_recibido_de_memoria;
+                int desplazamiento = 0;
+                memcpy(&(size_mensaje_recibido_de_memoria), buffer_mensaje + desplazamiento, sizeof(int));
+                desplazamiento += sizeof(int);
+                mensaje_recibido_de_memoria=malloc(size_mensaje_recibido_de_memoria);
+                memcpy(mensaje_recibido_de_memoria, buffer_mensaje + desplazamiento, size_mensaje_recibido_de_memoria);
+
+                log_info(logger_io,"Texto leido de memoria: <%s>",mensaje_recibido_de_memoria);
+                free(buffer_mensaje);
+                free(mensaje_recibido_de_memoria); 
+
+                paquete_para_kernel = crear_paquete(IO_STDOUT_WRITE);
+                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
+                eliminar_paquete(paquete_para_kernel);                                    
+
+                break;
+
+            case IO_STDIN_READ:
+                log_info(logger_io,"IO_STDIN_READ: Recibiendo solicitud de lectura de kernel");
+                // Recibir la solicitud que contiene las direcciones de memoria y el tamaño a leer
+                solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
                 if (solicitud_recibida_kernel == NULL) {
                     fprintf(stderr, "Error al recibir la solicitud IO\n");
                     continue;
@@ -112,9 +151,8 @@ static void _atender_peticiones_kernel(){
                 void* buffer_temp = recibir_buffer(&size_temp, socket_cliente_memoria);
                 free(buffer_temp);
                 //envio el ok a kernel
-                if (cod_hand == IO_STDIN_READ){
-                    int mensajeOK =1;
-                    t_paquete* paquete_para_kernel = crear_paquete(IO_STDIN_READ);
+                if (cod_hand == IO_STDIN_READ){                    
+                    paquete_para_kernel = crear_paquete(IO_STDIN_READ);
                     agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                     enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
                     eliminar_paquete(paquete_para_kernel);                   

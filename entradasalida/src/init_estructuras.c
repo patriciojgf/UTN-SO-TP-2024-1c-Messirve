@@ -27,7 +27,7 @@ static void iniciar_configuracion(char* config_path){
         PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
         TIEMPO_UNIDAD_TRABAJO = atoi(config_get_string_value(config_io, "TIEMPO_UNIDAD_TRABAJO"));
     }
-    else if(strcmp(TIPO_INTERFAZ, "STDIN") == 0){
+    else if((strcmp(TIPO_INTERFAZ, "STDIN") == 0)|| (strcmp(TIPO_INTERFAZ, "STDOUT") == 0)){
         IP_KERNEL = config_get_string_value(config_io, "IP_KERNEL");
         PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
         IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");

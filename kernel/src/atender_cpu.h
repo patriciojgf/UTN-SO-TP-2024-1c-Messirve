@@ -18,5 +18,6 @@ void atender_cpu_signal(t_pcb* pcb, t_recurso* recurso);
 void atender_cpu_int_signal(t_pcb* pcb);
 void atender_cpu_int_finalizar_proceso(t_pcb* pcb);
 void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion);
+void atender_cpu_io_stdout_write(t_pcb* pcb, t_instruccion* instruccion);
 
 #endif /*ATENDER_CPU_H*/

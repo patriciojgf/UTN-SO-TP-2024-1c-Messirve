@@ -371,7 +371,7 @@ t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud, int motivo) {
     agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->cantidad_accesos), sizeof(uint32_t));
 
     for (int i = 0; i < solicitud->cantidad_accesos; i++) {
-        agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->datos_memoria[i].direccion_fisica), sizeof(uint32_t));		
+        agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->datos_memoria[i].direccion_fisica), sizeof(uint32_t));
 
         agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->datos_memoria[i].tamano), sizeof(uint32_t));
 		

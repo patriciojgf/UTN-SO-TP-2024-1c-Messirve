@@ -70,23 +70,11 @@ void ejecutar_proceso(){
 				// Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, 
 				// se lea desde la posición de memoria indicada por la Dirección Lógica almacenada 
 				// en el Registro Dirección, un tamaño indicado por el Registro Tamaño y se imprima por pantalla.
-				char *registro_direccion2 = list_get(inst_decodificada->parametros, 0);
-    			char *registro_tamano2 = list_get(inst_decodificada->parametros, 1);
-				info_registro_cpu registro_dir_info2 = _get_direccion_registro(registro_direccion2);
-				info_registro_cpu registro_tam_info2 = _get_direccion_registro(registro_tamano2);
-				uint8_t valor_direccion_logica2 = *(uint8_t*)registro_dir_info2.direccion;
-				uint8_t valor_tamano_a_escribir2 = *(uint8_t*)registro_tam_info2.direccion;
-				//tomar la direccion logica y calcular la o las fisicas necesarias para escribir el tamano especificado.
-				//por cada direccion fisica hacer un "agregar_a_pedido_memoria" con esa direccion, el parametro "prueba1" puede tener
-				//cualquier valor aca porque se va a completar con datos de la interfaz despues.
-				uint32_t dir_prueba2 = 99; //cuadno este la traduccion cambiar
-				uint32_t tam_prueba2 = 20; //esto seria el tamaño de pagina (max)
-
-				pedido_io_stdout_write = crear_pedido_memoria(contexto_cpu->pid,tam_prueba2);
-				agregar_a_pedido_memoria(pedido_io_stdout_write, "prueba1",dir_prueba2);
-				agregar_a_pedido_memoria(pedido_io_stdout_write, "prueba2",dir_prueba2);
-				
+	
+				//muevo la logica a una funcion propia
+				pedido_io_stdout_write=_io_std(inst_decodificada);				
 				motivo_desalojo = IO_STDOUT_WRITE;
+				break;
 
 			case IO_STDIN_READ:
 				//IO_STDIN_READ Int2 EAX AX
@@ -142,18 +130,19 @@ void ejecutar_proceso(){
 
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 		log_info(logger_cpu,"pthread_mutex_lock(&mutex_ejecucion_proceso)2");
+
 		//Desalojos por instrucciones ejecutadas
 		if(motivo_desalojo > -1){
 			flag_ejecucion = false;
 			devolver_contexto_a_dispatch(motivo_desalojo, inst_decodificada);
 			if (motivo_desalojo == IO_STDIN_READ){
-				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdin_read,IO_STDIN_READ);
+				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdin_read,motivo_desalojo);
 			}
-
 			if (motivo_desalojo == IO_STDOUT_WRITE){
-				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdout_write,IO_STDOUT_WRITE);
+				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdout_write,motivo_desalojo);
 			}
 		}
+
         // Verificar interrupciones.
         if (flag_interrupt && flag_ejecucion) {
             //log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
