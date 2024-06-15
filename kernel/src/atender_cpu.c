@@ -178,7 +178,7 @@ void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){
         list_add(interfaz->cola_procesos, pedido_en_espera);    
 		pthread_mutex_unlock(&interfaz->mutex_cola_block);
 
-        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu);
+        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu,IO_STDIN_READ);
 
         sem_wait(&pedido_en_espera->semaforo_pedido_ok);
 

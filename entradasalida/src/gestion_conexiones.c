@@ -102,7 +102,7 @@ static void _atender_peticiones_kernel(){
                 // Llenar los datos de memoria en la solicitud con el texto leído
                 llenar_datos_memoria(solicitud_recibida_kernel, input_text);
                 // Enviar la solicitud completada hacia donde se necesite procesar
-                enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel);
+                enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel,IO_STDIN_READ);
                 // Limpiar
                 free(input_text);
 

@@ -364,8 +364,8 @@ void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 /*Conexion con CPU + Paquetes - FIN*/
 
 /*IO READ*/
-t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud) {
-    t_paquete* paquete = crear_paquete(IO_STDIN_READ);
+t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud, int motivo) {
+    t_paquete* paquete = crear_paquete(motivo);
     agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->pid), sizeof(int));
     agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->size_solicitud), sizeof(uint32_t));
     agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->cantidad_accesos), sizeof(uint32_t));
@@ -381,8 +381,8 @@ t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud) {
     return paquete;
 }
 
-void enviar_solicitud_io(int socket, t_solicitud_io* solicitud) {
-    t_paquete* paquete = empaquetar_solicitud_io(solicitud);
+void enviar_solicitud_io(int socket, t_solicitud_io* solicitud, int motivo) {
+    t_paquete* paquete = empaquetar_solicitud_io(solicitud, motivo);
     enviar_paquete(paquete, socket);
     eliminar_paquete(paquete);
 }

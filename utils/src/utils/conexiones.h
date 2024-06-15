@@ -175,8 +175,8 @@ int handshake_cliente(int hs_origen, int socket);
 int handshake_server(int socket);
 
 /*-------IO------------------*/
-t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud);
-void enviar_solicitud_io(int socket, t_solicitud_io* solicitud);
+t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud, int motivo);
+void enviar_solicitud_io(int socket, t_solicitud_io* solicitud, int motivo);
 t_solicitud_io* recibir_solicitud_io(int socket);
 t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud);
 void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, uint32_t direccion_fisica);
