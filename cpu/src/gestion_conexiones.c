@@ -227,7 +227,7 @@ void atender_peticiones_memoria(){
                 int _size, tam_pag, _desplazamiento = 0;
                 void *_buffer = recibir_buffer(&_size, socket_memoria);
                 memcpy(&tam_pag,_buffer +_desplazamiento, sizeof(int));;
-                log_protegido_cpu(string_from_format("[ATENDER MEMORIA]tam_pag: %d\n", tam_pag));
+                log_info(logger_cpu, "[ATENDER MEMORIA]tam_pag: %d\n", tam_pag);
                 TAM_PAG = tam_pag;
                 log_protegido_cpu(string_from_format("TAM_PAG: %d", TAM_PAG));
             break;

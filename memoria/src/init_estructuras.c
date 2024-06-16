@@ -93,7 +93,7 @@ void iniciar_tabla_de_pagina(t_proceso* proceso)
     }
 
     // proceso_nuevo->cant_paginas = cant_paginas; //TODO: debería agregar cant_pagina a t_proceso
-    log_protegido_mem(string_from_format("Creacion de Tabla de Paginas PID: <%d>", proceso->id));
+    log_info(logger_memoria, "Creacion de Tabla de Paginas PID: <%d>", proceso->id);
 }
 
 void init_memoria(char* path_config)

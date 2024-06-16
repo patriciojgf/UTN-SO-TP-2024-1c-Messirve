@@ -617,50 +617,50 @@ static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_para
 }
 /*****************************************************************************************/
 
-static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros){
-	//log_protegido_cpu("_mostrar_parametros ");
-	char* nombre_instruccion = _get_nombre_instruccion(instruccion->identificador);
-	// if(cantidad_parametros == 0){
-	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s>",pid,nombre_instruccion);
-	// 	//log_protegido_cpu(mensaje_log);
-	// 	free(mensaje_log);
-	// }else if(cantidad_parametros == 1){
-	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0));
-	// 	//log_protegido_cpu(mensaje_log);
-	// 	free(mensaje_log);		
-	// }else if(cantidad_parametros == 2){
-	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1));
-	// 	//log_protegido_cpu(mensaje_log);
-	// 	free(mensaje_log);
-	// }else if(cantidad_parametros == 3){
-	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2));
-	// 	//log_protegido_cpu(mensaje_log);
-	// 	free(mensaje_log);
-	// }else if(cantidad_parametros == 4){
-	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3));
-	// 	//log_protegido_cpu(mensaje_log);
-	// 	free(mensaje_log);
-	// }else if(cantidad_parametros == 5){
-	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3),list_get(instruccion->parametros,4));
-	// 	//log_protegido_cpu(mensaje_log);
-	// 	free(mensaje_log);
-	// }
-	// free(nombre_instruccion);
+// static void _mostrar_parametros(t_instruccion* instruccion, u_int8_t cantidad_parametros){
+// 	//log_protegido_cpu("_mostrar_parametros ");
+// 	char* nombre_instruccion = _get_nombre_instruccion(instruccion->identificador);
+// 	// if(cantidad_parametros == 0){
+// 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s>",pid,nombre_instruccion);
+// 	// 	//log_protegido_cpu(mensaje_log);
+// 	// 	free(mensaje_log);
+// 	// }else if(cantidad_parametros == 1){
+// 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0));
+// 	// 	//log_protegido_cpu(mensaje_log);
+// 	// 	free(mensaje_log);		
+// 	// }else if(cantidad_parametros == 2){
+// 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1));
+// 	// 	//log_protegido_cpu(mensaje_log);
+// 	// 	free(mensaje_log);
+// 	// }else if(cantidad_parametros == 3){
+// 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2));
+// 	// 	//log_protegido_cpu(mensaje_log);
+// 	// 	free(mensaje_log);
+// 	// }else if(cantidad_parametros == 4){
+// 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3));
+// 	// 	//log_protegido_cpu(mensaje_log);
+// 	// 	free(mensaje_log);
+// 	// }else if(cantidad_parametros == 5){
+// 	// 	char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s, %s, %s, %s, %s, %s>",pid,nombre_instruccion,list_get(instruccion->parametros,0),list_get(instruccion->parametros,1),list_get(instruccion->parametros,2),list_get(instruccion->parametros,3),list_get(instruccion->parametros,4));
+// 	// 	//log_protegido_cpu(mensaje_log);
+// 	// 	free(mensaje_log);
+// 	// }
+// 	// free(nombre_instruccion);
 	
-	// Prepara el mensaje con el nombre de la instrucción
-    char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s", contexto_cpu->pid, nombre_instruccion);
+// 	// Prepara el mensaje con el nombre de la instrucción
+//     char* mensaje_log = string_from_format("PID: <%d> - Ejecutando: <%s", contexto_cpu->pid, nombre_instruccion);
     
-    // Agrega los parámetros al mensaje
-    for (int i = 0; i < cantidad_parametros; i++) {
-        char* parametro = list_get(instruccion->parametros, i);
-        mensaje_log = string_from_format("%s, %s", mensaje_log, parametro);
-    }
+//     // Agrega los parámetros al mensaje
+//     for (int i = 0; i < cantidad_parametros; i++) {
+//         char* parametro = list_get(instruccion->parametros, i);
+//         mensaje_log = string_from_format("%s, %s", mensaje_log, parametro);
+//     }
     
-    // Cierra el mensaje
-    mensaje_log = string_from_format("%s>", mensaje_log);
+//     // Cierra el mensaje
+//     mensaje_log = string_from_format("%s>", mensaje_log);
     
-    // Loggea el mensaje
-    //log_protegido_cpu(mensaje_log);
+//     // Loggea el mensaje
+//     //log_protegido_cpu(mensaje_log);
     
-	log_warning(logger_cpu, "Necesito hacer un free aca?");
-}
+// 	log_warning(logger_cpu, "Necesito hacer un free aca?");
+// }

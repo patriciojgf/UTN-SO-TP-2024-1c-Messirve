@@ -231,7 +231,7 @@ static void atender_peticiones_kernel(void *void_args){
                 confirmar_proceso_creado(); 
                 break;
              case LIBERAR_ESTRUCTURAS_MEMORIA:
-                log_protegido_mem(string_from_format("[ATENDER KERNEL]: LIBERAR_ESTRUCTURAS_MEMORIA"));
+                log_info(logger_memoria, "[ATENDER KERNEL]: LIBERAR_ESTRUCTURAS_MEMORIA");
                 pid=0; desplazamiento = 0; size = 0;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
