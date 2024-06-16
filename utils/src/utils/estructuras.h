@@ -83,6 +83,23 @@ typedef struct {
 }t_tabla_pagina;
 
 
+/*IO READ*/
+typedef struct {
+    uint32_t direccion_fisica;
+    uint32_t tamano;
+    char* datos;  // Suponiendo que los datos se gestionarán externamente.
+} t_dato_memoria;
+
+typedef struct {
+    int pid;
+    uint32_t size_solicitud;
+    uint32_t cantidad_accesos;    
+    t_dato_memoria* datos_memoria;
+} t_solicitud_io;
+
+
+/*IO READ - FIN*/
+
 void inicializar_registros(t_registros_cpu* registros);
 
 #endif // ESTRUCTURAS_H

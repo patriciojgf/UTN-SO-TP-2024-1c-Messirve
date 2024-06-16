@@ -2,13 +2,7 @@
 
 static void init_log();
 
-//-----------------------------------------------------------------------------//
-void log_protegido_io(char* mensaje){
-	sem_wait(&mlog);
-	log_info(logger_io, "%s", mensaje);
-	sem_post(&mlog);
-	free(mensaje);
-}
+//--------
 
 static void init_log(){
     logger_io = iniciar_logger("io.log", "IO");
@@ -22,22 +16,31 @@ static void iniciar_configuracion(char* config_path){
         config_destroy(config_io);
         exit(EXIT_FAILURE);
     }      
-    TIPO_INTERFAZ = config_get_string_value(config_io, "TIPO_INTERFAZ");
-    TIEMPO_UNIDAD_TRABAJO = atoi(config_get_string_value(config_io, "TIEMPO_UNIDAD_TRABAJO"));
-    IP_KERNEL = config_get_string_value(config_io, "IP_KERNEL");
-    PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
-    IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");
-    PUERTO_MEMORIA = config_get_string_value(config_io, "PUERTO_MEMORIA");
-    PATH_BASE_DIALFS = config_get_string_value(config_io, "PATH_BASE_DIALFS");
-    BLOCK_SIZE = atoi(config_get_string_value(config_io, "BLOCK_SIZE"));
-    BLOCK_COUNT = atoi(config_get_string_value(config_io, "BLOCK_COUNT"));
+    TIPO_INTERFAZ = config_get_string_value(config_io, "TIPO_INTERFAZ");    
+
+    if(strcmp(TIPO_INTERFAZ, "GENERICA") == 0){
+        IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");
+        PUERTO_MEMORIA = config_get_string_value(config_io, "PUERTO_MEMORIA");
+        BLOCK_SIZE = atoi(config_get_string_value(config_io, "BLOCK_SIZE"));
+        BLOCK_COUNT = atoi(config_get_string_value(config_io, "BLOCK_COUNT"));
+        IP_KERNEL = config_get_string_value(config_io, "IP_KERNEL");
+        PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
+        TIEMPO_UNIDAD_TRABAJO = atoi(config_get_string_value(config_io, "TIEMPO_UNIDAD_TRABAJO"));
+    }
+    else if((strcmp(TIPO_INTERFAZ, "STDIN") == 0)|| (strcmp(TIPO_INTERFAZ, "STDOUT") == 0)){
+        IP_KERNEL = config_get_string_value(config_io, "IP_KERNEL");
+        PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
+        IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");
+        PUERTO_MEMORIA = config_get_string_value(config_io, "PUERTO_MEMORIA");
+    }
 }
 
 static void iniciar_semaforos(){
-    sem_init(&mlog,0,1);
+    sem_init(&sem_io_stdin_read_ok,0,0);
 }
 
 static void iniciar_estructuras(){
+    // lista_interfaz_socket = list_create();
 }
 
 static void init_nombre_interfaz(char* nombre){

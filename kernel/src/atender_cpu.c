@@ -157,6 +157,82 @@ void atender_cpu_fin_quantum(t_pcb* pcb){
     sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
 }
 
+
+void atender_cpu_io_stdout_write(t_pcb* pcb, t_instruccion* instruccion){
+    char* nombre_interfaz = list_get(instruccion->parametros, 0);
+    log_info(logger_kernel,"Nombre de la interfaz: %s", nombre_interfaz);
+    t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
+    if(interfaz==NULL){
+        log_error(logger_kernel,"no se encontro la interfaz en la lista");
+    }
+    int cod = recibir_operacion(socket_dispatch);
+    if( cod == IO_STDOUT_WRITE){
+        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
+        
+        //se puede reutilizar t_pedido_stdin
+        t_pedido_stdin* pedido_en_espera = malloc(sizeof(t_pedido_stdin));
+        pedido_en_espera->pcb = pcb;
+        sem_init(&pedido_en_espera->semaforo_pedido_ok,0,0);
+
+        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+
+        pthread_mutex_lock(&mutex_plan_exec);
+        proceso_exec = NULL;
+        pthread_mutex_unlock(&mutex_plan_exec);
+        sem_post(&sem_plan_exec_libre);
+
+		pthread_mutex_lock(&interfaz->mutex_cola_block);
+        list_add(interfaz->cola_procesos, pedido_en_espera);    
+		pthread_mutex_unlock(&interfaz->mutex_cola_block);        
+        
+        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu,IO_STDOUT_WRITE);
+
+        sem_wait(&pedido_en_espera->semaforo_pedido_ok);
+
+        list_remove(interfaz->cola_procesos, 0);
+        desbloquar_proceso(pedido_en_espera->pcb->pid);
+        free(pedido_en_espera);
+    }
+    else{
+        log_error(logger_kernel,"atender_cpu_io_stdout_write: error en la operacion recibida. %d",cod);
+    }
+
+}
+
+void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){ 
+    char* nombre_interfaz = list_get(instruccion->parametros, 0);
+    t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
+    if(recibir_operacion(socket_dispatch) == IO_STDIN_READ){
+        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
+        
+        t_pedido_stdin* pedido_en_espera = malloc(sizeof(t_pedido_stdin));
+        pedido_en_espera->pcb = pcb;
+        sem_init(&pedido_en_espera->semaforo_pedido_ok,0,0);
+
+        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+
+        pthread_mutex_lock(&mutex_plan_exec);
+        proceso_exec = NULL;
+        pthread_mutex_unlock(&mutex_plan_exec);
+        sem_post(&sem_plan_exec_libre);
+
+		pthread_mutex_lock(&interfaz->mutex_cola_block);
+        list_add(interfaz->cola_procesos, pedido_en_espera);    
+		pthread_mutex_unlock(&interfaz->mutex_cola_block);
+
+        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu,IO_STDIN_READ);
+
+        sem_wait(&pedido_en_espera->semaforo_pedido_ok);
+
+        list_remove(interfaz->cola_procesos, 0);
+        desbloquar_proceso(pedido_en_espera->pcb->pid);
+        free(pedido_en_espera);
+    }
+    else{
+        log_error(logger_kernel,"atender_cpu_io_stdin_read: error en la operacion recibida.");
+    }
+}
+
 void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
     
     log_info(logger_kernel,"[ATENDER CPU IO SLEEP]");

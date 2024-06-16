@@ -1,13 +1,5 @@
 #include "init_estructuras.h"
 
-//-----------------------------------------------------------------------------//
-void log_protegido_mem(char *mensaje){
-    sem_wait(&mlog);
-    log_info(logger_memoria, "%s", mensaje);
-    sem_post(&mlog);
-    free(mensaje);
-}
-
 static void init_log(){
     logger_memoria = iniciar_logger("memoria.log", "MEMORIA");
 }
@@ -33,7 +25,12 @@ static void iniciar_semaforos(){
     sem_init(&mlog,0,1);
 }
 
+static void iniciar_mutex(){
+    pthread_mutex_init(&mutex_lista_interfaz,NULL);
+}
+
 static void iniciar_estructuras(){
+    lista_interfaz_socket = list_create();
     lista_procesos_en_memoria = list_create();
 }
 
@@ -99,11 +96,13 @@ void iniciar_tabla_de_pagina(t_proceso* proceso)
     log_protegido_mem(string_from_format("Creacion de Tabla de Paginas PID: <%d>", proceso->id));
 }
 
-void init_memoria(char* path_config){
+void init_memoria(char* path_config)
+{
     init_log();
     iniciar_configuracion(path_config);
     iniciar_estructuras();
     iniciar_semaforos();
     iniciar_espacio_de_usuario();
     // iniciar_tabla_de_pagina();
+    iniciar_mutex();
 }

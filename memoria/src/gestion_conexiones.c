@@ -1,11 +1,13 @@
 #include "gestion_conexiones.h"
 
-static void identificar_conexion_y_derivar(int socket_cliente, int cod_op);
 static void atender_peticiones_kernel(void *void_args);
 static void atender_peticiones_cpu(void *void_args);
+static void atender_peticiones_stdin(void *void_args);
+static void atender_peticiones_stdout(void *void_args);
 static void _confirmar_memoria_liberada();
 static void _enviar_tamanio_a_cpu(int socket_cliente_cpu);
 static int _get_marco(int pid);
+static void identificar_conexion_y_derivar(int socket_cliente, int cod_op);
 
 // --------------------------------------------------------------------------//
 // ------------- CONEXIONES E HILOS -----------------------------------------//
@@ -25,10 +27,11 @@ void gestionar_conexiones_entrantes(){
 }
 
 static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
+    int *argumentos;
     switch(cod_op){
         case HANDSHAKE_KERNEL: {
             //log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE KERNEL RECIBIDO ----"));
-			int *argumentos = malloc(sizeof(int));
+			argumentos = malloc(sizeof(int));
 			*argumentos = socket_cliente;
             socket_cliente_kernel = socket_cliente;
             pthread_create(&hilo_gestionar_kernel, NULL, (void*) atender_peticiones_kernel, argumentos);
@@ -38,7 +41,7 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
         case HANDSHAKE_CPU:{
             //log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE CPU RECIBIDO ----"));
 
-			int *argumentos = malloc(sizeof(int));
+			argumentos = malloc(sizeof(int));
 			*argumentos = socket_cliente;
             socket_cliente_cpu = socket_cliente;
 
@@ -51,8 +54,35 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
         case HANDSHAKE_IO_GEN:
             //log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE CPU RECIBIDO ----"));
             break;
-        case HANDSHAKE_IO_STDIN:
-        case HANDSHAKE_IO_STDOUT:
+        case HANDSHAKE_IO_STDIN:        
+            log_info(logger_memoria,"HANDSHAKE_IO_STDIN");
+			recibir_operacion(socket_cliente);
+            int size = 0;
+            void *buffer = recibir_buffer(&size, socket_cliente);
+            free(buffer);
+
+            argumentos = malloc(sizeof(int));
+			*argumentos = socket_cliente;            
+            pthread_t hilo_gestionar_stdin;
+            pthread_create(&hilo_gestionar_stdin, NULL, (void*) atender_peticiones_stdin, argumentos);
+            pthread_detach(hilo_gestionar_stdin);
+
+            break;
+        case HANDSHAKE_IO_STDOUT:     
+            log_info(logger_memoria,"HANDSHAKE_IO_STDOUT");
+			recibir_operacion(socket_cliente);
+            int size2 = 0;
+            void *buffer2 = recibir_buffer(&size2, socket_cliente);
+            free(buffer2);
+
+            argumentos = malloc(sizeof(int));
+			*argumentos = socket_cliente;            
+            pthread_t hilo_gestionar_stdout;
+            pthread_create(&hilo_gestionar_stdout, NULL, (void*) atender_peticiones_stdout, argumentos);
+            pthread_detach(hilo_gestionar_stdout);
+
+            break;
+
         case HANDSHAKE_IO_DIALFS: 
         default:
             log_error(logger_memoria,"identificar_conexion_y_derivar: HANDSHAKE NO IDENTIFICADO, valor: %d", cod_op);
@@ -68,6 +98,69 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES DE LOGICA POR MODULO------------------------------//
 // --------------------------------------------------------------------------//
+static void atender_peticiones_stdout(void *void_args){
+    int* socket = (int*) void_args;
+    while(1){
+        int code_op = recibir_operacion(*socket);
+        if (code_op == IO_STDOUT_WRITE){
+            t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
+            log_warning(logger_memoria,"falta implementar:");
+            for(int i=0; i<solicitud->cantidad_accesos; i++){
+                log_warning(logger_memoria,"leer de direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
+                log_warning(logger_memoria,"la cantidad de bytes: <%d>",solicitud->datos_memoria[i].tamano);
+            }
+            log_warning(logger_memoria,"juntar todo lo que leyo y devolverlo como mensaje:");
+            char* mensaje_respuesta_temp = "mensaje de prueba";
+            
+            t_paquete* paquete = crear_paquete(IO_STDOUT_WRITE);
+            agregar_a_paquete(paquete, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
+            enviar_paquete(paquete, *socket);
+            eliminar_paquete(paquete);
+        }
+        else if (code_op == -1){
+            log_info(logger_memoria,"El IO_STDOUT_WRITE se desconecto");
+            break;
+        }
+        else {
+            log_error(logger_memoria,"atender_peticiones_stdout: Operacion desconocida");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+static void atender_peticiones_stdin(void *void_args){
+    int* socket = (int*) void_args;
+    while(1){
+        int code_op = recibir_operacion(*socket);
+        if (code_op == IO_STDIN_READ){
+            t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
+
+            //TODO logica de memoria que escribe 
+            log_info(logger_memoria,"falta implementar:");
+            for(int i=0; i<solicitud->cantidad_accesos; i++){
+                log_info(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
+                log_info(logger_memoria,"los datos <%s>",solicitud->datos_memoria[i].datos);
+            }
+
+            //confirmo a entradasalida
+            int mensajeOK =1;
+            t_paquete* paquete = crear_paquete(IO_STDIN_READ);
+            agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
+            enviar_paquete(paquete, *socket);
+            eliminar_paquete(paquete);            
+        }
+        else if (code_op == -1){
+            log_info(logger_memoria,"El IO_STDIN se desconecto");
+            break;
+        }
+        else {
+            log_error(logger_memoria,"atender_peticiones_stdin: Operacion desconocida");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+}
+
 static void atender_peticiones_cpu(void *void_args){
 	int* socket = (int*) void_args;
     int PC, size, pid = 0;
@@ -168,6 +261,8 @@ static void atender_peticiones_kernel(void *void_args){
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES DE LOGICA POR MODULO ---- FIN --------------------//
 // --------------------------------------------------------------------------//
+
+
 
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES AUXILIARES POR MODULO -----------------------------//

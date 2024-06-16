@@ -7,12 +7,13 @@
 #include "init_estructuras.h"
 #include "gestion_conexiones.h"
 
-sem_t mlog;
 
 int socket_memoria;
 int socket_servidor_kernel;
 
 char* nombre_interfaz;
+
+t_list* lista_interfaz_socket;
 
 //----LOG y CONFIGS-----//
 t_log* logger_io;
@@ -36,6 +37,12 @@ int socket_cliente_memoria;
 //------Hilos------------
 pthread_t hilo_gestionar_memoria;
 pthread_t hilo_gestionar_kernel;
+
+//-----semaforos---------
+sem_t sem_io_stdin_read_ok;
+
+////----mutex
+pthread_mutex_t mutex_lista_interfaz;
 
 t_config_io* datos_io;
 

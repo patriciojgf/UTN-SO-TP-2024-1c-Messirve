@@ -363,3 +363,132 @@ void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 }
 /*Conexion con CPU + Paquetes - FIN*/
 
+/*IO READ*/
+t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud, int motivo) {
+    t_paquete* paquete = crear_paquete(motivo);
+    agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->pid), sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->size_solicitud), sizeof(uint32_t));
+    agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->cantidad_accesos), sizeof(uint32_t));
+
+    for (int i = 0; i < solicitud->cantidad_accesos; i++) {
+        agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->datos_memoria[i].direccion_fisica), sizeof(uint32_t));
+
+        agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->datos_memoria[i].tamano), sizeof(uint32_t));
+		
+        agregar_a_paquete(paquete, solicitud->datos_memoria[i].datos, solicitud->datos_memoria[i].tamano);
+		
+    }
+    return paquete;
+}
+
+void enviar_solicitud_io(int socket, t_solicitud_io* solicitud, int motivo) {
+    t_paquete* paquete = empaquetar_solicitud_io(solicitud, motivo);
+    enviar_paquete(paquete, socket);
+    eliminar_paquete(paquete);
+}
+
+/* Función para recibir una solicitud de I/O */
+t_solicitud_io* recibir_solicitud_io(int socket) {
+    int size;
+    void* buffer = recibir_buffer(&size, socket);
+    int desplazamiento = 0;
+    t_solicitud_io* solicitud = malloc(sizeof(t_solicitud_io));
+
+    memcpy(&(solicitud->pid), buffer + desplazamiento, sizeof(int));
+    desplazamiento += sizeof(int);
+    memcpy(&(solicitud->size_solicitud), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(solicitud->cantidad_accesos), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+
+    solicitud->datos_memoria = malloc(solicitud->cantidad_accesos * sizeof(t_dato_memoria));
+    for (int i = 0; i < solicitud->cantidad_accesos; i++) {
+        memcpy(&(solicitud->datos_memoria[i].direccion_fisica), buffer + desplazamiento, sizeof(uint32_t));
+        desplazamiento += sizeof(uint32_t);
+
+        memcpy(&(solicitud->datos_memoria[i].tamano), buffer + desplazamiento, sizeof(uint32_t));
+        desplazamiento += sizeof(uint32_t) + sizeof(int);
+
+        solicitud->datos_memoria[i].datos = malloc(solicitud->datos_memoria[i].tamano);
+        memcpy(solicitud->datos_memoria[i].datos, buffer + desplazamiento, solicitud->datos_memoria[i].tamano);
+        desplazamiento += solicitud->datos_memoria[i].tamano;
+    }
+
+    free(buffer);
+    return solicitud;
+}
+
+
+
+t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud) {
+    t_solicitud_io* solicitud = malloc(sizeof(t_solicitud_io));
+    if (solicitud != NULL) {
+        solicitud->pid = pid;
+        solicitud->size_solicitud = size_solicitud;
+        solicitud->cantidad_accesos = 0;
+        solicitud->datos_memoria = NULL;  // Inicialmente no hay datos
+    }
+    return solicitud;
+}
+
+
+// Función para agregar un dato de memoria a la solicitud existente
+void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, uint32_t direccion_fisica) {
+    if (solicitud == NULL) {
+        return;  // Seguridad para evitar la desreferencia de NULL
+    }
+    // Redimensionar el arreglo de datos de memoria
+    size_t nuevo_tamano = solicitud->cantidad_accesos + 1;
+    solicitud->datos_memoria = realloc(solicitud->datos_memoria, nuevo_tamano * sizeof(t_dato_memoria));
+    if (solicitud->datos_memoria != NULL) {
+        // Inicializar el nuevo t_dato_memoria
+        uint32_t size_dato = strlen(dato) + 1; // +1 para el carácter nulo
+        solicitud->datos_memoria[solicitud->cantidad_accesos].direccion_fisica = direccion_fisica;  
+        solicitud->datos_memoria[solicitud->cantidad_accesos].tamano = size_dato;
+        solicitud->datos_memoria[solicitud->cantidad_accesos].datos = malloc(size_dato);
+        if (solicitud->datos_memoria[solicitud->cantidad_accesos].datos != NULL) {
+            memcpy(solicitud->datos_memoria[solicitud->cantidad_accesos].datos, dato, size_dato);
+        }
+		else{
+			printf("Error al asignar memoria para datos_memorisa\n");
+		}
+
+        solicitud->cantidad_accesos = nuevo_tamano;  // Actualizar la cantidad de accesos
+    } else {
+        // Manejar error de memoria aquí si es necesario
+        printf("Error al expandir la memoria para datos de memoria.\n");
+    }
+}
+
+
+// Función para liberar un pedido de memoria completo
+void eliminar_pedido_memoria(t_solicitud_io* solicitud) {
+    if (solicitud != NULL) {
+        // Primero liberar cada uno de los datos almacenados
+        for (size_t i = 0; i < solicitud->cantidad_accesos; i++) {
+            free(solicitud->datos_memoria[i].datos);  // Liberar los datos de cada acceso
+        }
+        // Luego liberar el arreglo de t_dato_memoria
+        free(solicitud->datos_memoria);
+        // Finalmente, liberar la estructura t_solicitud_io
+        free(solicitud);
+    }
+}
+
+void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text) {
+    char* current_position = input_text;
+    for (int i = 0; i < solicitud->cantidad_accesos; ++i) {
+        t_dato_memoria* dato = &solicitud->datos_memoria[i];
+        dato->datos = malloc(dato->tamano + 1);  // +1 para el caracter nulo
+        if (dato->datos == NULL) {
+            fprintf(stderr, "Error al asignar memoria para datos_memoria\n");
+            exit(EXIT_FAILURE);
+        }
+
+        memcpy(dato->datos, current_position, dato->tamano);
+        dato->datos[dato->tamano] = '\0'; 
+        current_position += dato->tamano; 
+    }
+}
+
+/*IO READ - FIN*/

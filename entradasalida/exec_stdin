@@ -1,0 +1,11 @@
+#!/bin/bash
+FILE=bin/entradasalida
+CONFIG_FILE=${1:-./cfg/stdin.config}
+NOMBRE_INTERFAZ=${2:-Int2}
+
+make clean all
+make
+
+if test -f "./$FILE"; then
+    ./$FILE "$CONFIG_FILE" "$NOMBRE_INTERFAZ"
+fi

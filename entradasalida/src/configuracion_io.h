@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <sys/socket.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #define LOG_NAME "io.log"
 #define PROCESS_NAME "IO"
@@ -28,8 +30,6 @@ extern char* PATH_BASE_DIALFS;
 extern int BLOCK_SIZE;
 extern int BLOCK_COUNT;
 
-//Semaforos
-extern sem_t mlog;
 
 //------Sockets----------
 extern int socket_cliente_kernel;
@@ -38,6 +38,10 @@ extern int socket_cliente_memoria;
 //------Hilos------------
 extern pthread_t hilo_gestionar_memoria;
 extern pthread_t hilo_gestionar_kernel;
+
+//-----semaforos---------
+extern sem_t sem_io_stdin_read_ok;
+
 
 
 typedef struct config_io

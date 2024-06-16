@@ -60,17 +60,11 @@ void mover_proceso_a_exit(t_pcb* pcb){
 }
 
 void mover_proceso_a_blocked(t_pcb* pcb, char* motivo){
-    log_info(logger_kernel, "mover_proceso_a_blocked");
     check_detener_planificador();
-    log_info(logger_kernel, "mover_proceso_a_blocked");
     pcb->estado_anterior = pcb->estado_actual;
-    log_info(logger_kernel, "mover_proceso_a_blocked");
     pcb->estado_actual = estado_BLOCKED;
-    log_info(logger_kernel, "mover_proceso_a_blocked");
     pthread_mutex_lock(&mutex_plan_blocked);
-    log_info(logger_kernel, "mover_proceso_a_blocked");
     list_add(lista_plan_blocked, pcb);
-    log_info(logger_kernel, "mover_proceso_a_blocked");
 
     //Log obligatorio
     log_info(logger_kernel, "PID: <%d> - Bloqueado por: <%s>", pcb->pid, motivo);
