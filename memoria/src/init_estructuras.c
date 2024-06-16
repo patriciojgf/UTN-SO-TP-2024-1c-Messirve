@@ -45,7 +45,7 @@ static void iniciar_espacio_de_usuario()
 }
 
 //TODO: mover a donde corresponda
-static void eliminar_espacio_de_usuario()
+void eliminar_espacio_de_usuario()
 {
     free(memoria_espacio_usuario);
 }

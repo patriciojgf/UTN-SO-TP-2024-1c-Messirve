@@ -235,7 +235,8 @@ static void atender_peticiones_kernel(void *void_args){
                 pid=0; desplazamiento = 0; size = 0;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
-                log_warning(logger_memoria, "falta implementar liberar estructuras memoria");
+                log_warning(logger_memoria, "revisar liberar estructuras memoria");
+                eliminar_espacio_de_usuario(); //TODO: le debería pasar el proceso? 
                 _confirmar_memoria_liberada();
                 break;
             case OBTENER_MARCO:
@@ -244,8 +245,11 @@ static void atender_peticiones_kernel(void *void_args){
                 memcpy(&pid, _buffer +_desplazamiento, sizeof(int));;
                 log_info(logger_memoria, "[ATENDER MEMORIA]pid: %d\n", pid);
                 log_info(logger_memoria, "PID: %d", pid);
-                _get_marco(pid);
-                _confirmar_memoria_liberada();
+                int marco = _get_marco(pid);
+                t_paquete* paquete_a_enviar = crear_paquete(ENVIAR_MARCO);
+                agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(marco),sizeof(int));
+                enviar_paquete(paquete_a_enviar, socket_cliente_cpu);
+                eliminar_paquete(paquete_a_enviar);
             case -1:
                 log_error(logger_memoria,"El KERNEL se desconecto");
                 exit(EXIT_FAILURE);

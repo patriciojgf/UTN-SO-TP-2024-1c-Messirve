@@ -10,6 +10,7 @@ static void _sum(t_instruccion* instruccion);
 static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
 static void _copy_string(t_instruccion* instruccion);
+static void _resize(t_instruccion* instruccion);
 static void _mov_in(t_instruccion* instruccion);
 static void _mov_out(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
@@ -63,8 +64,8 @@ void ejecutar_proceso(){
             case SUM: _sum(inst_decodificada); break;
             case SUB: _sub(inst_decodificada); break;
             case JNZ: _jnz(inst_decodificada); break;
+			case RESIZE: _resize(inst_decodificada); break;
 			case COPY_STRING: _copy_string(inst_decodificada); break;
-			// case RESIZE: _resize(inst_decodificada); break;
 			case MOV_IN: _mov_in(inst_decodificada); break;
 			case MOV_OUT: _mov_out(inst_decodificada); break;
 			case IO_GEN_SLEEP:
@@ -286,7 +287,8 @@ static void _jnz(t_instruccion* instruccion){
 }
 
 
-static void _mov_out(t_instruccion* instruccion){
+static void _mov_out(t_instruccion* instruccion)
+{
 	// (Registro Dirección, Registro Datos): 
 	// Lee el valor del Registro Datos y lo escribe 
 	// en la dirección física de memoria obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.
@@ -322,7 +324,8 @@ static void _mov_out(t_instruccion* instruccion){
 	free(buffer_recibido);
 }
 
-static void _mov_in(t_instruccion* instruccion){
+static void _mov_in(t_instruccion* instruccion)
+{
 	// MOV_IN EDX ECX
 	// (Registro Datos, Registro Dirección): 
 	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 

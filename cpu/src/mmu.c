@@ -6,7 +6,7 @@ static bool _comparar_referencias(fila_tlb* first_row, fila_tlb* second_row);
 static void _consultar_frame_a_memoria(int socket_cliente_cpu);
 static int _get_frame_from_tlb();
 
-int MMU(int dir_logica)
+int MMU(int pid, int dir_logica)
 {
     log_protegido_cpu(string_from_format("Obteniendo DF..."));
     int num_pagina = floor(dir_logica / TAM_PAG);
@@ -79,7 +79,7 @@ static int _get_frame_from_tlb(int pid, int pagina)
 
 static void _consultar_frame_a_memoria(int socket_cliente_cpu)
 {
-    t_paquete *paquete_a_enviar = crear_paquete(TAMANIO_PAGINA);
+    t_paquete *paquete_a_enviar = crear_paquete(OBTENER_MARCO);
     // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(TAM_PAGINA),sizeof(int));
     enviar_paquete(paquete_a_enviar, socket_cliente_cpu);
     eliminar_paquete(paquete_a_enviar);
