@@ -393,24 +393,83 @@ static void _jnz(t_instruccion* instruccion){
     }
 }
 
-static void _mov_int(t_instruccion* instruccion)
+static void _mov_in(t_instruccion* instruccion)
 {
 	log_info(logger_cpu, "[CPU] Se lee la instrucción MOV IN");
+	int mensajeOk = 0;
+	int size = 0;
+	t_paquete* paquete_signal = crear_paquete(CONTEXTO_EJECUCION);
+	agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->pid, sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->program_counter, sizeof(int));
+	empaquetar_registros_cpu(paquete_signal, contexto_cpu->registros_cpu);
+	empaquetar_instruccion_cpu(paquete_signal, instruccion);
+	// agregar_datos_sin_tamaño_a_paquete(paquete_signal, &motivo, sizeof(int)); //TODO: es necesario
+	enviar_paquete(paquete_signal, socket_cliente_dispatch);
+	eliminar_paquete(paquete_signal);
+	// sem_wait(&s_signal_kernel);
+	//recibo respuesta del dispatch
+	int codigo_op = recibir_operacion(socket_cliente_dispatch);
+	log_info(logger_cpu,"[EJECUTAR PROCESO]:MOV IN codigo_op <%d>",codigo_op);
+	void* buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
+	memcpy((&mensajeOk),buffer_recibido,sizeof(int));
+	log_info(logger_cpu,"[EJECUTAR PROCESO]:MOV IN mensajeOk <%d>",mensajeOk);
+	free(buffer_recibido);
+	// if(!mensajeOk){
+	// 	motivo_desalojo=INT_SIGNAL;
+	// 	log_info(logger_cpu,"[EJECUTAR PROCESO]: -- PID <%d> - PC<%d> - SIGNAL NO OK",contexto_cpu->pid,contexto_cpu->program_counter);
+	// }
 }
 
 static void _mov_out(t_instruccion* instruccion)
 {
 	log_info(logger_cpu, "[CPU] Se lee la instrucción MOV OUT");
+	int mensajeOk = 0;
+	int size = 0;
+	t_paquete* paquete_signal = crear_paquete(CONTEXTO_EJECUCION);
+	agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->pid, sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->program_counter, sizeof(int));
+	empaquetar_registros_cpu(paquete_signal, contexto_cpu->registros_cpu);
+	empaquetar_instruccion_cpu(paquete_signal, instruccion);
+	// agregar_datos_sin_tamaño_a_paquete(paquete_signal, &motivo, sizeof(int)); //TODO: es necesario
+	enviar_paquete(paquete_signal, socket_cliente_dispatch);
+	eliminar_paquete(paquete_signal);
+	// sem_wait(&s_signal_kernel);
+	//recibo respuesta del dispatch
+	int codigo_op = recibir_operacion(socket_cliente_dispatch);
+	log_info(logger_cpu,"[EJECUTAR PROCESO]:MOV OUT codigo_op <%d>",codigo_op);
+	void* buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
+	memcpy((&mensajeOk),buffer_recibido,sizeof(int));
+	log_info(logger_cpu,"[EJECUTAR PROCESO]:MOV OUT mensajeOk <%d>",mensajeOk);
+	free(buffer_recibido);
 }
 
 static void _resize(t_instruccion* instruccion)
 {
 	log_info(logger_cpu, "[CPU] Se lee la instrucción RESIZE");
+	int mensajeOk = 0;
+	int size = 0;
+	t_paquete* paquete_signal = crear_paquete(CONTEXTO_EJECUCION);
+	agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->pid, sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->program_counter, sizeof(int));
+	empaquetar_registros_cpu(paquete_signal, contexto_cpu->registros_cpu);
+	empaquetar_instruccion_cpu(paquete_signal, instruccion);
+	// agregar_datos_sin_tamaño_a_paquete(paquete_signal, &motivo, sizeof(int)); //TODO: es necesario
+	enviar_paquete(paquete_signal, socket_cliente_dispatch);
+	eliminar_paquete(paquete_signal);
+	// sem_wait(&s_signal_kernel);
+	//recibo respuesta del dispatch
+	int codigo_op = recibir_operacion(socket_cliente_dispatch);
+	log_info(logger_cpu,"[EJECUTAR PROCESO]:RESIZE codigo_op <%d>",codigo_op);
+	void* buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
+	memcpy((&mensajeOk),buffer_recibido,sizeof(int));
+	log_info(logger_cpu,"[EJECUTAR PROCESO]:RESIZE mensajeOk <%d>",mensajeOk);
+	free(buffer_recibido);
+	
 }
 
 static void _copy_string(t_instruccion* instruccion)
 {
-	log_info(logger_cpu, "[CPU] Se lee la instrucción COPY STRING");
+	log_info(logger_cpu, "[CPU] Se lee la instrucción COPY STRINGl");
 }
 
 
@@ -459,7 +518,7 @@ void ejecutar_proceso(){
             case SUM: _sum(inst_decodificada); break;
             case SUB: _sub(inst_decodificada); break;
             case JNZ: _jnz(inst_decodificada); break;
-			case MOV_IN: _mov_int(inst_decodificada); break;
+			case MOV_IN: _mov_in(inst_decodificada); break;
 			case MOV_OUT: _mov_out(inst_decodificada); break;
 			case RESIZE: _resize(inst_decodificada); break;
 			case COPY_STRING: _copy_string(inst_decodificada); break;
