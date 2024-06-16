@@ -9,6 +9,9 @@ static void _set(t_instruccion* instruccion);
 static void _sum(t_instruccion* instruccion);
 static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
+static void _copy_string(t_instruccion* instruccion);
+static void _mov_in(t_instruccion* instruccion);
+static void _mov_out(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
 static info_registro_cpu _get_direccion_registro(char* string_registro);
 static t_solicitud_io* _io_std(t_instruccion* instruccion);
@@ -60,7 +63,9 @@ void ejecutar_proceso(){
             case SUM: _sum(inst_decodificada); break;
             case SUB: _sub(inst_decodificada); break;
             case JNZ: _jnz(inst_decodificada); break;
-            // case IO_GEN_SLEEP: _io_gen_sleep(inst_decodificada); break;
+			case COPY_STRING: _copy_string(inst_decodificada); break;
+			case MOV_IN: _mov_in(inst_decodificada); break;
+			case MOV_OUT: _mov_out(inst_decodificada); break;
 			case IO_GEN_SLEEP:
 				motivo_desalojo = IO_GEN_SLEEP;
 				break;
@@ -279,6 +284,57 @@ static void _jnz(t_instruccion* instruccion){
     }
 }
 
+
+static void _mov_out(t_instruccion* instruccion){
+	// (Registro Dirección, Registro Datos): 
+	// Lee el valor del Registro Datos y lo escribe 
+	// en la dirección física de memoria obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.
+	char* registro_datos = list_get(instruccion->parametros, 1);
+	info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
+	uint8_t valor_del_registro_datos = *(uint8_t*)registro_datos_info.direccion;
+
+	char* registro_direccion = list_get(instruccion->parametros, 0);
+	info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
+	uint8_t valor_direccion_logica = *(uint8_t*)registro_direccion_info.direccion;
+	
+	//guardar valor_del_registro_datos en la direccion fisica correspondiente a valor_direccion_logica
+}
+
+static void _mov_in(t_instruccion* instruccion){
+	// MOV_IN EDX ECX
+	// (Registro Datos, Registro Dirección): 
+	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
+	// en el Registro Dirección y lo almacena en el Registro Datos.
+	char* registro_datos = list_get(instruccion->parametros, 0);
+	char* registro_direccion = list_get(instruccion->parametros, 1);
+    info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
+    info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
+
+    uint8_t valor_direccion_logica = *(uint8_t*)registro_direccion_info.direccion;
+	log_warning(logger_cpu,"ir a la direccion fisica de la direccion valor_direccion_logica, y escribirlo en registro_datos_info.direccion");
+
+// (hay un ejemplo de casteo en el set)
+	// *(uint8_t*)registro_datos_info.direccion =valor que trae de memoria.
+
+}
+
+static void _copy_string(t_instruccion* instruccion){
+	// (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad 
+	// de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
+	log_warning(logger_cpu,"falta implementar la parte de memoria");
+
+	uint32_t direccion_logica_destino = contexto_cpu->registros_cpu.DI;
+	log_warning(logger_cpu,"traducir la direccion a fisica");
+
+    int tamano_a_copiar = atoi(list_get(instruccion->parametros, 0));
+
+	char* string_a_guardar = malloc(tamano_a_copiar + 1);
+	memcpy(string_a_guardar, (char*)contexto_cpu->registros_cpu.SI, tamano_a_copiar);
+	string_a_guardar[tamano_a_copiar] = '\0';
+
+	log_warning(logger_cpu,"pasarle a memoria el pedido");
+	free(string_a_guardar);
+}
 
 static void _f_exit(t_instruccion *inst){ 
     flag_ejecucion = false;
