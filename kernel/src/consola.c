@@ -44,6 +44,19 @@ static void _iniciar_planificacion(){
     }    
 }
 
+static void _help()
+{
+    printf("----------- HELP -----------\n");
+    printf("1. EJECUTAR_SCRIPT [PATH]\n");
+    printf("2. INICIAR_PROCESO [PATH]\n");
+    printf("3. FINALIZAR_PROCESO [PID]\n");
+    printf("4. DETENER_PLANIFICACION\n");
+    printf("5. INICIAR_PLANIFICACION\n");
+    printf("6. MULTIPROGRAMACION [VALOR]\n");
+    printf("7. PROCESO_ESTADO\n");
+    printf("----------------------------\n");
+}
+
 static bool _check_instruccion(char* leido) {
     // Divide la cadena de entrada en partes utilizando espacios como delimitadores.
     char** comando_consola = string_split(leido, " ");
@@ -62,7 +75,7 @@ static bool _check_instruccion(char* leido) {
         t_instruccion_consola* instruccion = list_iterator_next(iterador_carousel);
         
         // Compara el nombre de la instrucción con el primer elemento del comando dividido.
-        if (strcmp(instruccion->nombre , comando_consola[0]) == 0) {
+        if (string_equals_ignore_case(instruccion->nombre , comando_consola[0])) {
             // Comprueba si la cantidad de parámetros coincide con la definición de la instrucción.
             if (instruccion->cantidad_parametros == cantidad_de_parametros) {
                 // Marca el comando como válido y detiene la iteración ya que se encontró una coincidencia completa.
@@ -96,7 +109,7 @@ static void _ejecutar_comando_validado(char* leido) {
 
     // Función para buscar la instrucción en la lista.
     bool _buscar_instruccion_consola(t_instruccion_consola* instruccion) {
-        return strcmp(instruccion->nombre , comando_consola[0]) == 0;
+        return string_equals_ignore_case(instruccion->nombre , comando_consola[0]);
     }
 
     // Encontrar la instrucción correspondiente.
@@ -112,7 +125,7 @@ static void _ejecutar_comando_validado(char* leido) {
         case EJECUTAR_SCRIPT:{
             ejecutar_script(comando_consola[1]);
             break;
-    break;
+    // break;
         }
         case INICIAR_PROCESO: {
             t_pcb* pcb_inicializado = crear_pcb(comando_consola[1]);
@@ -148,6 +161,9 @@ static void _ejecutar_comando_validado(char* leido) {
             listar_los_pid_por_lista();    
             break;
         }
+        case HELPER:
+            _help(); 
+            break;
         default:
             log_warning(logger_kernel, "Operación no soportada.");
             break;
@@ -160,7 +176,7 @@ void procesar_comandos_consola() {
     // Leer el primer comando.
     char* leido = readline("> ");
     // Continuar leyendo mientras la línea no esté vacía.
-    while (leido != NULL && strcmp(leido, "") != 0) {
+    while (leido != NULL && strcmp(leido, "") != 0 && !(string_equals_ignore_case(leido, "EXIT") || string_equals_ignore_case(leido, "SALIR"))) {
         // Validar y procesar el comando si es válido.
         if (_check_instruccion(leido)) {
             printf("Comando válido\n");
@@ -168,6 +184,7 @@ void procesar_comandos_consola() {
         } else {
             printf("Comando inválido o incorrecto\n");
         }
+        add_history(leido);
         // Liberar la memoria asignada a la línea leída y leer la siguiente.
         free(leido);
         leido = readline("> ");
