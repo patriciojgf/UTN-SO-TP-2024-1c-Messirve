@@ -33,6 +33,22 @@ static void iniciar_configuracion(char* config_path){
         IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");
         PUERTO_MEMORIA = config_get_string_value(config_io, "PUERTO_MEMORIA");
     }
+    else if(string_equals_ignore_case(TIPO_INTERFAZ, "DIALFS"))
+    {
+        TIEMPO_UNIDAD_TRABAJO = config_get_int_value(config_io, "TIEMPO_UNIDAD_TRABAJO");
+        IP_KERNEL = config_get_string_value(config_io, "IP_KERNEL");
+        PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
+        IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");
+        PUERTO_MEMORIA = config_get_string_value(config_io, "PUERTO_MEMORIA");
+        PATH_BASE_DIALFS = config_get_string_value(config_io, "PATH_BASE_DIALFS");
+        BLOCK_SIZE = config_get_int_value(config_io, "BLOCK_SIZE");
+        BLOCK_COUNT = config_get_int_value(config_io, "BLOCK_COUNT");
+        RETRASO_COMPACTACION = config_get_int_value(config_io, "RETRASO_COMPACTACION");
+    }
+    else
+    {
+        log_error(logger_io, "Interfaz %s inválida.", TIPO_INTERFAZ); 
+    }
 }
 
 static void iniciar_semaforos(){
