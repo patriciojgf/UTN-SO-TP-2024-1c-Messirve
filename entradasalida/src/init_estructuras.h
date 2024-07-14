@@ -1,6 +1,7 @@
 #ifndef INIT_ESTRUC_IO_H
 #define INIT_ESTRUC_IO_H
 
+#include <commons/bitarray.h>
 #include <configuracion_io.h>
 #include <fcntl.h>
 #include <unistd.h>

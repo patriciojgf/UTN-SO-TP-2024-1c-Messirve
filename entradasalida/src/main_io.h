@@ -50,6 +50,8 @@ t_config_io* datos_io;
 pthread_t hilo_kernel;
 pthread_t hilo_memoria;
 
+t_bitarray* bitmap_fs;
+
 int conectarMemoria();
 int conectarKernel();
 

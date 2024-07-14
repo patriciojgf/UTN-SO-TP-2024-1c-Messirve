@@ -1,13 +1,14 @@
 #ifndef STATIC_CONFIGURACION_IO_H_
 #define STATIC_CONFIGURACION_IO_H_
 
-#include <utils/logconfig.h>
-#include <utils/conexiones.h>
+#include <commons/bitarray.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <sys/socket.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <utils/logconfig.h>
+#include <utils/conexiones.h>
 
 #define LOG_NAME "io.log"
 #define PROCESS_NAME "IO"
@@ -43,7 +44,7 @@ extern pthread_t hilo_gestionar_kernel;
 //-----semaforos---------
 extern sem_t sem_io_stdin_read_ok;
 
-
+extern t_bitarray* bitmap_fs;
 
 typedef struct config_io
 {

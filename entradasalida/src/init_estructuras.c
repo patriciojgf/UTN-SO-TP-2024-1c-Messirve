@@ -1,5 +1,4 @@
 #include "init_estructuras.h"
-#include <fcntl.h>
 
 static void init_log();
 static char* concatenar_path(char* path, char* nombre_archivo);
@@ -79,6 +78,29 @@ static void crear_archivo_de_bloques()
     log_info(logger_io, "Archivo de bloques creado correctamente.");
 }
 
+static void crear_archivo_bitmap()
+{
+    int tamanio_archivo_bitmap = BLOCK_COUNT / 8;
+
+    void *bitmap_memoria_usuario = malloc(tamanio_archivo_bitmap);
+    bitmap_fs = bitarray_create_with_mode(bitmap_memoria_usuario, tamanio_archivo_bitmap, LSB_FIRST);
+
+    char* path = concatenar_path(PATH_BASE_DIALFS, "bitmap");
+
+    int file_descriptor = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if(file_descriptor == -1)
+    {
+        log_error(logger_io, "Error al abrir el archivo de bitmap.");
+        return;
+    }
+
+    if(ftruncate(file_descriptor, tamanio_archivo_bitmap) == -1)
+    {
+        log_error(logger_io, "Error al truncar el archivo de bitmap.");
+        return;
+    }
+}
+
 static void iniciar_estructuras()
 {
     // lista_interfaz_socket = list_create();
@@ -96,6 +118,7 @@ static void iniciar_estructuras()
             log_warning(logger_io, "Ya existe el directorio: (%s)", PATH_BASE_DIALFS);
         }
         crear_archivo_de_bloques();
+        crear_archivo_bitmap();
     }
 }
 
