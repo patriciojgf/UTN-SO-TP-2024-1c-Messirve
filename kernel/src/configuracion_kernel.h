@@ -24,7 +24,8 @@ typedef enum{
     DETENER_PLANIFICACION,
     INICIAR_PLANIFICACION,
     MULTIPROGRAMACION,
-    PROCESO_ESTADO
+    PROCESO_ESTADO,
+    HELPER
 } t_codigo_consola;
 
 typedef struct

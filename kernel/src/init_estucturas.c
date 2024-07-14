@@ -133,6 +133,7 @@ static void init_instrucciones_consola(){
     agrego_instruccion_permitida(lista_instrucciones_permitidas,"INICIAR_PLANIFICACION",INICIAR_PLANIFICACION,0);
     agrego_instruccion_permitida(lista_instrucciones_permitidas,"MULTIPROGRAMACION",MULTIPROGRAMACION,1);
     agrego_instruccion_permitida(lista_instrucciones_permitidas,"PROCESO_ESTADO",PROCESO_ESTADO,0);
+    agrego_instruccion_permitida(lista_instrucciones_permitidas,"HELP",HELPER,0);
 }
 
 void init_kernel(char* path_config){
