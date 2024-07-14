@@ -1,6 +1,8 @@
 #include "init_estructuras.h"
+#include <fcntl.h>
 
 static void init_log();
+static char* concatenar_path(char* path, char* nombre_archivo);
 
 //--------
 
@@ -55,8 +57,46 @@ static void iniciar_semaforos(){
     sem_init(&sem_io_stdin_read_ok,0,0);
 }
 
-static void iniciar_estructuras(){
+static void crear_archivo_de_bloques()
+{
+    char* path = concatenar_path(PATH_BASE_DIALFS, "bloques");
+
+    int file_descriptor = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if(file_descriptor == -1)
+    {
+        log_error(logger_io, "Error al abrir el archivo de bloques.");
+        return;
+    }
+
+    int tamanio_archivo = BLOCK_SIZE * BLOCK_COUNT;
+    if(ftruncate(file_descriptor, tamanio_archivo) == -1)
+    {
+        log_error(logger_io, "Error al truncar el archivo de bloques.");
+        return;
+    }
+
+    close(file_descriptor);
+    log_info(logger_io, "Archivo de bloques creado correctamente.");
+}
+
+static void iniciar_estructuras()
+{
     // lista_interfaz_socket = list_create();
+    if(string_equals_ignore_case(TIPO_INTERFAZ, "DIALFS"))
+    {
+        if(PATH_BASE_DIALFS == NULL)
+        {
+            PATH_BASE_DIALFS = "/home/utnso/dialfs";
+        }
+
+        int valor = mkdir(PATH_BASE_DIALFS, 0777);
+        
+        if(valor < 0)
+        {
+            log_warning(logger_io, "Ya existe el directorio: (%s)", PATH_BASE_DIALFS);
+        }
+        crear_archivo_de_bloques();
+    }
 }
 
 static void init_nombre_interfaz(char* nombre){
@@ -74,3 +114,16 @@ void init_io(char* path_config, char* nombre){
     iniciar_semaforos();
     init_nombre_interfaz(nombre);
 }
+
+/*************** FUNCIONES AUXILIARES *****************/
+static char* concatenar_path(char* path, char* nombre_archivo)
+{
+	char *unaPalabra = string_new();
+	string_append(&unaPalabra, path);
+	string_append(&unaPalabra, "/");
+	string_append(&unaPalabra, nombre_archivo);
+	string_append(&unaPalabra, ".dat");
+
+    return unaPalabra;
+}
+/******************************************************/
