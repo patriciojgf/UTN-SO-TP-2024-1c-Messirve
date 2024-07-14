@@ -433,7 +433,7 @@ t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud) {
 
 
 // Función para agregar un dato de memoria a la solicitud existente
-void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, uint32_t direccion_fisica) {
+void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, int size_dato, uint32_t direccion_fisica) {
     if (solicitud == NULL) {
         return;  // Seguridad para evitar la desreferencia de NULL
     }
@@ -442,7 +442,7 @@ void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, uint32_t di
     solicitud->datos_memoria = realloc(solicitud->datos_memoria, nuevo_tamano * sizeof(t_dato_memoria));
     if (solicitud->datos_memoria != NULL) {
         // Inicializar el nuevo t_dato_memoria
-        uint32_t size_dato = strlen(dato) + 1; // +1 para el carácter nulo
+        // uint32_t size_dato = strlen(dato) + 1; // +1 para el carácter nulo
         solicitud->datos_memoria[solicitud->cantidad_accesos].direccion_fisica = direccion_fisica;  
         solicitud->datos_memoria[solicitud->cantidad_accesos].tamano = size_dato;
         solicitud->datos_memoria[solicitud->cantidad_accesos].datos = malloc(size_dato);

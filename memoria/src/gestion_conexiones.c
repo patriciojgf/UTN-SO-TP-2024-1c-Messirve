@@ -37,10 +37,18 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
         }
         case HANDSHAKE_CPU:{
             //log_protegido_mem(string_from_format("[HANDSHAKE KERNEL]: 3) ---- HANDSHAKE CPU RECIBIDO ----"));
+            
+            //Envio tamaño de pagina
+            send(socket_cliente, &TAM_PAGINA, sizeof(int), 0);
 
 			argumentos = malloc(sizeof(int));
 			*argumentos = socket_cliente;
-            socket_cliente_cpu = socket_cliente;            
+            socket_cliente_cpu = socket_cliente;
+
+            //PATRICIO - agrego el envio de tamaño pagina antes de atender
+
+
+
             pthread_create(&hilo_gestionar_cpu, NULL, (void*) atender_peticiones_cpu, argumentos);
             pthread_detach(hilo_gestionar_cpu);
             break;
@@ -157,13 +165,25 @@ static void atender_peticiones_stdin(void *void_args){
 
 static void atender_peticiones_cpu(void *void_args){
 	int* socket = (int*) void_args;
-    int PC, size, pid = 0;
+    int PC, size, pid, pagina = 0;
     void *buffer;
     while(1){
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Esperando operación."));
         int code_op = recibir_operacion(*socket);
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
         switch (code_op) {
+            case PEDIDO_MARCO:
+                log_info(logger_memoria,"PEDIDO_MARCO");
+                buffer = recibir_buffer(&size, *socket);
+                memcpy(&pid, buffer, sizeof(int));
+                memcpy(&pagina, buffer + sizeof(int), sizeof(int));
+                usleep(RETARDO_RESPUESTA * 1000);
+                int nro_marco = buscar_marco_por_pagina(pagina, pid);
+                t_paquete* paquete_respuesta_marco = crear_paquete(PEDIDO_MARCO);
+                agregar_a_paquete(paquete_respuesta_marco, &nro_marco, sizeof(int));
+                enviar_paquete(paquete_respuesta_marco, *socket);
+                eliminar_paquete(paquete_respuesta_marco);
+                break;                
             case MENSAJE:
                 //log_protegido_mem(string_from_format("[ATENDER CPU]: MENSAJE"));
                 recibir_mensaje(*socket,logger_memoria);
@@ -182,6 +202,20 @@ static void atender_peticiones_cpu(void *void_args){
                 enviar_paquete(paquete, *socket);
                 //log_protegido_mem(string_from_format("[ATENDER CPU]: INST ENVIADA - PID: %d, PC: %d",pid,PC));  
                 eliminar_paquete(paquete);
+                break;
+            case RESIZE:
+                log_info(logger_memoria,"RESIZE");
+                int new_size;
+                buffer = recibir_buffer(&size, *socket);
+                memcpy(&pid, buffer, sizeof(int));
+                memcpy(&new_size, buffer + sizeof(int), sizeof(int));
+                usleep(RETARDO_RESPUESTA * 1000);
+
+                int respuesta_a_resize = resize_proceso(pid, new_size);
+                t_paquete* paquete_respuesta_resize = crear_paquete(RESIZE);
+                agregar_a_paquete(paquete_respuesta_resize, &respuesta_a_resize, sizeof(int));
+                enviar_paquete(paquete_respuesta_resize, *socket);
+                eliminar_paquete(paquete_respuesta_resize);
                 break;
             default:
                 log_error(logger_memoria,"codigo desconocido %d",code_op);

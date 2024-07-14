@@ -9,6 +9,8 @@ static void _set(t_instruccion* instruccion);
 static void _sum(t_instruccion* instruccion);
 static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
+
+static int _resize(t_instruccion* instruccion);
 static void _copy_string(t_instruccion* instruccion);
 static void _mov_in(t_instruccion* instruccion);
 static void _mov_out(t_instruccion* instruccion);
@@ -16,7 +18,6 @@ static void _f_exit(t_instruccion *inst);
 static info_registro_cpu _get_direccion_registro(char* string_registro);
 static t_solicitud_io* _io_std(t_instruccion* instruccion);
 //
-
 
 //----
 extern t_registros_cpu registros_cpu;
@@ -42,7 +43,6 @@ void ejecutar_proceso(){
         eliminar_paquete(paquete);
         log_info(logger_cpu,"[EJECUTAR PROCESO]: -- HICE FETCH -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
         sem_wait(&s_instruccion_actual);
-
         // Decodificar la instrucción actual.
         char** instruccion_separada = string_split(instruccion_actual, " ");
         u_int8_t identificador = _get_identificador(instruccion_separada[0]);
@@ -66,6 +66,11 @@ void ejecutar_proceso(){
 			case COPY_STRING: _copy_string(inst_decodificada); break;
 			case MOV_IN: _mov_in(inst_decodificada); break;
 			case MOV_OUT: _mov_out(inst_decodificada); break;
+			case RESIZE: 
+				if(_resize(inst_decodificada)==-1){
+					motivo_desalojo = RESIZE;
+				}
+				break;
 			case IO_GEN_SLEEP:
 				motivo_desalojo = IO_GEN_SLEEP;
 				break;
@@ -199,25 +204,77 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 // 	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
 //     flag_ejecucion = false;
 // }
+
+// static t_solicitud_io* _io_std(t_instruccion* instruccion){
+// 		char *registro_direccion2 = list_get(instruccion->parametros, 1);
+// 		char *registro_tamano2 = list_get(instruccion->parametros, 2);
+// 		info_registro_cpu registro_dir_info2 = _get_direccion_registro(registro_direccion2);
+// 		info_registro_cpu registro_tam_info2 = _get_direccion_registro(registro_tamano2);
+// 		uint8_t valor_direccion_logica2 = *(uint8_t*)registro_dir_info2.direccion;
+// 		uint8_t valor_tamano_a_escribir2 = *(uint8_t*)registro_tam_info2.direccion;
+// 		//tomar la direccion logica y calcular la o las fisicas necesarias para escribir el tamano especificado.
+// 		//por cada direccion fisica hacer un "agregar_a_pedido_memoria" con esa direccion, el parametro "prueba1" puede tener
+// 		//cualquier valor aca porque se va a completar con datos de la interfaz despues.
+
+// 		uint32_t dir_prueba2 = 99; //cuadno este la traduccion cambiar
+// 		uint32_t tam_prueba2 = 20; //esto seria el tamaño de pagina (max)
+
+// 		t_solicitud_io* pedido_io;
+// 		pedido_io = crear_pedido_memoria(contexto_cpu->pid,tam_prueba2);
+// 		agregar_a_pedido_memoria(pedido_io, "prueba1",dir_prueba2);
+// 		agregar_a_pedido_memoria(pedido_io, "prueba2",dir_prueba2);
+// 		return pedido_io;
+// }
+
+//Patricio- modifico agregando mmu
 static t_solicitud_io* _io_std(t_instruccion* instruccion){
-		char *registro_direccion2 = list_get(instruccion->parametros, 1);
-		char *registro_tamano2 = list_get(instruccion->parametros, 2);
-		info_registro_cpu registro_dir_info2 = _get_direccion_registro(registro_direccion2);
-		info_registro_cpu registro_tam_info2 = _get_direccion_registro(registro_tamano2);
-		uint8_t valor_direccion_logica2 = *(uint8_t*)registro_dir_info2.direccion;
-		uint8_t valor_tamano_a_escribir2 = *(uint8_t*)registro_tam_info2.direccion;
+		char *registro_direccion = list_get(instruccion->parametros, 1);
+		char *registro_tamano = list_get(instruccion->parametros, 2);
+		info_registro_cpu registro_dir_info = _get_direccion_registro(registro_direccion);
+		info_registro_cpu registro_tam_info = _get_direccion_registro(registro_tamano);
+		uint8_t valor_direccion_logica = *(uint8_t*)registro_dir_info.direccion;
+		uint8_t valor_tamano_a_escribir = *(uint8_t*)registro_tam_info.direccion;
+		log_info(logger_cpu,"[IO_STDOUT_WRITE]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,valor_direccion_logica);
+		log_info(logger_cpu,"[IO_STDOUT_WRITE]: -- PID <%d> - PC<%d> - valor_tamano_a_escribir <%d>",contexto_cpu->pid,contexto_cpu->program_counter,valor_tamano_a_escribir);
 		//tomar la direccion logica y calcular la o las fisicas necesarias para escribir el tamano especificado.
 		//por cada direccion fisica hacer un "agregar_a_pedido_memoria" con esa direccion, el parametro "prueba1" puede tener
 		//cualquier valor aca porque se va a completar con datos de la interfaz despues.
 
-		uint32_t dir_prueba2 = 99; //cuadno este la traduccion cambiar
-		uint32_t tam_prueba2 = 20; //esto seria el tamaño de pagina (max)
-
+		/* calculo la cantidad de paginas que voy a tener que escribir
+		tamaño total a escribir / tamaño de paginas */
+		int cantidad_paginas = (valor_tamano_a_escribir / tamanio_pagina) + 1;
 		t_solicitud_io* pedido_io;
-		pedido_io = crear_pedido_memoria(contexto_cpu->pid,tam_prueba2);
-		agregar_a_pedido_memoria(pedido_io, "prueba1",dir_prueba2);
-		agregar_a_pedido_memoria(pedido_io, "prueba2",dir_prueba2);
+		pedido_io = crear_pedido_memoria(contexto_cpu->pid, tamanio_pagina);
+		int posicion_texto = 0;
+		int direccion_logica_actual = list_get(instruccion->parametros, 1);
+		for(int i = 0; i < cantidad_paginas; i++){
+			int direccion_fisica_actual = mmu(valor_direccion_logica);
+			log_warning(logger_cpu, "falta implementar page fault");
+			agregar_a_pedido_memoria(pedido_io, " ", tamanio_pagina,direccion_fisica_actual);
+			direccion_logica_actual++;
+		}
 		return pedido_io;
+}
+
+static int _resize(t_instruccion* instruccion){
+	// RESIZE 10
+	//RESIZE (Tamaño): Solicitará a la Memoria ajustar el tamaño del proceso al tamaño pasado por parámetro. 
+	//En caso de que la respuesta de la memoria sea Out of Memory, se deberá devolver el contexto de ejecución al 
+	//Kernel informando de esta situación.
+	int valor_new_size = atoi(list_get(instruccion->parametros, 0));
+	t_paquete* paquete = crear_paquete(RESIZE);
+	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
+	agregar_datos_sin_tamaño_a_paquete(paquete, &valor_new_size, sizeof(int));
+	enviar_paquete(paquete, socket_memoria);
+	eliminar_paquete(paquete);
+	
+	sem_wait(&s_resize);
+
+	if(respuesta_memoria == -1){
+		log_info(logger_cpu,"[_RESIZE]: -- PID <%d> - PC<%d> - RESIZE NO OK",contexto_cpu->pid,contexto_cpu->program_counter);
+		return -1;
+	}
+	return 0;
 }
 
 static void _set(t_instruccion* instruccion){

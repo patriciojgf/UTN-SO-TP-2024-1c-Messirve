@@ -25,6 +25,7 @@ extern int socket_servidor, socket_cliente, socket_kernel, socket_cpu, socket_io
 /*----PROCESOS e INSTRUCCIOENS----*/
 extern t_list* lista_procesos_en_memoria;
 extern t_list* lista_instrucciones;
+extern t_list* listado_marcos;
 
 /*----MEMORIA USUARIO-------------*/
 extern void *memoria_espacio_usuario;
@@ -36,6 +37,21 @@ typedef struct {
     t_list* tabla_de_paginas;
     int cantidad_de_paginas;
 }t_proceso;
+
+//tabla de paginas
+typedef struct {
+    int id;
+    int marco;
+    int bit_de_validez;
+}t_pagina;
+
+//bitmap de marcos libres
+typedef struct {
+    int id;
+    int pid;
+    int pagina_asignada;
+    int bit_de_uso;
+}t_marco;
 
 // extern void log_protegido_mem(char* mensaje);
 

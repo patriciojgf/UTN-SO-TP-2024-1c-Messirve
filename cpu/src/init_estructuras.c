@@ -33,6 +33,8 @@ static void iniciar_configuracion(char* config_path){
 static void iniciar_semaforos(){
     sem_init(&mlog,0,1);
     sem_init(&s_instruccion_actual,0,0);
+    sem_init(&s_pedido_marco,0,0);
+    sem_init(&s_resize,0,0);
     sem_init(&s_signal_kernel,0,0);
     sem_init(&s_fetch_espere_instruccion,0,0);
     sem_init(&sem_check_recibiendo_interrupcion,0,0);
@@ -49,10 +51,23 @@ static void iniciar_estructuras(){
     contexto_cpu= malloc(sizeof(t_contexto));
 }
 
+static void iniciar_tlb(){
+    lista_tlb = list_create();
+    for(int i=0; i<CANTIDAD_ENTRADAS_TLB; i++){
+        t_fila_tlb* entrada = malloc(sizeof(t_fila_tlb));
+        entrada->pid = -1;
+        entrada->pagina = -1;
+        entrada->marco = -1;
+        entrada->timestamp = 0; // Inicializar timestamp
+        list_add(lista_tlb,entrada);
+    }
+}
+
 void init_cpu(char* path_config){
     init_log();
     iniciar_configuracion(path_config);
     iniciar_estructuras();
     iniciar_semaforos();
     iniciar_mutex();
+    iniciar_tlb();
 }

@@ -3,9 +3,9 @@
 
 #include "configuracion_cpu.h"
 #include "init_estructuras.h"
+#include "gestion_memoria.h"
 
 extern int pid;
-extern int tam_pag;
 extern int program_counter;
 extern int socket_memoria, socket_servidor_dispatch,socket_dispatch;
 extern t_registros_cpu registros_cpu;

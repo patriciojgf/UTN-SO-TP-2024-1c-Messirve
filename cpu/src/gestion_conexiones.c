@@ -5,8 +5,6 @@ static void _handshake_cliente_memoria(int socket, char* nombre_destino);
 static void _recibir_nuevo_contexto(int socket);
 // static int _get_retardo();
 
-
-
 // --------------------------------------------------------------------------//
 // ------------- CONEXIONES E HILOS -----------------------------------------//
 // --------------------------------------------------------------------------//
@@ -204,6 +202,12 @@ void atender_peticiones_memoria(){
     while(1){
         //log_info(logger_cpu,"[ATENDER MEMORIA]: ---- ESPERANDO OPERACION ----");
         int cod_op = recibir_operacion(socket_memoria);
+        int size, tam_inst, desplazamiento, respuesta_memoria;
+        size = 0;
+        tam_inst = 0;
+        desplazamiento = 0;
+        respuesta_memoria = -1;
+        void *buffer;
         //log_info(logger_cpu,"[ATENDER MEMORIA]: ---- COD OP ----");
         switch(cod_op){
             case FETCH_INSTRUCCION_RESPUESTA:
@@ -212,14 +216,30 @@ void atender_peticiones_memoria(){
                     free(instruccion_actual);
                     instruccion_actual = NULL;
                 }
-                int size, tam_inst, desplazamiento = 0;
-                void *buffer = recibir_buffer(&size, socket_memoria);
-                memcpy(&tam_inst,buffer +desplazamiento, sizeof(int));;
+                buffer = recibir_buffer(&size, socket_memoria);
+                if (buffer == NULL) {
+                    log_error(logger_cpu, "Error al recibir buffer");
+                    break;
+                }
+                
+                memcpy(&tam_inst,buffer +desplazamiento, sizeof(int));
                 desplazamiento+=sizeof(int);
                 instruccion_actual = malloc(tam_inst+1); 
                 memcpy(instruccion_actual, buffer + desplazamiento, tam_inst);
                 sem_post(&s_instruccion_actual);
                 free(buffer);
+                break;
+            case PEDIDO_MARCO:
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA PEDIDO_MARCO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                buffer = recibir_buffer(&size, socket_memoria);
+                memcpy(&respuesta_memoria, buffer + desplazamiento, sizeof(int));
+                sem_post(&s_pedido_marco);
+                break;
+            case RESIZE:
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                buffer = recibir_buffer(&size, socket_memoria);
+                memcpy(&respuesta_memoria, buffer + desplazamiento, sizeof(int));
+                sem_post(&s_resize);
                 break;
             default:
                 log_error(logger_cpu, "[atender_peticiones_memoria]: cod_op no identificado <%d>",cod_op);
@@ -242,7 +262,9 @@ static void _handshake_cliente_memoria(int socket, char* nombre_destino){
     int resultado_hs = handshake_cliente(HANDSHAKE_CPU,socket);
     switch(resultado_hs){
         case HANDSHAKE_OK:
-            ////log_info(logger_cpu,"[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
+            //Recibo el tamaño de pagina
+            recv(socket, &tamanio_pagina, sizeof(int), MSG_WAITALL);
+            log_info(logger_cpu,"[GESTION CONEXIONES]: Handshake con %s: OK, tamaño de pagina %d \n", nombre_destino,tamanio_pagina);
             break;
         default:
             log_error(logger_cpu, "ERROR EN HANDSHAKE: Operacion N* %d desconocida\n", resultado_hs);

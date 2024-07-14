@@ -23,9 +23,16 @@ extern t_log* logger_cpu;
 extern t_config* config_cpu;
 extern bool llego_interrupcion;
 
+//memoria
+extern t_list* lista_tlb;
+extern int tamanio_pagina;
+extern int respuesta_memoria;
+
 //semaforos
 extern sem_t mlog;
 extern sem_t s_instruccion_actual;
+extern sem_t s_pedido_marco;
+extern sem_t s_resize;
 extern sem_t s_signal_kernel;
 extern sem_t s_fetch_espere_instruccion;
 extern sem_t sem_check_recibiendo_interrupcion;
@@ -79,6 +86,13 @@ typedef struct{
     int program_counter; // Número de la próxima instrucción a ejecutar.
     t_registros_cpu registros_cpu; // Registros de la CPU.
 } t_contexto;
+
+typedef struct{
+    int pid;
+    int pagina;
+    int marco;
+    time_t timestamp; // Usado para FIFO (llegada) y LRU (utlimo acceso)
+} t_fila_tlb;
 
 t_config_cpu* iniciar_config_cpu(t_config* config_cpu);
 void finalizar_config_cpu(t_config_cpu* config_cpu);
