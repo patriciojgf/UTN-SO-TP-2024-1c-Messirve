@@ -58,7 +58,7 @@ static void iniciar_semaforos(){
 
 static void crear_archivo_de_bloques()
 {
-    char* path = concatenar_path(PATH_BASE_DIALFS, "bloques");
+    char* path = concatenar_path(PATH_BASE_DIALFS, "bloques.dat");
 
     int file_descriptor = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if(file_descriptor == -1)
@@ -85,7 +85,7 @@ static void crear_archivo_bitmap()
     void *bitmap_memoria_usuario = malloc(tamanio_archivo_bitmap);
     bitmap_fs = bitarray_create_with_mode(bitmap_memoria_usuario, tamanio_archivo_bitmap, LSB_FIRST);
 
-    char* path = concatenar_path(PATH_BASE_DIALFS, "bitmap");
+    char* path = concatenar_path(PATH_BASE_DIALFS, "bitmap.dat");
 
     int file_descriptor = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if(file_descriptor == -1)
@@ -145,8 +145,39 @@ static char* concatenar_path(char* path, char* nombre_archivo)
 	string_append(&unaPalabra, path);
 	string_append(&unaPalabra, "/");
 	string_append(&unaPalabra, nombre_archivo);
-	string_append(&unaPalabra, ".dat");
-
     return unaPalabra;
+}
+
+static bool crear_archivo_metadata(char* nombre_archivo)
+{
+    char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+
+    if (access(path, F_OK) != -1) 
+    {
+        log_warning(logger_io, "El archivo %s existe.\n", path);
+        return false;
+    }
+
+    FILE *file = fopen(path, "w");
+
+    if (!file)
+    {
+        error_show("ERROR CREANDO ARCHIVO DE FCB");
+        return false;
+    }
+    fclose(file);
+
+    t_config* metadata = config_create(path);
+    if(metadata == NULL)
+    {
+      error_show("Error al intentar crear el archivo metadata.");
+      return false;
+    }
+
+    config_set_value(metadata, "BLOQUE_INICIAL", "-1");
+    config_set_value(metadata, "TAMANIO_ARCHIVO", "0");
+    config_save(metadata);
+
+    return true;
 }
 /******************************************************/
