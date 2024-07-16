@@ -21,4 +21,6 @@ void atender_peticiones_interrupt();
 
 void envio_interrupcion(int pid, int motivo);
 
+void desconectar_interfaz(t_interfaz* interfaz);
+
 #endif /* GES_CONEXIONES_H_ */

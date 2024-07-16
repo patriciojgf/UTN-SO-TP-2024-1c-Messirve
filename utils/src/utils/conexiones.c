@@ -475,20 +475,74 @@ void eliminar_pedido_memoria(t_solicitud_io* solicitud) {
     }
 }
 
+// void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text) {
+//     char* current_position = input_text;
+//     for (int i = 0; i < solicitud->cantidad_accesos; ++i) {
+//         t_dato_memoria* dato = &solicitud->datos_memoria[i];
+//         printf("Dato %d: direccion_fisica: <%d>, tamano: <%d>\n", i, dato->direccion_fisica, dato->tamano);
+
+//         // Aseguramos que la memoria está siendo correctamente asignada
+//         dato->datos = (char*)malloc(dato->tamano + 1);  // +1 para el caracter nulo
+//         if (dato->datos == NULL) {
+//             fprintf(stderr, "Error al asignar memoria para datos_memoria\n");
+//             exit(EXIT_FAILURE);
+//         }
+
+//         // Copiamos los datos y aseguramos el caracter nulo
+//         memcpy(dato->datos, current_position, dato->tamano);
+//         dato->datos[dato->tamano] = '\0';
+//         printf("Dato %d: <%s>\n", i, dato->datos);
+
+//         // Desplazamos la posición actual según el tamaño de los datos copiados
+//         current_position += dato->tamano;
+//     }
+// }
+
 void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text) {
-    char* current_position = input_text;
+    size_t size_solicitud = solicitud->size_solicitud;
+    char* buffer = (char*)malloc(size_solicitud + 1);
+    if (buffer == NULL) {
+        fprintf(stderr, "Error al asignar memoria para el buffer\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(buffer, input_text, size_solicitud);
+    memset(buffer + strlen(input_text), ' ', size_solicitud - strlen(input_text));
+    buffer[size_solicitud] = '\0';
+    char* current_position = buffer;
+    // printf("Total size_solicitud: %zu, buffer: <%s>\n", size_solicitud, buffer);
     for (int i = 0; i < solicitud->cantidad_accesos; ++i) {
         t_dato_memoria* dato = &solicitud->datos_memoria[i];
-        dato->datos = malloc(dato->tamano + 1);  // +1 para el caracter nulo
+        // printf("Procesando Dato %d: tamano: %d\n", i, dato->tamano);
+        dato->datos = (char*)malloc(dato->tamano + 1);
         if (dato->datos == NULL) {
             fprintf(stderr, "Error al asignar memoria para datos_memoria\n");
+            free(buffer);
             exit(EXIT_FAILURE);
         }
-
         memcpy(dato->datos, current_position, dato->tamano);
-        dato->datos[dato->tamano] = '\0'; 
-        current_position += dato->tamano; 
+        dato->datos[dato->tamano] = '\0';
+        // printf("Dato %d: <%s>, current_position index: %ld\n", i, dato->datos, current_position - buffer);
+        current_position += dato->tamano;
+    }
+    free(buffer);
+}
+
+void liberar_solicitud_io(t_solicitud_io* solicitud) {
+    if (solicitud != NULL) {
+        // Liberar cada conjunto de datos dentro del arreglo
+        for (int i = 0; i < solicitud->cantidad_accesos; i++) {
+            free(solicitud->datos_memoria[i].datos); // Liberar la memoria del dato individual
+            solicitud->datos_memoria[i].datos = NULL; // Buenas prácticas: poner el puntero en NULL
+        }
+
+        // Liberar el arreglo de datos de memoria
+        free(solicitud->datos_memoria);
+        solicitud->datos_memoria = NULL;
+
+        // Si la estructura t_solicitud_io misma fue asignada dinámicamente, liberarla aquí
+        free(solicitud);
     }
 }
+
 
 /*IO READ - FIN*/

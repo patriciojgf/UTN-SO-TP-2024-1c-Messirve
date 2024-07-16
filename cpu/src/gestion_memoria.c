@@ -18,7 +18,6 @@ int mmu(int direccion_logica){
     if(marco == -1){
         //log obligatorio: TLB Miss: “PID: <PID> - TLB MISS - Pagina: <NUMERO_PAGINA>”
         log_info(logger_cpu, "PID: %d - TLB MISS - Pagina: %d", contexto_cpu->pid, numero_pagina);
-
         //No esta presente en TLB
         //Busco en tabla de paginas
         marco = memoria_pido_marco(numero_pagina);
@@ -128,5 +127,6 @@ static int memoria_pido_marco(int pagina){
     enviar_paquete(paquete_a_enviar, socket_memoria);
     eliminar_paquete(paquete_a_enviar);    
     sem_wait(&s_pedido_marco);
+    log_info(logger_cpu, "memoria_pido_marco:me llego el marco %d",respuesta_memoria);
     return respuesta_memoria;
 }

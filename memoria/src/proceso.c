@@ -52,6 +52,7 @@ static int asignar_marco_libre(int pid, int nro_pagina){
     pagina->marco = nro_marco;
     list_add(get_proceso_memoria(pid)->tabla_de_paginas, pagina);
     get_proceso_memoria(pid)->cantidad_de_paginas++;
+    log_info(logger_memoria, "asignar_marco_libre: la cantidad de paginas es %d", get_proceso_memoria(pid)->cantidad_de_paginas);
     
     log_info(logger_memoria, "PID <%d> - Se asigno el marco %d al proceso %d para la pagina %d", pid,nro_marco, pid, nro_pagina);
     return nro_marco;
@@ -76,12 +77,16 @@ static void liberar_un_marco(int pid){
 int resize_proceso(int pid, int new_size) {
     int old_size = get_proceso_memoria(pid)->cantidad_de_paginas;
     int marcos_a_asignar = (new_size/TAM_PAGINA) - old_size;
+
     if(cantidad_marcos_libres()<marcos_a_asignar){
         log_error(logger_memoria, "No hay marcos suficientes <%d> para asignar al proceso PID <%d>, hay <%d>.", marcos_a_asignar, pid, cantidad_marcos_libres());
         return -1; // Error al asignar marco
     }
 
     if (marcos_a_asignar > 0) {
+        //log obligatorio
+        // Ampliación de Proceso: “PID: <PID> - Tamaño Actual: <TAMAÑO_ACTUAL> - Tamaño a Ampliar: <TAMAÑO_A_AMPLIAR>” 
+        log_info(logger_memoria, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Ampliar: <%d>", pid, old_size, (new_size-old_size));
         for (int i = 0; i < marcos_a_asignar; i++) {
             if (asignar_marco_libre(pid, old_size + i) == -1) {
                 log_error(logger_memoria, "No se pudo asignar un marco libre al proceso PID <%d>.", pid);
@@ -89,12 +94,18 @@ int resize_proceso(int pid, int new_size) {
             }
         }
     } else if (marcos_a_asignar < 0) {
+        // log obligatorio
+        // Reducción de Proceso: “PID: <PID> - Tamaño Actual: <TAMAÑO_ACTUAL> - Tamaño a Reducir: <TAMAÑO_A_REDUCIR>” 
+        log_info(logger_memoria, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Reducir: <%d>", pid, old_size, (old_size-new_size));
         for (int i = 0; i < -marcos_a_asignar; i++) { // Cambiado para iterar correctamente
             liberar_un_marco(pid);
         }
     } else {
         log_info(logger_memoria, "El proceso PID <%d> ya tiene el tamaño deseado: <%d>", pid, old_size);
     }
+    //log obligatorio
+    // Creación / destrucción de Tabla de Páginas: “PID: <PID> - Tamaño: <CANTIDAD_PAGINAS>”
+    log_info(logger_memoria, "PID: <%d> - Tamaño: <%d>", pid, new_size/TAM_PAGINA);
     return 0; // Éxito
 }
 

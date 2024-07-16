@@ -144,20 +144,24 @@ static void _atender_peticiones_kernel(){
                 enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel,IO_STDIN_READ);
                 // Limpiar
                 free(input_text);
-
+                log_info(logger_io,"IO_STDIN_READ: solicitud enviada a memoria");
                 //espero handshake ok
                 int cod_hand = recibir_operacion(socket_cliente_memoria);
                 int size_temp =0;
                 void* buffer_temp = recibir_buffer(&size_temp, socket_cliente_memoria);
                 free(buffer_temp);
+                log_info(logger_io,"IO_STDIN_READ: handshake recibido de memoria");
                 //envio el ok a kernel
                 if (cod_hand == IO_STDIN_READ){                    
                     paquete_para_kernel = crear_paquete(IO_STDIN_READ);
                     agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                     enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
-                    eliminar_paquete(paquete_para_kernel);                   
+                    eliminar_paquete(paquete_para_kernel);     
+                    log_info(logger_io,"IO_STDIN_READ: handshake enviado a kernel");              
                 }
                 else{
+                    //liberar memoria de t_solicitud_io
+                    liberar_solicitud_io(solicitud_recibida_kernel);
                     log_error(logger_io,"falla en conexion con memoria");
                 }
                 break;

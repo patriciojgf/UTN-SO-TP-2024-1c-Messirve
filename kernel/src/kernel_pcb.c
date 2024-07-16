@@ -27,7 +27,6 @@ static t_paquete* _empaquetar_contexto_cpu(t_pcb* pcb){
 }
 
 void enviar_contexto_dispatch(t_pcb* pcb){
-    log_warning(logger_kernel,"Envio el contexto a dispatch");
 	t_paquete* paquete_a_enviar = _empaquetar_contexto_cpu(pcb);
 	enviar_paquete(paquete_a_enviar, socket_dispatch);
 	eliminar_paquete(paquete_a_enviar);

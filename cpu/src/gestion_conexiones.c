@@ -202,11 +202,10 @@ void atender_peticiones_memoria(){
     while(1){
         //log_info(logger_cpu,"[ATENDER MEMORIA]: ---- ESPERANDO OPERACION ----");
         int cod_op = recibir_operacion(socket_memoria);
-        int size, tam_inst, desplazamiento, respuesta_memoria;
+        int size, tam_inst, desplazamiento;
         size = 0;
         tam_inst = 0;
         desplazamiento = 0;
-        respuesta_memoria = -1;
         void *buffer;
         //log_info(logger_cpu,"[ATENDER MEMORIA]: ---- COD OP ----");
         switch(cod_op){
@@ -230,10 +229,15 @@ void atender_peticiones_memoria(){
                 free(buffer);
                 break;
             case PEDIDO_MARCO:
+                respuesta_memoria=-1;
+                int marco_recibido=-1;                
                 log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA PEDIDO_MARCO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 buffer = recibir_buffer(&size, socket_memoria);
-                memcpy(&respuesta_memoria, buffer + desplazamiento, sizeof(int));
+                memcpy(&marco_recibido, buffer + desplazamiento, sizeof(int));
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA PEDIDO_MARCO -- PID <%d> - PC<%d> - MARCO <%d>",contexto_cpu->pid,contexto_cpu->program_counter,marco_recibido);
+                respuesta_memoria=marco_recibido;
                 sem_post(&s_pedido_marco);
+
                 break;
             case RESIZE:
                 log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);

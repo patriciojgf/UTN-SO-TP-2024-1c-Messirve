@@ -186,4 +186,5 @@ t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud);
 void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, int size_dato, uint32_t direccion_fisica);
 void eliminar_pedido_memoria(t_solicitud_io* solicitud) ;
 void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text);
+void liberar_solicitud_io(t_solicitud_io* solicitud);
 #endif /* CONEXIONES_H_ */

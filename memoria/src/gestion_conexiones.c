@@ -138,21 +138,30 @@ static void atender_peticiones_stdin(void *void_args){
             t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
 
             //TODO logica de memoria que escribe 
-            log_info(logger_memoria,"falta implementar:");
             for(int i=0; i<solicitud->cantidad_accesos; i++){
-                log_info(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
-                log_info(logger_memoria,"los datos <%s>",solicitud->datos_memoria[i].datos);
+                // log_info(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
+                // log_info(logger_memoria,"los datos <%s>",solicitud->datos_memoria[i].datos);
+                mem_escribir_dato_direccion_fisica(
+                    solicitud->datos_memoria[i].direccion_fisica,   //direccion
+                    solicitud->datos_memoria[i].datos,              //dato
+                    strlen(solicitud->datos_memoria[i].datos)+1,    //tamaño
+                    solicitud->pid);                                //pid
+
+                // mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, strlen(solicitud->datos_memoria[i].datos)+1);
             }
+            //liberar memoria de t_solicitud_io
+            liberar_solicitud_io(solicitud);
 
             //confirmo a entradasalida
             int mensajeOK =1;
             t_paquete* paquete = crear_paquete(IO_STDIN_READ);
             agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
             enviar_paquete(paquete, *socket);
-            eliminar_paquete(paquete);            
+            eliminar_paquete(paquete);      
+            //desconecto      
         }
         else if (code_op == -1){
-            log_info(logger_memoria,"El IO_STDIN se desconecto");
+            close(*socket);
             break;
         }
         else {
@@ -173,14 +182,13 @@ static void atender_peticiones_cpu(void *void_args){
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
         switch (code_op) {
             case PEDIDO_MARCO:
-                log_info(logger_memoria,"PEDIDO_MARCO");
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&pagina, buffer + sizeof(int), sizeof(int));
                 usleep(RETARDO_RESPUESTA * 1000);
                 int nro_marco = buscar_marco_por_pagina(pagina, pid);
                 t_paquete* paquete_respuesta_marco = crear_paquete(PEDIDO_MARCO);
-                agregar_a_paquete(paquete_respuesta_marco, &nro_marco, sizeof(int));
+                agregar_datos_sin_tamaño_a_paquete(paquete_respuesta_marco,&nro_marco,sizeof(int));
                 enviar_paquete(paquete_respuesta_marco, *socket);
                 eliminar_paquete(paquete_respuesta_marco);
                 break;                
@@ -276,3 +284,4 @@ static void atender_peticiones_kernel(void *void_args){
 // --------------------------------------------------------------------------//
 // ------------- FUNCIONES DE LOGICA POR MODULO ---- FIN --------------------//
 // --------------------------------------------------------------------------//
+

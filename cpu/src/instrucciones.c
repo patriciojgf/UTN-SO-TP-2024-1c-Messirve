@@ -244,14 +244,18 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion){
 		tamaño total a escribir / tamaño de paginas */
 		int cantidad_paginas = (valor_tamano_a_escribir / tamanio_pagina) + 1;
 		t_solicitud_io* pedido_io;
-		pedido_io = crear_pedido_memoria(contexto_cpu->pid, tamanio_pagina);
+		pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
 		int posicion_texto = 0;
 		int direccion_logica_actual = list_get(instruccion->parametros, 1);
 		for(int i = 0; i < cantidad_paginas; i++){
+			//le sumo el tamaño de pagina para que vaya a buscar la siguiente
 			int direccion_fisica_actual = mmu(valor_direccion_logica);
+			log_info(logger_cpu,"[IO_STDOUT_WRITE]: -- PID <%d> - PC<%d> - DIRECCION FISICA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,direccion_fisica_actual);
 			log_warning(logger_cpu, "falta implementar page fault");
 			agregar_a_pedido_memoria(pedido_io, " ", tamanio_pagina,direccion_fisica_actual);
-			direccion_logica_actual++;
+			log_info(logger_cpu,"suma: %d",(valor_direccion_logica + tamanio_pagina));
+			valor_direccion_logica = valor_direccion_logica + tamanio_pagina;
+			log_info(logger_cpu,"valor_direccion_logica: %d",valor_direccion_logica);
 		}
 		return pedido_io;
 }
