@@ -1,7 +1,7 @@
 #include "gestion_conexiones.h"
 
 static void _handshake_cliente(int socket, char* nombre_destino);
-static void _atender_peticiones_memoria();
+// static void _atender_peticiones_memoria();
 static void _atender_peticiones_kernel();
 static void _identifico_nombre(int socket);
 static void _lectura_consola(int size_lectura, char* buffer);
@@ -60,27 +60,27 @@ void gestionar_conexion_kernel(){
 // ------------- FUNCIONES DE LOGICA POR MODULO------------------------------//
 // --------------------------------------------------------------------------//
 
-static void _atender_peticiones_memoria(){
-    while(1){
-        int cod_op = recibir_operacion(socket_cliente_memoria);
-        switch(cod_op){
-            case MENSAJE:
-                recibir_mensaje(socket_cliente_memoria, logger_io);
-                break;
-            case IO_STDIN_READ:           
-                sem_post(&sem_io_stdin_read_ok);
-                break;
-            case -1:
-                log_error(logger_io,"El MEMORIA se desconecto");
-                // break;
-                exit(EXIT_FAILURE);
-            default:
-                log_warning(logger_io, "Memoria: Operacion desconocida.");
-                // break;
-                exit(EXIT_FAILURE);
-        }
-    }
-}
+// static void _atender_peticiones_memoria(){
+//     while(1){
+//         int cod_op = recibir_operacion(socket_cliente_memoria);
+//         switch(cod_op){
+//             case MENSAJE:
+//                 recibir_mensaje(socket_cliente_memoria, logger_io);
+//                 break;
+//             case IO_STDIN_READ:           
+//                 sem_post(&sem_io_stdin_read_ok);
+//                 break;
+//             case -1:
+//                 log_error(logger_io,"El MEMORIA se desconecto");
+//                 // break;
+//                 exit(EXIT_FAILURE);
+//             default:
+//                 log_warning(logger_io, "Memoria: Operacion desconocida.");
+//                 // break;
+//                 exit(EXIT_FAILURE);
+//         }
+//     }
+// }
 
 static void _atender_peticiones_kernel(){
     while(1){
@@ -105,6 +105,11 @@ static void _atender_peticiones_kernel(){
                 log_info(logger_io,"IO_STDOUT_WRITE: enviar_solicitud_io");
 
                 int cod_mensaje = recibir_operacion(socket_cliente_memoria);
+                if(cod_mensaje == -1){
+                    log_error(logger_io,"falla en conexion con memoria");
+                    liberar_solicitud_io(solicitud_recibida_kernel);
+                    continue;
+                }
                 int size_mensaje =0;
                 void* buffer_mensaje = recibir_buffer(&size_mensaje, socket_cliente_memoria);
                 

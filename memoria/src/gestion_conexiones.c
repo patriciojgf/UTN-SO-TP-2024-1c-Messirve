@@ -106,18 +106,36 @@ static void atender_peticiones_stdout(void *void_args){
         int code_op = recibir_operacion(*socket);
         if (code_op == IO_STDOUT_WRITE){
             t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
-            log_warning(logger_memoria,"falta implementar:");
+            char* mensaje_respuesta_temp = NULL;
+            int total_size = 0;
             for(int i=0; i<solicitud->cantidad_accesos; i++){
-                log_warning(logger_memoria,"leer de direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
-                log_warning(logger_memoria,"la cantidad de bytes: <%d>",solicitud->datos_memoria[i].tamano);
+                void* dato_leido = mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, solicitud->datos_memoria[i].tamano, solicitud->pid);
+                if(dato_leido == NULL){
+                    free(mensaje_respuesta_temp);
+                    exit(EXIT_FAILURE);
+                }
+
+                char* nuevo_resultado = realloc(mensaje_respuesta_temp, total_size + solicitud->datos_memoria[i].tamano +1); //+1 para el '\0'
+                if (nuevo_resultado == NULL) {
+                    // Manejo de error si realloc falla
+                    free(dato_leido);
+                    free(mensaje_respuesta_temp);
+                    exit(EXIT_FAILURE);
+                }
+                mensaje_respuesta_temp = nuevo_resultado;
+                memcpy(mensaje_respuesta_temp + total_size, dato_leido, solicitud->datos_memoria[i].tamano);
+                total_size += solicitud->datos_memoria[i].tamano;
+                mensaje_respuesta_temp[total_size] = '\0'; 
+                free(dato_leido);                
             }
-            log_warning(logger_memoria,"juntar todo lo que leyo y devolverlo como mensaje:");
-            char* mensaje_respuesta_temp = "mensaje de prueba";
-            
+
             t_paquete* paquete = crear_paquete(IO_STDOUT_WRITE);
             agregar_a_paquete(paquete, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
             enviar_paquete(paquete, *socket);
             eliminar_paquete(paquete);
+            free(mensaje_respuesta_temp);
+            liberar_solicitud_io(solicitud);
+
         }
         else if (code_op == -1){
             log_info(logger_memoria,"El IO_STDOUT_WRITE se desconecto");
@@ -137,7 +155,6 @@ static void atender_peticiones_stdin(void *void_args){
         if (code_op == IO_STDIN_READ){
             t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
 
-            //TODO logica de memoria que escribe 
             for(int i=0; i<solicitud->cantidad_accesos; i++){
                 // log_info(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
                 // log_info(logger_memoria,"los datos <%s>",solicitud->datos_memoria[i].datos);
