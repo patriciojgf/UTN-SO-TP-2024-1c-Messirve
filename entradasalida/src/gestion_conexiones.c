@@ -86,6 +86,7 @@ static void _atender_peticiones_kernel(){
     while(1){
         t_solicitud_io* solicitud_recibida_kernel;
         int mensajeOK =1;
+        int size=0;
         t_paquete* paquete_para_kernel;
         int cod_op = recibir_operacion(socket_cliente_kernel);
         switch(cod_op){
@@ -162,7 +163,7 @@ static void _atender_peticiones_kernel(){
                 }
                 break;
             case IO_GEN_SLEEP:
-                int size=0;
+                size=0;
                 void *buffer = recibir_buffer(&size, socket_cliente_kernel);           
                 int tiempo_sleep;
                 memcpy(&tiempo_sleep, buffer, sizeof(int));
@@ -173,7 +174,11 @@ static void _atender_peticiones_kernel(){
             case IO_FS_CREATE:
                 log_info(logger_io, "Proximamente hace su magia...");
                 //debería recibir el PID del proceso y nombre del archivo
-                //crear_archivo(nombre_archivo);
+                size=0;
+                void *buffer_create = recibir_buffer(&size, socket_cliente_kernel);           
+                char* nombre_archivo;
+                memcpy(&nombre_archivo, buffer_create, sizeof(int));
+                crear_archivo(nombre_archivo);
                 //debería mandar confirmación de archivo creado?
                 break;
             case IO_FS_DELETE:

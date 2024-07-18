@@ -51,6 +51,10 @@ pthread_t hilo_kernel;
 pthread_t hilo_memoria;
 
 t_bitarray* bitmap_fs;
+void* bitmap_void;
+
+int tamanio_archivo_bloque;
+int tamanio_archivo_bitmap;
 
 int conectarMemoria();
 int conectarKernel();

@@ -67,8 +67,8 @@ static void crear_archivo_de_bloques()
         return;
     }
 
-    int tamanio_archivo = BLOCK_SIZE * BLOCK_COUNT;
-    if(ftruncate(file_descriptor, tamanio_archivo) == -1)
+    tamanio_archivo_bloque = BLOCK_SIZE * BLOCK_COUNT;
+    if(ftruncate(file_descriptor, tamanio_archivo_bloque) == -1)
     {
         log_error(logger_io, "Error al truncar el archivo de bloques.");
         return;
@@ -80,11 +80,6 @@ static void crear_archivo_de_bloques()
 
 static void crear_archivo_bitmap()
 {
-    int tamanio_archivo_bitmap = BLOCK_COUNT / 8;
-
-    void *bitmap_memoria_usuario = malloc(tamanio_archivo_bitmap);
-    bitmap_fs = bitarray_create_with_mode(bitmap_memoria_usuario, tamanio_archivo_bitmap, LSB_FIRST);
-
     char* path = concatenar_path(PATH_BASE_DIALFS, "bitmap.dat");
 
     int file_descriptor = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -93,6 +88,11 @@ static void crear_archivo_bitmap()
         log_error(logger_io, "Error al abrir el archivo de bitmap.");
         return;
     }
+
+    tamanio_archivo_bitmap = BLOCK_COUNT / 8;
+
+    bitmap_void = mmap(NULL, tamanio_archivo_bitmap, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor, 0);
+    bitmap_fs = bitarray_create_with_mode(bitmap_void, tamanio_archivo_bitmap, LSB_FIRST);
 
     if(ftruncate(file_descriptor, tamanio_archivo_bitmap) == -1)
     {
@@ -153,7 +153,7 @@ static char* concatenar_path(char* path, char* nombre_archivo)
     return unaPalabra;
 }
 
-bool crear_archivo_metadata(char* nombre_archivo)
+bool crear_archivo_metadata(char* nombre_archivo, int bloque_inicial)
 {
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
 
@@ -179,15 +179,15 @@ bool crear_archivo_metadata(char* nombre_archivo)
       return false;
     }
 
-    config_set_value(metadata, "BLOQUE_INICIAL", "-1");
+    config_set_value(metadata, "BLOQUE_INICIAL", string_itoa(bloque_inicial));
     config_set_value(metadata, "TAMANIO_ARCHIVO", "0");
     config_save(metadata);
 
-    if(ftruncate(metadata, 0) == -1)
-    {
-        log_error(logger_io, "Error al truncar el archivo de bitmap.");
-        return false;
-    }
+    // if(ftruncate(metadata, 0) == -1)
+    // {
+    //     log_error(logger_io, "Error al truncar el archivo de bitmap.");
+    //     return false;
+    // }
 
     return true;
 }

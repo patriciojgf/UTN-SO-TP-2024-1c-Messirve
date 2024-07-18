@@ -45,6 +45,9 @@ extern pthread_t hilo_gestionar_kernel;
 extern sem_t sem_io_stdin_read_ok;
 
 extern t_bitarray* bitmap_fs;
+extern void* bitmap_void;
+extern int tamanio_archivo_bloque;
+extern int tamanio_archivo_bitmap;
 
 typedef struct config_io
 {
