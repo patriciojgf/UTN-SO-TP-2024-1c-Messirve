@@ -8,5 +8,6 @@
 
 void log_protegido_io(char* mensaje);
 void init_io(char* path_config, char* nombre_interfaz);
+bool crear_archivo_metadata(char* nombre_archivo);
 
 #endif/*INIT_ESTRUC_IO_H*/

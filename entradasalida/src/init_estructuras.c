@@ -119,6 +119,11 @@ static void iniciar_estructuras()
         }
         crear_archivo_de_bloques();
         crear_archivo_bitmap();
+        // if(!crear_archivo_metadata("test"))
+        // {
+        //     log_error(logger_io, "No se pudo crear el archivo de metadata.");
+        // } 
+        // log_info(logger_io, "Archivo de metadata creado correctamente. ");
     }
 }
 
@@ -148,7 +153,7 @@ static char* concatenar_path(char* path, char* nombre_archivo)
     return unaPalabra;
 }
 
-static bool crear_archivo_metadata(char* nombre_archivo)
+bool crear_archivo_metadata(char* nombre_archivo)
 {
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
 
@@ -177,6 +182,12 @@ static bool crear_archivo_metadata(char* nombre_archivo)
     config_set_value(metadata, "BLOQUE_INICIAL", "-1");
     config_set_value(metadata, "TAMANIO_ARCHIVO", "0");
     config_save(metadata);
+
+    if(ftruncate(metadata, 0) == -1)
+    {
+        log_error(logger_io, "Error al truncar el archivo de bitmap.");
+        return false;
+    }
 
     return true;
 }
