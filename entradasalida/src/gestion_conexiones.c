@@ -170,6 +170,34 @@ static void _atender_peticiones_kernel(){
                 int handshake = IO_GEN_SLEEP;
                 send(socket_cliente_kernel, &handshake, sizeof(handshake), 0);
                 break;
+            case IO_FS_CREATE:
+                log_info(logger_io, "Proximamente hace su magia...");
+                //debería recibir el PID del proceso y nombre del archivo
+                //crear_archivo(nombre_archivo);
+                //debería mandar confirmación de archivo creado?
+                break;
+            case IO_FS_DELETE:
+                log_info(logger_io, "Proximamente hace su magia...");
+                //recibo el nombre del archivo a eliminar
+                //elimiar_archivo(nombre_archivo);
+                break;
+            case IO_FS_TRUNCATE:
+                log_info(logger_io, "Proximamente hace su magia...");
+                //TODO: ver que recibo
+                //truncar_archivo(param);
+                break;
+            case IO_FS_WRITE:
+                log_info(logger_io, "Proximamente hace su magia...");
+                //se debería conectar con memoria para que haga su magia?
+                //params = leer_memoria();
+                //escribir_archivo(params);
+                break;
+            case IO_FS_READ:
+                log_info(logger_io, "Proximamente hace su magia...");
+                //se debería conectar con memoria para que haga su magia? 
+                //void* data = leer_archivo_fs(params);
+                //escribir_memoria(data);
+                break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");
                 exit(EXIT_FAILURE);
