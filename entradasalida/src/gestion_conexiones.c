@@ -176,15 +176,19 @@ static void _atender_peticiones_kernel(){
                 //debería recibir el PID del proceso y nombre del archivo
                 size=0;
                 void *buffer_create = recibir_buffer(&size, socket_cliente_kernel);           
-                char* nombre_archivo;
-                memcpy(&nombre_archivo, buffer_create, sizeof(int));
-                crear_archivo(nombre_archivo);
+                char* nombre_archivo_create;
+                memcpy(&nombre_archivo_create, buffer_create, sizeof(int));
+                crear_archivo(nombre_archivo_create);
                 //debería mandar confirmación de archivo creado?
                 break;
             case IO_FS_DELETE:
                 log_info(logger_io, "Proximamente hace su magia...");
                 //recibo el nombre del archivo a eliminar
-                //elimiar_archivo(nombre_archivo);
+                size=0;
+                void *buffer_delete = recibir_buffer(&size, socket_cliente_kernel);           
+                char* nombre_archivo_delete;
+                memcpy(&nombre_archivo_delete, buffer_create, sizeof(int));
+                eliminar_archivo(nombre_archivo_delete);
                 break;
             case IO_FS_TRUNCATE:
                 log_info(logger_io, "Proximamente hace su magia...");

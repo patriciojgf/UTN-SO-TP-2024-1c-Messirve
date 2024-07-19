@@ -1,7 +1,6 @@
 #include "init_estructuras.h"
 
 static void init_log();
-static char* concatenar_path(char* path, char* nombre_archivo);
 
 //--------
 
@@ -144,7 +143,7 @@ void init_io(char* path_config, char* nombre){
 }
 
 /*************** FUNCIONES AUXILIARES *****************/
-static char* concatenar_path(char* path, char* nombre_archivo)
+char* concatenar_path(char* path, char* nombre_archivo)
 {
 	char *unaPalabra = string_new();
 	string_append(&unaPalabra, path);

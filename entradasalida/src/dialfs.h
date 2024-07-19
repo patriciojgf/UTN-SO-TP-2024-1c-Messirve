@@ -6,6 +6,8 @@
 #include <sys/mman.h>
 
 void crear_archivo(char* nombre_archivo);
+void eliminar_archivo(char* nombre_archivo);
+
 
 #endif
 
