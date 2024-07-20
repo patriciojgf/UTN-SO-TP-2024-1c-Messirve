@@ -16,11 +16,14 @@ bool llego_interrupcion = 0;
 t_list* lista_tlb;
 int tamanio_pagina;
 int respuesta_memoria;
+char* respuesta_memoria_char;
 
 //semaforos
 sem_t mlog;
 sem_t s_instruccion_actual;
 sem_t s_pedido_marco;
+sem_t s_pedido_lectura_m;
+sem_t s_pedido_escritura_m;
 sem_t s_resize;
 sem_t s_signal_kernel;
 sem_t s_fetch_espere_instruccion;

@@ -109,6 +109,7 @@ static void atender_peticiones_stdout(void *void_args){
             char* mensaje_respuesta_temp = NULL;
             int total_size = 0;
             for(int i=0; i<solicitud->cantidad_accesos; i++){
+                log_info(logger_memoria,"cantidad de accesos: %d",solicitud->cantidad_accesos);
                 void* dato_leido = mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, solicitud->datos_memoria[i].tamano, solicitud->pid);
                 if(dato_leido == NULL){
                     free(mensaje_respuesta_temp);
@@ -192,13 +193,17 @@ static void atender_peticiones_stdin(void *void_args){
 static void atender_peticiones_cpu(void *void_args){
 	int* socket = (int*) void_args;
     int PC, size, pid, pagina = 0;
+    int desplazamiento = 0;
+    int direccion_fisica = 0;
     void *buffer;
     while(1){
+        desplazamiento = 0; size=0; pid=0; 
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Esperando operación."));
         int code_op = recibir_operacion(*socket);
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
         switch (code_op) {
             case PEDIDO_MARCO:
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - PEDIDO_MARCO");
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&pagina, buffer + sizeof(int), sizeof(int));
@@ -210,10 +215,12 @@ static void atender_peticiones_cpu(void *void_args){
                 eliminar_paquete(paquete_respuesta_marco);
                 break;                
             case MENSAJE:
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - MENSAJE");
                 //log_protegido_mem(string_from_format("[ATENDER CPU]: MENSAJE"));
                 recibir_mensaje(*socket,logger_memoria);
                 break;
             case FETCH_INSTRUCCION:
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - FETCH_INSTRUCCION");
                 //log_protegido_mem(string_from_format("[ATENDER CPU]: FETCH_INSTRUCCION - PID: %d, PC: %d",pid,PC));                
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
@@ -229,7 +236,7 @@ static void atender_peticiones_cpu(void *void_args){
                 eliminar_paquete(paquete);
                 break;
             case RESIZE:
-                log_info(logger_memoria,"RESIZE");
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE");
                 int new_size;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
@@ -241,6 +248,51 @@ static void atender_peticiones_cpu(void *void_args){
                 agregar_a_paquete(paquete_respuesta_resize, &respuesta_a_resize, sizeof(int));
                 enviar_paquete(paquete_respuesta_resize, *socket);
                 eliminar_paquete(paquete_respuesta_resize);
+                break;
+            case LEER_MEMORIA:
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - LEER_MEMORIA");
+                int cantidad_bytes = 0;
+                buffer = recibir_buffer(&size, *socket);
+                memcpy(&pid, buffer, sizeof(int));
+                desplazamiento += sizeof(int);
+                memcpy(&direccion_fisica, buffer + desplazamiento, sizeof(int));
+                desplazamiento += sizeof(int);
+                memcpy(&cantidad_bytes, buffer + desplazamiento, sizeof(int));
+                void* dato_leido_mem = mem_leer_dato_direccion_fisica(direccion_fisica, cantidad_bytes, pid);                
+                usleep(RETARDO_RESPUESTA * 1000);
+                t_paquete* paquete_respuesta_leer_memoria = crear_paquete(LEER_MEMORIA);
+                agregar_a_paquete(paquete_respuesta_leer_memoria, dato_leido_mem, cantidad_bytes);
+                enviar_paquete(paquete_respuesta_leer_memoria, *socket);
+                eliminar_paquete(paquete_respuesta_leer_memoria);
+                break;
+            case ESCRIBIR_MEMORIA:
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - ESCRIBIR_MEMORIA");
+                buffer = recibir_buffer(&size, *socket);
+                // Leer PID
+                memcpy(&pid, buffer, sizeof(int));   
+                desplazamiento += sizeof(int); 
+                // Leer dirección física
+                memcpy(&direccion_fisica, buffer + desplazamiento, sizeof(int)); 
+                desplazamiento += sizeof(int);
+                // Leer cantidad de bytes a escribir
+                memcpy(&cantidad_bytes, buffer + desplazamiento, sizeof(int));
+                desplazamiento += sizeof(int);                
+                // Preparar memoria para los datos a escribir
+                void* dato_escrito = malloc(cantidad_bytes);
+                // Copiar los datos a escribir en la memoria asignada
+                memcpy(dato_escrito, buffer + desplazamiento, cantidad_bytes);
+
+                // Realizar la escritura en memoria
+                mem_escribir_dato_direccion_fisica(direccion_fisica, dato_escrito, cantidad_bytes, pid);
+                free(dato_escrito);
+                // Simular retardo de respuesta
+                usleep(RETARDO_RESPUESTA * 1000);
+                // Enviar respuesta de éxito
+                t_paquete* paquete_respuesta_escribir_memoria = crear_paquete(ESCRIBIR_MEMORIA);
+                int valor_ok = 1;
+                agregar_a_paquete(paquete_respuesta_escribir_memoria, &valor_ok, sizeof(int));
+                enviar_paquete(paquete_respuesta_escribir_memoria, *socket);
+                eliminar_paquete(paquete_respuesta_escribir_memoria);
                 break;
             default:
                 log_error(logger_memoria,"codigo desconocido %d",code_op);
@@ -277,6 +329,7 @@ static void atender_peticiones_kernel(void *void_args){
                 t_proceso* proceso = crear_proceso(pid,path);
                 list_add(lista_procesos_en_memoria, proceso);
                 confirmar_proceso_creado(); 
+                free(path);
                 break;
             case LIBERAR_ESTRUCTURAS_MEMORIA:
                 pid=0; desplazamiento = 0; size = 0;

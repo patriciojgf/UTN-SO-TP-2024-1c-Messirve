@@ -129,7 +129,7 @@ static void _atender_peticiones_kernel(){
                 agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                 enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
                 eliminar_paquete(paquete_para_kernel);                                    
-
+                liberar_solicitud_io(solicitud_recibida_kernel);                
                 break;
 
             case IO_STDIN_READ:

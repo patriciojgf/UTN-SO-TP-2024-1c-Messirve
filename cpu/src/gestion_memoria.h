@@ -4,6 +4,7 @@
 #include "init_estructuras.h"
 
 int mmu(int direccion_logica);
-
+char* leer_memoria(int direccion_logica, int cantidad_bytes);
+void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor);
 
 #endif /*GESTION_MEM_H*/

@@ -15,7 +15,7 @@ extern t_contexto* contexto_cpu;
 
 typedef struct {
     void* direccion;
-    size_t tamano;  // Tamaño del registro en bytes
+    int tamano;  // Tamaño del registro en bytes
 } info_registro_cpu;
 
 //interrupciones

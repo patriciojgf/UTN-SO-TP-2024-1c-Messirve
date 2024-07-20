@@ -27,11 +27,14 @@ extern bool llego_interrupcion;
 extern t_list* lista_tlb;
 extern int tamanio_pagina;
 extern int respuesta_memoria;
+extern char* respuesta_memoria_char;
 
 //semaforos
 extern sem_t mlog;
 extern sem_t s_instruccion_actual;
 extern sem_t s_pedido_marco;
+extern sem_t s_pedido_lectura_m;
+extern sem_t s_pedido_escritura_m;
 extern sem_t s_resize;
 extern sem_t s_signal_kernel;
 extern sem_t s_fetch_espere_instruccion;

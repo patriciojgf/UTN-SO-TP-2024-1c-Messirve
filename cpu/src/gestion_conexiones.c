@@ -237,13 +237,36 @@ void atender_peticiones_memoria(){
                 log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA PEDIDO_MARCO -- PID <%d> - PC<%d> - MARCO <%d>",contexto_cpu->pid,contexto_cpu->program_counter,marco_recibido);
                 respuesta_memoria=marco_recibido;
                 sem_post(&s_pedido_marco);
-
+                free(buffer);
                 break;
+            case LEER_MEMORIA:
+                respuesta_memoria_char = NULL;
+                int size_char_recibido = 0;
+
+                buffer = recibir_buffer(&size, socket_memoria);
+                memcpy(&(size_char_recibido), buffer, sizeof(int));
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA LEER_MEMORIA -- PID <%d> - PC<%d> - SIZE <%d>",contexto_cpu->pid,contexto_cpu->program_counter,size_char_recibido);
+                desplazamiento += sizeof(int);
+
+                respuesta_memoria_char=malloc(size_char_recibido+1);
+                memcpy(respuesta_memoria_char, buffer + desplazamiento, size_char_recibido);
+                respuesta_memoria_char[size_char_recibido] = '\0'; 
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA LEER_MEMORIA -- PID <%d> - PC<%d> - CONTENIDO <%s>",contexto_cpu->pid,contexto_cpu->program_counter,respuesta_memoria_char);
+                sem_post(&s_pedido_lectura_m);
+                free(buffer);
+                break;
+            case ESCRIBIR_MEMORIA:
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA ESCRIBIR_MEMORIA -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                buffer = recibir_buffer(&size, socket_memoria);
+                free(buffer);
+                sem_post(&s_pedido_escritura_m);
+                break;            
             case RESIZE:
                 log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 buffer = recibir_buffer(&size, socket_memoria);
                 memcpy(&respuesta_memoria, buffer + desplazamiento, sizeof(int));
                 sem_post(&s_resize);
+                free(buffer);
                 break;
             default:
                 log_error(logger_cpu, "[atender_peticiones_memoria]: cod_op no identificado <%d>",cod_op);

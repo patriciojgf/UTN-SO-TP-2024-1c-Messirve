@@ -17,10 +17,23 @@ static void _mov_out(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
 static info_registro_cpu _get_direccion_registro(char* string_registro);
 static t_solicitud_io* _io_std(t_instruccion* instruccion);
+static int calcular_bytes_segun_registro(char* registro);
 //
 
 //----
 extern t_registros_cpu registros_cpu;
+
+static int leer_valor_registro_como_int(void* direccion, size_t tamano) {
+    uint32_t valor = 0;
+    if (tamano == 1) {
+        valor = *(uint8_t*)direccion;
+    } else if (tamano == 2) {
+        valor = *(uint16_t*)direccion;
+    } else if (tamano == 4) {
+        valor = *(uint32_t*)direccion;
+    }
+    return (int)valor;  // Convertimos explícitamente a int para manejar la dirección como entero.
+}
 
 //CONTEXTO
 void ejecutar_proceso(){
@@ -133,13 +146,11 @@ void ejecutar_proceso(){
         }
         contexto_cpu->program_counter++;
 		contexto_cpu->registros_cpu.PC = contexto_cpu->program_counter;
-		log_info(logger_cpu,"pthread_mutex_unlock(&mutex_ejecucion_proceso)1");
 		pthread_mutex_unlock(&mutex_ejecucion_proceso);
 
 		check_recibiendo_interrupcion();
 
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
-		log_info(logger_cpu,"pthread_mutex_lock(&mutex_ejecucion_proceso)2");
 
 		//Desalojos por instrucciones ejecutadas
 		if(motivo_desalojo > -1){
@@ -171,7 +182,6 @@ void ejecutar_proceso(){
         free(instruccion_actual);
 		instruccion_actual=NULL; 
 		pthread_mutex_unlock(&mutex_ejecucion_proceso);
-		log_info(logger_cpu,"pthread_mutex_unlock(&mutex_ejecucion_proceso)2");
 
         //log_info(logger_cpu,"[Ejecutar Proceso]: Instrucción completada y recursos liberados.");
     }
@@ -225,6 +235,77 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 // 		agregar_a_pedido_memoria(pedido_io, "prueba2",dir_prueba2);
 // 		return pedido_io;
 // }
+static void _mov_in(t_instruccion* instruccion){
+	// MOV_IN EDX ECX
+	// (Registro Datos, Registro Dirección): 
+	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
+	// en el Registro Dirección y lo almacena en el Registro Datos.
+	log_info(logger_cpu, "--------------------------------------------MOV IN---------------------------------------------");
+
+	//Busco los registros de la instruccion en formato char
+	char* registro_datos = list_get(instruccion->parametros, 0);
+	char* registro_direccion = list_get(instruccion->parametros, 1);
+
+	//Consigo la informacon de esos registros (direccion + tamanio)
+    info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
+    info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
+
+	//convierto la direccion a int para poder usarla mas facilmente
+	int direccion_logica = leer_valor_registro_como_int(registro_direccion_info.direccion, 	registro_direccion_info.tamano	);
+
+	//solicito a memoria leer esa direccion, y espero la respuesta
+	char* dato_leido  = leer_memoria(direccion_logica, registro_datos_info.tamano);
+
+	//escribo el valor que me devolvio memoria en el registro correspondiente
+	memcpy(registro_datos_info.direccion, dato_leido, registro_datos_info.tamano);	
+	free(dato_leido);
+	
+	//genero un log para ver el valor leido y escrito en el registro
+	int dato_leido_int = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
+	//log obligario
+	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
+	log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
+}
+
+static void _mov_out(t_instruccion* instruccion){
+
+	log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
+// MOV_OUT (Registro Dirección, Registro Datos): 
+// Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
+// obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.	
+	char* registro_direccion	= list_get(instruccion->parametros, 0);
+    char* registro_datos		= list_get(instruccion->parametros, 1);
+
+    info_registro_cpu registro_direccion_info 	= _get_direccion_registro(registro_direccion);
+    info_registro_cpu registro_datos_info		= _get_direccion_registro(registro_datos);
+
+	// int cantidad_bytes_dir 		= calcular_bytes_segun_registro(registro_direccion);
+	// int cantidad_bytes_datos 	= calcular_bytes_segun_registro(registro_datos);
+
+	// int direccion_logica 		= leer_valor_registro_como_int(registro_direccion_info.direccion, cantidad_bytes_dir);
+	// int dato_a_escribir 		= leer_valor_registro_como_int(registro_datos_info.direccion, cantidad_bytes_datos);
+	int direccion_logica 		= leer_valor_registro_como_int(registro_direccion_info.direccion, 	registro_direccion_info.tamano	);
+	int dato_a_escribir 		= leer_valor_registro_como_int(registro_datos_info.direccion	, 	registro_datos_info.tamano		);
+
+    int direccion_fisica = mmu(direccion_logica);
+    if (direccion_fisica == -1) {
+        log_warning(logger_cpu, "PAGE FAULT - Falta manejo de error.");
+        return;
+    }
+	
+    // Preparar el paquete para enviar los datos a memoria
+	t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &registro_datos_info.tamano, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, registro_datos_info.direccion, registro_datos_info.tamano);
+    enviar_paquete(paquete_a_enviar, socket_memoria);
+    eliminar_paquete(paquete_a_enviar);
+    sem_wait(&s_pedido_escritura_m);
+	//log obligario
+	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
+	log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_fisica, dato_a_escribir);
+}
 
 //Patricio- modifico agregando mmu
 static t_solicitud_io* _io_std(t_instruccion* instruccion){
@@ -242,7 +323,7 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion){
 
 		/* calculo la cantidad de paginas que voy a tener que escribir
 		tamaño total a escribir / tamaño de paginas */
-		int cantidad_paginas = (valor_tamano_a_escribir / tamanio_pagina) + 1;
+		int cantidad_paginas = (valor_tamano_a_escribir + tamanio_pagina - 1) / tamanio_pagina;
 		t_solicitud_io* pedido_io;
 		pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
 		int posicion_texto = 0;
@@ -346,38 +427,20 @@ static void _jnz(t_instruccion* instruccion){
 }
 
 
-static void _mov_out(t_instruccion* instruccion){
-	// (Registro Dirección, Registro Datos): 
-	// Lee el valor del Registro Datos y lo escribe 
-	// en la dirección física de memoria obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.
-	char* registro_datos = list_get(instruccion->parametros, 1);
-	info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
-	uint8_t valor_del_registro_datos = *(uint8_t*)registro_datos_info.direccion;
+// static void _mov_out(t_instruccion* instruccion){
+// 	// (Registro Dirección, Registro Datos): 
+// 	// Lee el valor del Registro Datos y lo escribe 
+// 	// en la dirección física de memoria obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.
+// 	char* registro_datos = list_get(instruccion->parametros, 1);
+// 	info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
+// 	uint8_t valor_del_registro_datos = *(uint8_t*)registro_datos_info.direccion;
 
-	char* registro_direccion = list_get(instruccion->parametros, 0);
-	info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
-	uint8_t valor_direccion_logica = *(uint8_t*)registro_direccion_info.direccion;
+// 	char* registro_direccion = list_get(instruccion->parametros, 0);
+// 	info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
+// 	uint8_t valor_direccion_logica = *(uint8_t*)registro_direccion_info.direccion;
 	
-	//guardar valor_del_registro_datos en la direccion fisica correspondiente a valor_direccion_logica
-}
-
-static void _mov_in(t_instruccion* instruccion){
-	// MOV_IN EDX ECX
-	// (Registro Datos, Registro Dirección): 
-	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
-	// en el Registro Dirección y lo almacena en el Registro Datos.
-	char* registro_datos = list_get(instruccion->parametros, 0);
-	char* registro_direccion = list_get(instruccion->parametros, 1);
-    info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
-    info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
-
-    uint8_t valor_direccion_logica = *(uint8_t*)registro_direccion_info.direccion;
-	log_warning(logger_cpu,"ir a la direccion fisica de la direccion valor_direccion_logica, y escribirlo en registro_datos_info.direccion");
-
-// (hay un ejemplo de casteo en el set)
-	// *(uint8_t*)registro_datos_info.direccion =valor que trae de memoria.
-
-}
+// 	//guardar valor_del_registro_datos en la direccion fisica correspondiente a valor_direccion_logica
+// }
 
 static void _copy_string(t_instruccion* instruccion){
 	// (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad 
@@ -607,4 +670,16 @@ static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_para
 	free(vector_parametros);
 
 	return parametros;
+}
+
+static int calcular_bytes_segun_registro(char* registro){
+	log_info(logger_cpu,"calcular_bytes_segun_registro - REGISTRO: <%s>",registro);
+	int bytes = -1;
+	if(strcmp(registro,"AX")==0 || strcmp(registro,"BX")==0 || strcmp(registro,"CX")==0 || strcmp(registro,"DX")==0){
+		bytes=1;
+	}
+	if(strcmp(registro,"EAX")==0 || strcmp(registro,"EBX")==0 || strcmp(registro,"ECX")==0 || strcmp(registro,"EDX")==0 || strcmp(registro,"SI")==0 || strcmp(registro,"DI")==0){
+		bytes=4;
+	}
+	return bytes;
 }

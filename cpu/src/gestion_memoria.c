@@ -8,6 +8,38 @@ static void tlb_agregar_pagina(int pid, int pagina, int marco);
 static int memoria_pido_marco(int pagina);
 /*----*/
 
+void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor){
+    int direccion_fisica = mmu(direccion_logica);
+    if(direccion_fisica == -1){
+        log_warning(logger_cpu, "falta implementar PAGE FAULT");
+        exit(EXIT_FAILURE);
+    }
+    t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, valor, cantidad_bytes);
+    enviar_paquete(paquete_a_enviar, socket_memoria);
+    eliminar_paquete(paquete_a_enviar);
+    sem_wait(&s_pedido_escritura_m);
+}
+
+char* leer_memoria(int direccion_logica, int cantidad_bytes){
+    int direccion_fisica = mmu(direccion_logica);
+    if(direccion_fisica == -1){
+        log_warning(logger_cpu, "falta implementar PAGE FAULT");
+        exit(EXIT_FAILURE);
+    }
+    t_paquete* paquete_a_enviar = crear_paquete(LEER_MEMORIA);
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
+    enviar_paquete(paquete_a_enviar, socket_memoria);
+    eliminar_paquete(paquete_a_enviar);
+    sem_wait(&s_pedido_lectura_m);
+    return respuesta_memoria_char;
+}
+
 int mmu(int direccion_logica){
     int numero_pagina = direccion_logica / tamanio_pagina;
     int desplazamiento = direccion_logica % tamanio_pagina;
@@ -22,9 +54,6 @@ int mmu(int direccion_logica){
         //Busco en tabla de paginas
         marco = memoria_pido_marco(numero_pagina);
         if(marco == -1){
-            //No esta presente en tabla de paginas
-            //TODO
-            log_warning(logger_cpu,"FALTA IMPLEMENTAR PAGE FAULT");
             return -1;
         } 
         else{
