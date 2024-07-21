@@ -54,11 +54,32 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
         return;
     }
     int tamanio_archivo_aux = config_get_int_value(metada_aux, "TAMANIO_ARCHIVO");
+
     int bloques_actuales = ceil(((double)tamanio_archivo_aux) / BLOCK_SIZE);
     if(!bloques_actuales)
     {
         bloques_actuales = 1;
     }
+    
+    int nuevo_bloques = ceil(((double)solicitud_io->datos_memoria->tamano) / BLOCK_SIZE);
+    if(!nuevo_bloques)
+    {
+        nuevo_bloques = 1;
+    }
+
+    if(nuevo_bloques - bloques_actuales > 0)
+    {
+        //agrandar
+    }
+    else
+    {
+        //achicar
+    }
+
+    //actualizar metadata
+    config_set_value(metada_aux, "TAMANIO_ARCHIVO", string_itoa(nuevo_bloques));
+    free(path);
+    config_destroy(metada_aux);
 }
 
 /*************** FUNCIONES AUXILIARES *****************/
