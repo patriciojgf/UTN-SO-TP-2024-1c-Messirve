@@ -88,7 +88,7 @@ typedef struct {
     uint32_t direccion_fisica;
     uint32_t tamano;
     char* datos;  // Suponiendo que los datos se gestionarán externamente.
-    // char* nombre_archivo; //TODO: pasar por aca? 
+    // char* nombre_archivo; //TODO: pasar por aca?
 } t_dato_memoria;
 
 typedef struct {

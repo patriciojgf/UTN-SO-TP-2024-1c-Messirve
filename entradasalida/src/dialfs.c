@@ -54,6 +54,7 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
         return;
     }
     int tamanio_archivo_aux = config_get_int_value(metada_aux, "TAMANIO_ARCHIVO");
+    int bloque_inicial_aux = config_get_int_value(metada_aux, "BLOQUE_INICIAL");
 
     int bloques_actuales = ceil(((double)tamanio_archivo_aux) / BLOCK_SIZE);
     if(!bloques_actuales)
@@ -67,13 +68,31 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
         nuevo_bloques = 1;
     }
 
-    if(nuevo_bloques - bloques_actuales > 0)
+    int bloques_a_actualizar = nuevo_bloques - bloques_actuales;
+    if(bloques_a_actualizar > 0)
     {
         //agrandar
+        int inicio = bloques_actuales + bloque_inicial_aux;
+        for(int i = inicio; i < inicio + bloques_a_actualizar; i++)
+        {
+            ocupar_bloque(i);
+        }
+
+        //TODO: ver el tema de compatación
+    }
+    else if(bloques_a_actualizar < 0)
+    {
+        //achicar
+        bloques_a_actualizar = bloques_actuales - nuevo_bloques;
+        int inicio =  bloque_inicial_aux + bloques_actuales - 1; 
+        for(int i = inicio; i < inicio - bloques_a_actualizar; i++)
+        {
+            liberar_bloque(i);
+        }
     }
     else
     {
-        //achicar
+        //TODO: que pasa si es cero
     }
 
     //actualizar metadata
