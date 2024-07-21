@@ -5,6 +5,7 @@
 #include "init_estructuras.h"
 #include "gestion_memoria.h"
 
+
 extern int pid;
 extern int program_counter;
 extern int socket_memoria, socket_servidor_dispatch,socket_dispatch;

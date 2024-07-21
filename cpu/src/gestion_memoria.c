@@ -8,36 +8,116 @@ static void tlb_agregar_pagina(int pid, int pagina, int marco);
 static int memoria_pido_marco(int pagina);
 /*----*/
 
-void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor){
-    int direccion_fisica = mmu(direccion_logica);
-    if(direccion_fisica == -1){
-        log_warning(logger_cpu, "falta implementar PAGE FAULT");
-        exit(EXIT_FAILURE);
-    }
-    t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, valor, cantidad_bytes);
-    enviar_paquete(paquete_a_enviar, socket_memoria);
-    eliminar_paquete(paquete_a_enviar);
-    sem_wait(&s_pedido_escritura_m);
+// void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor){
+//     int direccion_fisica = mmu(direccion_logica);
+//     if(direccion_fisica == -1){
+//         log_warning(logger_cpu, "falta implementar PAGE FAULT");
+//         exit(EXIT_FAILURE);
+//     }
+//     t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
+//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
+//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, valor, cantidad_bytes);
+//     enviar_paquete(paquete_a_enviar, socket_memoria);
+//     eliminar_paquete(paquete_a_enviar);
+//     sem_wait(&s_pedido_escritura_m);
+// }
+
+static int min(int a, int b) {
+    return (a < b) ? a : b;
 }
 
-char* leer_memoria(int direccion_logica, int cantidad_bytes){
-    int direccion_fisica = mmu(direccion_logica);
-    if(direccion_fisica == -1){
-        log_warning(logger_cpu, "falta implementar PAGE FAULT");
-        exit(EXIT_FAILURE);
+void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor) {
+    int total_escrito = 0;
+
+    while (total_escrito < cantidad_bytes) {
+        int direccion_fisica = mmu(direccion_logica + total_escrito);
+        if (direccion_fisica == -1) {
+            log_warning(logger_cpu, "PAGE FAULT - Falta implementación adecuada.");
+            exit(EXIT_FAILURE);
+        }
+
+        // Calcular cuánto escribir en este segmento
+        int bytes_restantes = cantidad_bytes - total_escrito;
+        int bytes_a_escribir = min(tamanio_pagina - (direccion_logica % tamanio_pagina), bytes_restantes);
+
+        // Preparar y enviar el paquete de escritura
+        t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
+        agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+        agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+        agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &bytes_a_escribir, sizeof(int));
+        agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, valor + total_escrito, bytes_a_escribir);
+        enviar_paquete(paquete_a_enviar, socket_memoria);
+        eliminar_paquete(paquete_a_enviar);
+
+        // Esperar la confirmación de escritura
+        sem_wait(&s_pedido_escritura_m);
+        total_escrito += bytes_a_escribir;
+	//log obligario
+	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
+	log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d>", contexto_cpu->pid, direccion_fisica, *(valor+total_escrito));
     }
-    t_paquete* paquete_a_enviar = crear_paquete(LEER_MEMORIA);
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
-    enviar_paquete(paquete_a_enviar, socket_memoria);
-    eliminar_paquete(paquete_a_enviar);
-    sem_wait(&s_pedido_lectura_m);
-    return respuesta_memoria_char;
+}
+
+// char* leer_memoria(int direccion_logica, int cantidad_bytes){
+//     int direccion_fisica = mmu(direccion_logica);
+//     if(direccion_fisica == -1){
+//         log_warning(logger_cpu, "falta implementar PAGE FAULT");
+//         exit(EXIT_FAILURE);
+//     }
+//     t_paquete* paquete_a_enviar = crear_paquete(LEER_MEMORIA);
+//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
+//     enviar_paquete(paquete_a_enviar, socket_memoria);
+//     eliminar_paquete(paquete_a_enviar);
+//     sem_wait(&s_pedido_lectura_m);
+//     return respuesta_memoria_char;
+// }
+
+char* leer_memoria(int direccion_logica, int cantidad_bytes) {
+    int total_leido = 0;
+    char* resultado_final = malloc(cantidad_bytes + 1); // Asegurar espacio para el resultado final
+    if (!resultado_final) {
+        log_error(logger_cpu, "No se pudo asignar memoria para leer datos.");
+        return NULL;
+    }
+    resultado_final[0] = '\0'; // Inicializar como cadena vacía
+
+    while (total_leido < cantidad_bytes) {
+        int direccion_fisica = mmu(direccion_logica + total_leido);
+        if (direccion_fisica == -1) {
+            log_warning(logger_cpu, "PAGE FAULT - Falta implementación.");
+            free(resultado_final);
+            return NULL;
+        }
+
+        // Calcular cuánto leer en este segmento
+        int bytes_restantes = cantidad_bytes - total_leido;
+        int bytes_a_leer = min(tamanio_pagina - (direccion_logica % tamanio_pagina), bytes_restantes);
+
+        // Preparar y enviar el paquete de lectura
+        t_paquete* paquete_a_enviar = crear_paquete(LEER_MEMORIA);
+        agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+        agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+        agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &bytes_a_leer, sizeof(int));
+        enviar_paquete(paquete_a_enviar, socket_memoria);
+        eliminar_paquete(paquete_a_enviar);
+
+        // Esperar la respuesta
+        sem_wait(&s_pedido_lectura_m);
+        //log obligatorio
+        //Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
+	    log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_fisica, *respuesta_memoria_char);
+        
+        // Asumiendo que respuesta_memoria_char contiene los bytes leídos
+        memcpy(resultado_final + total_leido, respuesta_memoria_char, bytes_a_leer);
+        total_leido += bytes_a_leer;
+    }
+
+    resultado_final[cantidad_bytes] = '\0'; // Asegurarse de que el resultado es una cadena válida
+    return resultado_final;
 }
 
 int mmu(int direccion_logica){
@@ -149,13 +229,12 @@ static void tlb_agregar_pagina(int pid, int pagina, int marco){
 
 static int memoria_pido_marco(int pagina){
     //log obligatorio “PID: <PID> - OBTENER MARCO - Página: <NUMERO_PAGINA> - Marco: <NUMERO_MARCO>”.
-    log_info(logger_cpu, "PID: %d - OBTENER MARCO - Página: %d", contexto_cpu->pid, pagina);
+    log_info(logger_cpu, "PID: <%d> - OBTENER MARCO - Página: <%d>", contexto_cpu->pid, pagina);
     t_paquete* paquete_a_enviar = crear_paquete(PEDIDO_MARCO);
     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &pagina, sizeof(int));
     enviar_paquete(paquete_a_enviar, socket_memoria);
     eliminar_paquete(paquete_a_enviar);    
     sem_wait(&s_pedido_marco);
-    log_info(logger_cpu, "memoria_pido_marco:me llego el marco %d",respuesta_memoria);
     return respuesta_memoria;
 }

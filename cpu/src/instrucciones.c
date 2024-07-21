@@ -1,5 +1,4 @@
 #include "instrucciones.h"
-
 //static char* _recibir_instruccion(int socket_cliente);
 static u_int8_t _get_identificador(char* identificador_txt);
 static u_int8_t _cantidad_parametros(u_int8_t identificador);
@@ -54,8 +53,9 @@ void ejecutar_proceso(){
         agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
         enviar_paquete(paquete, socket_memoria);
         eliminar_paquete(paquete);
-        log_info(logger_cpu,"[EJECUTAR PROCESO]: -- HICE FETCH -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
         sem_wait(&s_instruccion_actual);
+		//log obligatorio: “PID: <PID> - FETCH - Program Counter: <PROGRAM_COUNTER>”.
+		log_info(logger_cpu,"PID: <%d> - FETCH - Program Counter: <%d>",contexto_cpu->pid,contexto_cpu->program_counter);
         // Decodificar la instrucción actual.
         char** instruccion_separada = string_split(instruccion_actual, " ");
         u_int8_t identificador = _get_identificador(instruccion_separada[0]);
@@ -235,6 +235,29 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 // 		agregar_a_pedido_memoria(pedido_io, "prueba2",dir_prueba2);
 // 		return pedido_io;
 // }
+static void _copy_string(t_instruccion* instruccion){
+	// COPY_STRING 8
+	// COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la 
+	// cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
+	log_info(logger_cpu, "------------------------------------------COPY STRING------------------------------------------");
+
+	int tamano_a_copiar = atoi(list_get(instruccion->parametros, 0));//Tamaño	
+	info_registro_cpu registro_SI_info = _get_direccion_registro("SI");//String apuntado por registro SI
+	info_registro_cpu registro_DI_info = _get_direccion_registro("DI");//String apuntado por registro SI
+	int direccion_logica_origen 	= leer_valor_registro_como_int(registro_SI_info.direccion, registro_SI_info.tamano	);
+	int direccion_logica_destino 	= leer_valor_registro_como_int(registro_DI_info.direccion, registro_DI_info.tamano	);
+
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <COPY_STRING> - <%d>",contexto_cpu->pid, tamano_a_copiar);
+
+	//solicito a memoria leer esa direccion, y espero la respuesta
+	char* dato_leido  = leer_memoria(direccion_logica_origen, tamano_a_copiar);
+	//escribo el valor que me devolvio memoria en el registro correspondiente
+	escribir_valor_en_memoria(direccion_logica_destino,tamano_a_copiar, dato_leido);	
+	free(dato_leido);
+
+}
+
 static void _mov_in(t_instruccion* instruccion){
 	// MOV_IN EDX ECX
 	// (Registro Datos, Registro Dirección): 
@@ -245,6 +268,9 @@ static void _mov_in(t_instruccion* instruccion){
 	//Busco los registros de la instruccion en formato char
 	char* registro_datos = list_get(instruccion->parametros, 0);
 	char* registro_direccion = list_get(instruccion->parametros, 1);
+
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_IN> - <%s> - <%s>",contexto_cpu->pid, registro_datos, registro_direccion);
 
 	//Consigo la informacon de esos registros (direccion + tamanio)
     info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
@@ -264,7 +290,7 @@ static void _mov_in(t_instruccion* instruccion){
 	int dato_leido_int = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 	//log obligario
 	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
-	log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
+	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
 }
 
 static void _mov_out(t_instruccion* instruccion){
@@ -275,6 +301,8 @@ static void _mov_out(t_instruccion* instruccion){
 // obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.	
 	char* registro_direccion	= list_get(instruccion->parametros, 0);
     char* registro_datos		= list_get(instruccion->parametros, 1);
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s> - <%s>",contexto_cpu->pid, registro_direccion, registro_datos);
 
     info_registro_cpu registro_direccion_info 	= _get_direccion_registro(registro_direccion);
     info_registro_cpu registro_datos_info		= _get_direccion_registro(registro_datos);
@@ -287,24 +315,26 @@ static void _mov_out(t_instruccion* instruccion){
 	int direccion_logica 		= leer_valor_registro_como_int(registro_direccion_info.direccion, 	registro_direccion_info.tamano	);
 	int dato_a_escribir 		= leer_valor_registro_como_int(registro_datos_info.direccion	, 	registro_datos_info.tamano		);
 
-    int direccion_fisica = mmu(direccion_logica);
-    if (direccion_fisica == -1) {
-        log_warning(logger_cpu, "PAGE FAULT - Falta manejo de error.");
-        return;
-    }
+	escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
+
+    // int direccion_fisica = mmu(direccion_logica);
+    // if (direccion_fisica == -1) {
+    //     log_warning(logger_cpu, "PAGE FAULT - Falta manejo de error.");
+    //     return;
+    // }
 	
-    // Preparar el paquete para enviar los datos a memoria
-	t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &registro_datos_info.tamano, sizeof(int));
-    agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, registro_datos_info.direccion, registro_datos_info.tamano);
-    enviar_paquete(paquete_a_enviar, socket_memoria);
-    eliminar_paquete(paquete_a_enviar);
-    sem_wait(&s_pedido_escritura_m);
-	//log obligario
-	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
-	log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_fisica, dato_a_escribir);
+    // // Preparar el paquete para enviar los datos a memoria
+	// t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
+    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
+    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
+    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &registro_datos_info.tamano, sizeof(int));
+    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, registro_datos_info.direccion, registro_datos_info.tamano);
+    // enviar_paquete(paquete_a_enviar, socket_memoria);
+    // eliminar_paquete(paquete_a_enviar);
+    // // sem_wait(&s_pedido_escritura_m);
+	// //log obligario
+	// //Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
+	// log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_fisica, dato_a_escribir);
 }
 
 //Patricio- modifico agregando mmu
@@ -347,6 +377,8 @@ static int _resize(t_instruccion* instruccion){
 	//En caso de que la respuesta de la memoria sea Out of Memory, se deberá devolver el contexto de ejecución al 
 	//Kernel informando de esta situación.
 	int valor_new_size = atoi(list_get(instruccion->parametros, 0));
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <RESIZE> - <%d>",contexto_cpu->pid, valor_new_size);
 	t_paquete* paquete = crear_paquete(RESIZE);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
 	agregar_datos_sin_tamaño_a_paquete(paquete, &valor_new_size, sizeof(int));
@@ -367,6 +399,9 @@ static void _set(t_instruccion* instruccion){
     char* valor_string = list_get(instruccion->parametros, 1);
     uint32_t nuevo_valor = (uint32_t)atoi(valor_string); // Convierte el valor string a uint32_t una sola vez
 
+	//log obligatorio
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - <%s> - <%s>",contexto_cpu->pid, nombre_registro, valor_string);
+
     info_registro_cpu reg_info = _get_direccion_registro(nombre_registro);
 
     // Mostrar el valor actual del registro antes de la modificación
@@ -375,6 +410,8 @@ static void _set(t_instruccion* instruccion){
     } else if (reg_info.tamano == sizeof(uint32_t)) {
         *(uint32_t*)reg_info.direccion = nuevo_valor; // Asigna el nuevo valor
     }
+	// Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+
 }
 
 
@@ -383,6 +420,8 @@ static void _sum(t_instruccion* instruccion){
     char *registro_origen = list_get(instruccion->parametros, 1);
     info_registro_cpu registro_des_info = _get_direccion_registro(registro_destino);
     info_registro_cpu registro_ori_info = _get_direccion_registro(registro_origen);
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SUM> - <%s> - <%s>",contexto_cpu->pid, registro_destino, registro_origen);
 
     // Tratar todo como uint8_t para simplificar
     uint8_t valor_destino = *(uint8_t*)registro_des_info.direccion;
@@ -396,6 +435,7 @@ static void _sum(t_instruccion* instruccion){
     } else {
         *(uint8_t*)registro_des_info.direccion = resultado;
     }
+
 }
 
 static void _sub(t_instruccion* instruccion){
@@ -406,6 +446,10 @@ static void _sub(t_instruccion* instruccion){
     // Tratar todo como uint8_t para simplificar
     uint8_t valor_destino = *(uint8_t*)registro_des_info.direccion;
     uint8_t valor_origen = *(uint8_t*)registro_ori_info.direccion;
+
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SUB> - <%s> - <%s>",contexto_cpu->pid, registro_destino, registro_origen);
+
     uint8_t resultado = valor_destino - valor_origen; // Resta como uint8_t
     // Asignar el resultado al registro de destino
     if (registro_des_info.tamano == sizeof(uint32_t)) {
@@ -417,6 +461,8 @@ static void _sub(t_instruccion* instruccion){
 
 static void _jnz(t_instruccion* instruccion){
     char* registro_nombre = (char*)list_get(instruccion->parametros, 0);  // Asumiendo que esto devuelve un nombre de registro en forma de cadena
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <JNZ> - <%s>",contexto_cpu->pid, registro_nombre);
     info_registro_cpu dir_registro_info = _get_direccion_registro(registro_nombre);
     uint32_t registro_valor = *(uint32_t*)dir_registro_info.direccion;
     if (registro_valor != 0) {
@@ -442,25 +488,27 @@ static void _jnz(t_instruccion* instruccion){
 // 	//guardar valor_del_registro_datos en la direccion fisica correspondiente a valor_direccion_logica
 // }
 
-static void _copy_string(t_instruccion* instruccion){
-	// (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad 
-	// de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
-	log_warning(logger_cpu,"falta implementar la parte de memoria");
+// static void _copy_string(t_instruccion* instruccion){
+// 	// (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad 
+// 	// de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
+// 	log_warning(logger_cpu,"falta implementar la parte de memoria");
 
-	uint32_t direccion_logica_destino = contexto_cpu->registros_cpu.DI;
-	log_warning(logger_cpu,"traducir la direccion a fisica");
+// 	uint32_t direccion_logica_destino = contexto_cpu->registros_cpu.DI;
+// 	log_warning(logger_cpu,"traducir la direccion a fisica");
 
-    int tamano_a_copiar = atoi(list_get(instruccion->parametros, 0));
+//     int tamano_a_copiar = atoi(list_get(instruccion->parametros, 0));
 
-	char* string_a_guardar = malloc(tamano_a_copiar + 1);
-	memcpy(string_a_guardar, (char*)contexto_cpu->registros_cpu.SI, tamano_a_copiar);
-	string_a_guardar[tamano_a_copiar] = '\0';
+// 	char* string_a_guardar = malloc(tamano_a_copiar + 1);
+// 	memcpy(string_a_guardar, (char*)contexto_cpu->registros_cpu.SI, tamano_a_copiar);
+// 	string_a_guardar[tamano_a_copiar] = '\0';
 
-	log_warning(logger_cpu,"pasarle a memoria el pedido");
-	free(string_a_guardar);
-}
+// 	log_warning(logger_cpu,"pasarle a memoria el pedido");
+// 	free(string_a_guardar);
+// }
 
 static void _f_exit(t_instruccion *inst){ 
+	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <EXIT>",contexto_cpu->pid);
     flag_ejecucion = false;
 	devolver_contexto_a_dispatch(EXIT, inst);
 }
