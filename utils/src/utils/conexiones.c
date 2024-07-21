@@ -412,6 +412,10 @@ t_solicitud_io* recibir_solicitud_io(int socket) {
         solicitud->datos_memoria[i].datos = malloc(solicitud->datos_memoria[i].tamano);
         memcpy(solicitud->datos_memoria[i].datos, buffer + desplazamiento, solicitud->datos_memoria[i].tamano);
         desplazamiento += solicitud->datos_memoria[i].tamano;
+
+		// solicitud->datos_memoria[i].nombre_archivo = malloc(solicitud->datos_memoria[i].tamano);
+        // memcpy(solicitud->datos_memoria[i].nombre_archivo, buffer + desplazamiento, solicitud->datos_memoria[i].tamano);
+        // desplazamiento += solicitud->datos_memoria[i].tamano;
     }
 
     free(buffer);

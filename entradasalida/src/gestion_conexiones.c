@@ -172,37 +172,66 @@ static void _atender_peticiones_kernel(){
                 send(socket_cliente_kernel, &handshake, sizeof(handshake), 0);
                 break;
             case IO_FS_CREATE:
-                log_info(logger_io, "Proximamente hace su magia...");
+                log_info(logger_io, "Iniciando [IO_FS_CREATE]");
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
                 //debería recibir el PID del proceso y nombre del archivo
+                solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
+                if (solicitud_recibida_kernel == NULL) 
+                {
+                    error_show("Error al recibir la solicitud IO\n");
+                    continue;
+                }
                 size=0;
                 void *buffer_create = recibir_buffer(&size, socket_cliente_kernel);           
                 char* nombre_archivo_create;
                 memcpy(&nombre_archivo_create, buffer_create, sizeof(int));
+                log_info(logger_io, "[IO_FS_CREATE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
                 crear_archivo(nombre_archivo_create);
                 //debería mandar confirmación de archivo creado?
                 break;
             case IO_FS_DELETE:
-                log_info(logger_io, "Proximamente hace su magia...");
+                log_info(logger_io, "Iniciando [IO_FS_DELETE]");
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
                 //recibo el nombre del archivo a eliminar
+                solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
+                if (solicitud_recibida_kernel == NULL) 
+                {
+                    error_show("Error al recibir la solicitud IO\n");
+                    continue;
+                }
                 size=0;
                 void *buffer_delete = recibir_buffer(&size, socket_cliente_kernel);           
                 char* nombre_archivo_delete;
                 memcpy(&nombre_archivo_delete, buffer_create, sizeof(int));
+                log_info(logger_io, "[IO_FS_DELETE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
                 eliminar_archivo(nombre_archivo_delete);
                 break;
             case IO_FS_TRUNCATE:
-                log_info(logger_io, "Proximamente hace su magia...");
-                //TODO: ver que recibo
-                //truncar_archivo(param);
+                log_info(logger_io, "Iniciando [IO_FS_TRUNCATE]");
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
+                solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
+                if (solicitud_recibida_kernel == NULL) 
+                {
+                    error_show("Error al recibir la solicitud IO\n");
+                    continue;
+                }
+                size=0;
+                void *buffer_truncate = recibir_buffer(&size, socket_cliente_kernel);           
+                char* nombre_archivo_truncate;
+                memcpy(&nombre_archivo_truncate, buffer_create, sizeof(int));
+                log_info(logger_io, "[IO_FS_TRUNCATE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
+                truncar_archivo(solicitud_recibida_kernel, nombre_archivo_truncate);
                 break;
             case IO_FS_WRITE:
                 log_info(logger_io, "Proximamente hace su magia...");
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
                 //se debería conectar con memoria para que haga su magia?
                 //params = leer_memoria();
                 //escribir_archivo(params);
                 break;
             case IO_FS_READ:
                 log_info(logger_io, "Proximamente hace su magia...");
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
                 //se debería conectar con memoria para que haga su magia? 
                 //void* data = leer_archivo_fs(params);
                 //escribir_memoria(data);

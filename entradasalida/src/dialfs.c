@@ -44,6 +44,23 @@ void eliminar_archivo(char* nombre_archivo)
     config_destroy(metadata_aux);
 }
 
+void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
+{
+    char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+    t_config* metada_aux = config_create(path); 
+    if(metada_aux == NULL)
+    {
+        log_error(logger_io, "Error al leer archivo metadata.");
+        return;
+    }
+    int tamanio_archivo_aux = config_get_int_value(metada_aux, "TAMANIO_ARCHIVO");
+    int bloques_actuales = ceil(((double)tamanio_archivo_aux) / BLOCK_SIZE);
+    if(!bloques_actuales)
+    {
+        bloques_actuales = 1;
+    }
+}
+
 /*************** FUNCIONES AUXILIARES *****************/
 
 static int obtener_bloques_libres(int inicio)
