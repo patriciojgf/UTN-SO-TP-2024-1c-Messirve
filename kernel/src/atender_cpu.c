@@ -15,11 +15,10 @@ void atender_cpu_exit(t_pcb* pcb, char* motivo_exit){
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
-    sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
-
-    mover_proceso_a_exit(pcb);
     //log obligatorio
     log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->pid, motivo_exit);  
+    mover_proceso_a_exit(pcb);
+    sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
     
 
 
@@ -210,7 +209,10 @@ void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){
         sem_init(&pedido_en_espera->semaforo_pedido_ok,0,0);
 
         mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
-
+        
+        //habilito el puerto dispatch para recibir nuevos desalojos.
+        sem_post(&s_pedido_io_enviado);
+        
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
         pthread_mutex_unlock(&mutex_plan_exec);

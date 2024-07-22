@@ -78,6 +78,7 @@ extern sem_t s_conexion_interfaz; //para la primer interfaz
 
 //planificacion
 extern sem_t sem_pcb_desalojado;
+extern sem_t s_pedido_io_enviado;
 extern sem_t sem_plan_exec_libre;
 extern sem_t sem_plan_ready;
 extern sem_t sem_plan_new;

@@ -75,6 +75,7 @@ static void liberar_un_marco(int pid){
 }
 
 int resize_proceso(int pid, int new_size) {
+    log_info(logger_memoria, "resize_proceso - PID <%d> - NEW_SIZE <%d>", pid, new_size);
     int old_size = get_proceso_memoria(pid)->cantidad_de_paginas;
     int marcos_a_asignar = (new_size/TAM_PAGINA) - old_size;
 
@@ -82,6 +83,7 @@ int resize_proceso(int pid, int new_size) {
         log_error(logger_memoria, "No hay marcos suficientes <%d> para asignar al proceso PID <%d>, hay <%d>.", marcos_a_asignar, pid, cantidad_marcos_libres());
         return -1; // Error al asignar marco
     }
+    log_info(logger_memoria, "resize_proceso - PID <%d> - OLD_SIZE <%d> - MARCOS_A_ASIGNAR <%d>", pid, old_size, marcos_a_asignar);
 
     if (marcos_a_asignar > 0) {
         //log obligatorio

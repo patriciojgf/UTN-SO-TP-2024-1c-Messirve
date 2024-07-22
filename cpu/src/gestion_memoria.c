@@ -8,34 +8,17 @@ static void tlb_agregar_pagina(int pid, int pagina, int marco);
 static int memoria_pido_marco(int pagina);
 /*----*/
 
-// void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor){
-//     int direccion_fisica = mmu(direccion_logica);
-//     if(direccion_fisica == -1){
-//         log_warning(logger_cpu, "falta implementar PAGE FAULT");
-//         exit(EXIT_FAILURE);
-//     }
-//     t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
-//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
-//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
-//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
-//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, valor, cantidad_bytes);
-//     enviar_paquete(paquete_a_enviar, socket_memoria);
-//     eliminar_paquete(paquete_a_enviar);
-//     sem_wait(&s_pedido_escritura_m);
-// }
-
 static int min(int a, int b) {
     return (a < b) ? a : b;
 }
 
-void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor) {
+int escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor) {
     int total_escrito = 0;
 
     while (total_escrito < cantidad_bytes) {
         int direccion_fisica = mmu(direccion_logica + total_escrito);
         if (direccion_fisica == -1) {
-            log_warning(logger_cpu, "PAGE FAULT - Falta implementación adecuada.");
-            exit(EXIT_FAILURE);
+            return -1;
         }
 
         // Calcular cuánto escribir en este segmento
@@ -58,6 +41,7 @@ void escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* v
 	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
 	log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d>", contexto_cpu->pid, direccion_fisica, *(valor+total_escrito));
     }
+    return 0;
 }
 
 // char* leer_memoria(int direccion_logica, int cantidad_bytes){
@@ -88,9 +72,8 @@ char* leer_memoria(int direccion_logica, int cantidad_bytes) {
     while (total_leido < cantidad_bytes) {
         int direccion_fisica = mmu(direccion_logica + total_leido);
         if (direccion_fisica == -1) {
-            log_warning(logger_cpu, "PAGE FAULT - Falta implementación.");
             free(resultado_final);
-            return NULL;
+            return "-1";
         }
 
         // Calcular cuánto leer en este segmento

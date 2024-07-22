@@ -95,7 +95,9 @@ typedef enum
 	EXIT,
 	FIN_QUANTUM,
 	INT_SIGNAL,
-	INT_FINALIZAR_PROCESO
+	INT_FINALIZAR_PROCESO,
+	PAGE_FAULT,
+	OUT_OF_MEMORY
 /*INSTRUCCIONES - FIN*/
     /*agregar el resto*/
 }op_code;

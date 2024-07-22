@@ -162,7 +162,8 @@ static void atender_peticiones_stdin(void *void_args){
                 mem_escribir_dato_direccion_fisica(
                     solicitud->datos_memoria[i].direccion_fisica,   //direccion
                     solicitud->datos_memoria[i].datos,              //dato
-                    strlen(solicitud->datos_memoria[i].datos)+1,    //tamaño
+                    // strlen(solicitud->datos_memoria[i].datos)+1,    //tamaño
+                    solicitud->datos_memoria[i].tamano,
                     solicitud->pid);                                //pid
 
                 // mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, strlen(solicitud->datos_memoria[i].datos)+1);
@@ -241,11 +242,14 @@ static void atender_peticiones_cpu(void *void_args){
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&new_size, buffer + sizeof(int), sizeof(int));
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE - PID: %d, NEW_SIZE: %d", pid, new_size);
                 usleep(RETARDO_RESPUESTA * 1000);
 
                 int respuesta_a_resize = resize_proceso(pid, new_size);
+                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE - PID: <%d> - NEW_SIZE: <%d> - RESP <%d>", pid, new_size, respuesta_a_resize);
+
                 t_paquete* paquete_respuesta_resize = crear_paquete(RESIZE);
-                agregar_a_paquete(paquete_respuesta_resize, &respuesta_a_resize, sizeof(int));
+                agregar_datos_sin_tamaño_a_paquete(paquete_respuesta_resize, &respuesta_a_resize, sizeof(int));
                 enviar_paquete(paquete_respuesta_resize, *socket);
                 eliminar_paquete(paquete_respuesta_resize);
                 break;

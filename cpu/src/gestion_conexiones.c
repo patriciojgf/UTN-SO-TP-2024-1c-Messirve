@@ -264,7 +264,8 @@ void atender_peticiones_memoria(){
             case RESIZE:
                 // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 buffer = recibir_buffer(&size, socket_memoria);
-                memcpy(&respuesta_memoria, buffer + desplazamiento, sizeof(int));
+                memcpy(&respuesta_memoria, buffer, sizeof(int));
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d> - RESPUESTA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,respuesta_memoria);
                 sem_post(&s_resize);
                 free(buffer);
                 break;

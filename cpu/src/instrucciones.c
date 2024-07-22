@@ -11,14 +11,17 @@ static void _jnz(t_instruccion* instruccion);
 
 static int _resize(t_instruccion* instruccion);
 static void _copy_string(t_instruccion* instruccion);
-static void _mov_in(t_instruccion* instruccion);
-static void _mov_out(t_instruccion* instruccion);
+static int _mov_in(t_instruccion* instruccion);
+static int _mov_out(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
 static info_registro_cpu _get_direccion_registro(char* string_registro);
 static t_solicitud_io* _io_std(t_instruccion* instruccion);
 static int calcular_bytes_segun_registro(char* registro);
 //
 
+static int min(int a, int b) {
+    return (a < b) ? a : b;
+}
 //----
 extern t_registros_cpu registros_cpu;
 
@@ -77,11 +80,22 @@ void ejecutar_proceso(){
             case SUB: _sub(inst_decodificada); break;
             case JNZ: _jnz(inst_decodificada); break;
 			case COPY_STRING: _copy_string(inst_decodificada); break;
-			case MOV_IN: _mov_in(inst_decodificada); break;
-			case MOV_OUT: _mov_out(inst_decodificada); break;
+			case MOV_IN: 
+				if(_mov_in(inst_decodificada)==-1){
+					motivo_desalojo = PAGE_FAULT;
+					break;				
+				}
+				break;
+			case MOV_OUT: 
+				if(_mov_out(inst_decodificada)==-1){
+					motivo_desalojo = PAGE_FAULT;
+					break;				
+				}
+				break;
+			// case MOV_OUT: _mov_out(inst_decodificada); break;
 			case RESIZE: 
 				if(_resize(inst_decodificada)==-1){
-					motivo_desalojo = RESIZE;
+					motivo_desalojo = OUT_OF_MEMORY;
 				}
 				break;
 			case IO_GEN_SLEEP:
@@ -95,8 +109,12 @@ void ejecutar_proceso(){
 				// en el Registro Dirección, un tamaño indicado por el Registro Tamaño y se imprima por pantalla.
 	
 				//muevo la logica a una funcion propia
-				pedido_io_stdout_write=_io_std(inst_decodificada);				
-				motivo_desalojo = IO_STDOUT_WRITE;
+				pedido_io_stdout_write=_io_std(inst_decodificada);
+				if(pedido_io_stdout_write == NULL){
+					motivo_desalojo = PAGE_FAULT;
+				} else{
+					motivo_desalojo = IO_STDOUT_WRITE;
+				}				
 				break;
 
 			case IO_STDIN_READ:
@@ -108,8 +126,14 @@ void ejecutar_proceso(){
 				// en el Registro Dirección.
 
 				//muevo la logica a una funcion propia
-				pedido_io_stdin_read=_io_std(inst_decodificada);				
-				motivo_desalojo = IO_STDIN_READ;
+				pedido_io_stdin_read=_io_std(inst_decodificada);
+				if(pedido_io_stdin_read == NULL){
+					motivo_desalojo = PAGE_FAULT;
+				} else{
+					// motivo_desalojo = IO_STDOUT_WRITE;		
+					motivo_desalojo = IO_STDIN_READ;
+				}
+				// pedido_io_stdin_read=_io_std(inst_decodificada);
 				break;
 			case WAIT:
 				motivo_desalojo = WAIT;
@@ -258,7 +282,7 @@ static void _copy_string(t_instruccion* instruccion){
 
 }
 
-static void _mov_in(t_instruccion* instruccion){
+static int _mov_in(t_instruccion* instruccion){
 	// MOV_IN EDX ECX
 	// (Registro Datos, Registro Dirección): 
 	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
@@ -281,6 +305,10 @@ static void _mov_in(t_instruccion* instruccion){
 
 	//solicito a memoria leer esa direccion, y espero la respuesta
 	char* dato_leido  = leer_memoria(direccion_logica, registro_datos_info.tamano);
+	if(!strcmp(dato_leido,"-1")){
+		log_info(logger_cpu,"PID: <%d> - Page Fault - Ejecutando: <MOV_IN> - <%s> - <%s>",contexto_cpu->pid, registro_datos, registro_direccion);
+		return -1;	
+	}
 
 	//escribo el valor que me devolvio memoria en el registro correspondiente
 	memcpy(registro_datos_info.direccion, dato_leido, registro_datos_info.tamano);	
@@ -293,8 +321,7 @@ static void _mov_in(t_instruccion* instruccion){
 	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
 }
 
-static void _mov_out(t_instruccion* instruccion){
-
+static int _mov_out(t_instruccion* instruccion){
 	log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
 // MOV_OUT (Registro Dirección, Registro Datos): 
 // Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
@@ -304,71 +331,49 @@ static void _mov_out(t_instruccion* instruccion){
 	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s> - <%s>",contexto_cpu->pid, registro_direccion, registro_datos);
 
-    info_registro_cpu registro_direccion_info 	= _get_direccion_registro(registro_direccion);
-    info_registro_cpu registro_datos_info		= _get_direccion_registro(registro_datos);
+    info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
+    info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
+	int direccion_logica = leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano);
+	int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 
-	// int cantidad_bytes_dir 		= calcular_bytes_segun_registro(registro_direccion);
-	// int cantidad_bytes_datos 	= calcular_bytes_segun_registro(registro_datos);
-
-	// int direccion_logica 		= leer_valor_registro_como_int(registro_direccion_info.direccion, cantidad_bytes_dir);
-	// int dato_a_escribir 		= leer_valor_registro_como_int(registro_datos_info.direccion, cantidad_bytes_datos);
-	int direccion_logica 		= leer_valor_registro_como_int(registro_direccion_info.direccion, 	registro_direccion_info.tamano	);
-	int dato_a_escribir 		= leer_valor_registro_como_int(registro_datos_info.direccion	, 	registro_datos_info.tamano		);
-
-	escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
-
-    // int direccion_fisica = mmu(direccion_logica);
-    // if (direccion_fisica == -1) {
-    //     log_warning(logger_cpu, "PAGE FAULT - Falta manejo de error.");
-    //     return;
-    // }
-	
-    // // Preparar el paquete para enviar los datos a memoria
-	// t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
-    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
-    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
-    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &registro_datos_info.tamano, sizeof(int));
-    // agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, registro_datos_info.direccion, registro_datos_info.tamano);
-    // enviar_paquete(paquete_a_enviar, socket_memoria);
-    // eliminar_paquete(paquete_a_enviar);
-    // // sem_wait(&s_pedido_escritura_m);
-	// //log obligario
-	// //Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
-	// log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_fisica, dato_a_escribir);
+	int se_pudo_escribir = escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
+	return se_pudo_escribir;
 }
 
 //Patricio- modifico agregando mmu
-static t_solicitud_io* _io_std(t_instruccion* instruccion){
-		char *registro_direccion = list_get(instruccion->parametros, 1);
-		char *registro_tamano = list_get(instruccion->parametros, 2);
-		info_registro_cpu registro_dir_info = _get_direccion_registro(registro_direccion);
-		info_registro_cpu registro_tam_info = _get_direccion_registro(registro_tamano);
-		uint8_t valor_direccion_logica = *(uint8_t*)registro_dir_info.direccion;
-		uint8_t valor_tamano_a_escribir = *(uint8_t*)registro_tam_info.direccion;
-		log_info(logger_cpu,"[IO_STDOUT_WRITE]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,valor_direccion_logica);
-		log_info(logger_cpu,"[IO_STDOUT_WRITE]: -- PID <%d> - PC<%d> - valor_tamano_a_escribir <%d>",contexto_cpu->pid,contexto_cpu->program_counter,valor_tamano_a_escribir);
-		//tomar la direccion logica y calcular la o las fisicas necesarias para escribir el tamano especificado.
-		//por cada direccion fisica hacer un "agregar_a_pedido_memoria" con esa direccion, el parametro "prueba1" puede tener
-		//cualquier valor aca porque se va a completar con datos de la interfaz despues.
+static t_solicitud_io* _io_std(t_instruccion* instruccion) {
+    char *registro_direccion = list_get(instruccion->parametros, 1);
+    char *registro_tamano = list_get(instruccion->parametros, 2);
+    info_registro_cpu registro_dir_info = _get_direccion_registro(registro_direccion);
+    info_registro_cpu registro_tam_info = _get_direccion_registro(registro_tamano);
+    int direccion_logica_actual = *(uint8_t*)registro_dir_info.direccion;
+    int valor_tamano_a_escribir = *(uint8_t*)registro_tam_info.direccion;
 
-		/* calculo la cantidad de paginas que voy a tener que escribir
-		tamaño total a escribir / tamaño de paginas */
-		int cantidad_paginas = (valor_tamano_a_escribir + tamanio_pagina - 1) / tamanio_pagina;
-		t_solicitud_io* pedido_io;
-		pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
-		int posicion_texto = 0;
-		int direccion_logica_actual = list_get(instruccion->parametros, 1);
-		for(int i = 0; i < cantidad_paginas; i++){
-			//le sumo el tamaño de pagina para que vaya a buscar la siguiente
-			int direccion_fisica_actual = mmu(valor_direccion_logica);
-			log_info(logger_cpu,"[IO_STDOUT_WRITE]: -- PID <%d> - PC<%d> - DIRECCION FISICA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,direccion_fisica_actual);
-			log_warning(logger_cpu, "falta implementar page fault");
-			agregar_a_pedido_memoria(pedido_io, " ", tamanio_pagina,direccion_fisica_actual);
-			log_info(logger_cpu,"suma: %d",(valor_direccion_logica + tamanio_pagina));
-			valor_direccion_logica = valor_direccion_logica + tamanio_pagina;
-			log_info(logger_cpu,"valor_direccion_logica: %d",valor_direccion_logica);
-		}
-		return pedido_io;
+    log_info(logger_cpu,"[_io_std]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d>", contexto_cpu->pid, contexto_cpu->program_counter, direccion_logica_actual, valor_tamano_a_escribir);
+
+    t_solicitud_io* pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
+    int total_escrito = 0;
+
+    while (total_escrito < valor_tamano_a_escribir) {
+        int desplazamiento_inicial = direccion_logica_actual % tamanio_pagina;
+        int espacio_disponible_en_pagina = tamanio_pagina - desplazamiento_inicial;
+        int bytes_a_escribir = min(espacio_disponible_en_pagina, valor_tamano_a_escribir - total_escrito);
+        int direccion_fisica_actual = mmu(direccion_logica_actual);
+
+        if (direccion_fisica_actual == -1) {
+            log_warning(logger_cpu, "falta implementar PAGE FAULT");
+            eliminar_pedido_memoria(pedido_io);
+            return NULL;
+        }
+
+        log_info(logger_cpu, "[_io_std]: -- PID <%d> - PC<%d> - DIRECCION FISICA <%d> - Bytes a escribir <%d>", contexto_cpu->pid, contexto_cpu->program_counter, direccion_fisica_actual, bytes_a_escribir);
+        agregar_a_pedido_memoria(pedido_io, " ", bytes_a_escribir, direccion_fisica_actual);
+
+        direccion_logica_actual += bytes_a_escribir; // Mover la dirección lógica a la siguiente posición a escribir
+        total_escrito += bytes_a_escribir; // Incrementar el contador de bytes escritos
+    }
+
+    return pedido_io;
 }
 
 static int _resize(t_instruccion* instruccion){
@@ -386,8 +391,10 @@ static int _resize(t_instruccion* instruccion){
 	eliminar_paquete(paquete);
 	
 	sem_wait(&s_resize);
-
+	log_info(logger_cpu,"[RESIZE]: -- PID <%d> - PC<%d> - RESPUESTA_MEMORIA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,respuesta_memoria);
 	if(respuesta_memoria == -1){
+		// En caso de que la respuesta de la memoria sea Out of Memory, 
+		// se deberá devolver el contexto de ejecución al Kernel informando de esta situación.
 		log_info(logger_cpu,"[_RESIZE]: -- PID <%d> - PC<%d> - RESIZE NO OK",contexto_cpu->pid,contexto_cpu->program_counter);
 		return -1;
 	}
