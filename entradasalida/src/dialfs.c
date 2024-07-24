@@ -3,6 +3,7 @@
 static int obtener_bloques_libres(int inicio);
 static void ocupar_bloque(int index);
 static void liberar_bloque(int index);
+static bool se_puede_agrandar(int inicio, int bloques_a_actualizar);
 
 void crear_archivo(char* nombre_archivo)
 {
@@ -73,6 +74,14 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
     {
         //agrandar
         int inicio = bloques_actuales + bloque_inicial_aux;
+
+        if(!se_puede_agrandar(inicio, bloques_a_actualizar))
+        {
+            log_info(logger_io, "Compatación hace su magia...");  
+            usleep(TIEMPO_UNIDAD_TRABAJO*1000);
+            //TODO: implementar compatación
+        }
+
         for(int i = inicio; i < inicio + bloques_a_actualizar; i++)
         {
             ocupar_bloque(i);
@@ -137,6 +146,22 @@ static void liberar_bloque(int index)
 {
     bitarray_clean_bit(bitmap_fs, index);
     msync(bitmap_void, tamanio_archivo_bitmap, index);
+}
+
+static bool se_puede_agrandar(int inicio, int bloques_a_actualizar)
+{
+    for(int i = inicio; i < inicio * bloques_a_actualizar; i++)
+    {
+        if(i >= BLOCK_SIZE)
+        {
+            return false;
+        }
+        if(bitarray_test_bit(bitmap_fs, i) == 1) //verifica que haya bloques contiguos libres
+        {
+            return false;
+        }
+    }
+    return true; 
 }
 
 /******************************************************/
