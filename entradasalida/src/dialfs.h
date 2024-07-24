@@ -7,7 +7,7 @@
 #include <sys/mman.h>
 
 void crear_archivo(char* nombre_archivo);
-void eliminar_archivo(char* nombre_archivo);
+int liberar_bloques_de_archivo(char* nombre_archivo);
 void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo);
 
 #endif

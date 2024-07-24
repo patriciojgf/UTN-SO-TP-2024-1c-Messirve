@@ -204,7 +204,7 @@ static void _atender_peticiones_kernel(){
                 char* nombre_archivo_delete;
                 memcpy(&nombre_archivo_delete, buffer_create, sizeof(int));
                 log_info(logger_io, "[IO_FS_DELETE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
-                eliminar_archivo(nombre_archivo_delete);
+                liberar_bloques_de_archivo(nombre_archivo_delete);
                 break;
             case IO_FS_TRUNCATE:
                 log_info(logger_io, "Iniciando [IO_FS_TRUNCATE]");

@@ -1,7 +1,9 @@
 #include <dialfs.h>
 
+static void* escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio);
 static int obtener_bloques_libres(int inicio);
 static void ocupar_bloque(int index);
+static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio);
 static void liberar_bloque(int index);
 static bool se_puede_agrandar(int inicio, int bloques_a_actualizar);
 
@@ -15,7 +17,7 @@ void crear_archivo(char* nombre_archivo)
     }
 }
 
-void eliminar_archivo(char* nombre_archivo)
+int liberar_bloques_de_archivo(char* nombre_archivo)
 {
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
@@ -28,7 +30,7 @@ void eliminar_archivo(char* nombre_archivo)
 
     int bloque_inicial_aux = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
     int tamanio_archivo_aux = config_get_int_value(metadata_aux, "TAMANIO_ARCHIVO");
-    int bloques_a_liberar = ceil(tamanio_archivo_aux / BLOCK_SIZE);
+    int bloques_a_liberar = ceil(((double)tamanio_archivo_aux) / BLOCK_SIZE);
 
     //TODO: revisar
     if(!bloques_a_liberar)
@@ -43,6 +45,7 @@ void eliminar_archivo(char* nombre_archivo)
 
     free(path);
     config_destroy(metadata_aux);
+    return bloques_a_liberar;
 }
 
 void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
@@ -112,6 +115,41 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
 
 /*************** FUNCIONES AUXILIARES *****************/
 
+static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
+{
+    char path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+    t_config* metadata_aux = config_create(path);
+    int bloque_inicial = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
+    int valor = bloque_inicial * BLOCK_SIZE;
+
+    void* datos = malloc(tamanio);
+    FILE* archivo = fopen(path, "r"); //TODO: revisar si le paso PATH o PATH_BASE_DIALFS
+    fseek(archivo, valor + puntero, SEEK_SET);
+    fread(datos, tamanio, 1, archivo);
+    fclose(archivo);
+    config_destroy(metadata_aux);
+}
+
+static void* escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio)
+{
+    char path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+    t_config* metadata_aux = config_create(path);
+    int bloque_inicial = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
+    int valor = bloque_inicial * BLOCK_SIZE;
+
+    // void* datos = malloc(tamanio);
+    FILE* archivo = fopen(path, "r+"); //TODO: revisar si le paso PATH o PATH_BASE_DIALFS
+    fseek(archivo, valor + puntero, SEEK_SET);
+    fwrite(datos, tamanio, 1, archivo);
+    fclose(archivo);
+    config_destroy(metadata_aux);
+}
+
+static void compactar(char* nombre_archivo)
+{
+    int bloques = liberar_bloques_de_archivo(nombre_archivo);
+}
+
 static int obtener_bloques_libres(int inicio)
 {
     for(int i = inicio; i < BLOCK_COUNT; i++)
@@ -163,5 +201,10 @@ static bool se_puede_agrandar(int inicio, int bloques_a_actualizar)
     }
     return true; 
 }
+
+static int obtener_puntero(int bloque_inicial)
+{
+    return bloque_inicial * BLOCK_SIZE;
+} 
 
 /******************************************************/
