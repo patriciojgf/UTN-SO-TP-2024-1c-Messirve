@@ -1,8 +1,10 @@
 #include <dialfs.h>
 
-static void* escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio);
-static int obtener_bloques_libres(int inicio);
+static void compactar(char* nombre_archivo);
+static void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio);
 static void ocupar_bloque(int index);
+static int obtener_bloques_libres(int inicio);
+static int obtener_bloques_ocupados(int inicio);
 static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio);
 static void liberar_bloque(int index);
 static bool se_puede_agrandar(int inicio, int bloques_a_actualizar);
@@ -25,7 +27,7 @@ int liberar_bloques_de_archivo(char* nombre_archivo)
     if(metadata_aux == NULL)
     {
         log_error(logger_io, "Error al eliminar el archivo metadata. ");
-        return;
+        return EXIT_FAILURE;
     }
 
     int bloque_inicial_aux = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
@@ -82,7 +84,7 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
         {
             log_info(logger_io, "Compatación hace su magia...");  
             usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-            //TODO: implementar compatación
+            compactar(nombre_archivo);
         }
 
         for(int i = inicio; i < inicio + bloques_a_actualizar; i++)
@@ -117,7 +119,7 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
 
 static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
 {
-    char path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+    char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
     int bloque_inicial = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
     int valor = bloque_inicial * BLOCK_SIZE;
@@ -128,11 +130,12 @@ static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
     fread(datos, tamanio, 1, archivo);
     fclose(archivo);
     config_destroy(metadata_aux);
+    return datos;
 }
 
-static void* escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio)
+static void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio)
 {
-    char path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+    char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
     int bloque_inicial = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
     int valor = bloque_inicial * BLOCK_SIZE;
@@ -148,6 +151,28 @@ static void* escribir_archivo(void* datos, char* nombre_archivo, int puntero, in
 static void compactar(char* nombre_archivo)
 {
     int bloques = liberar_bloques_de_archivo(nombre_archivo);
+    void* archivo_void = leer_archivo(nombre_archivo, 0, bloques * BLOCK_SIZE);
+    int bloques_libre = obtener_bloques_libres(0);
+    int bloques_ocupado = obtener_bloques_ocupados(bloques_libre);
+    while(bloques_ocupado != -1)
+    {
+        bloques_libre = obtener_bloques_libres(bloques_libre);
+        bloques_ocupado = obtener_bloques_ocupados(bloques_libre);
+    }
+
+    char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+    t_config* metadata_aux = config_create(path);
+    config_set_value(metadata_aux, "BLOQUE_INICIAL", string_itoa(bloques_libre));
+    config_save(metadata_aux);
+    config_destroy(metadata_aux);
+    free(path);
+
+    escribir_archivo(archivo_void, nombre_archivo, 0, bloques * BLOCK_SIZE);
+    for(int i = bloques_libre; i < bloques_libre + bloques; i++)
+    {
+        ocupar_bloque(i);
+    }
+    free(archivo_void);
 }
 
 static int obtener_bloques_libres(int inicio)
@@ -202,9 +227,9 @@ static bool se_puede_agrandar(int inicio, int bloques_a_actualizar)
     return true; 
 }
 
-static int obtener_puntero(int bloque_inicial)
-{
-    return bloque_inicial * BLOCK_SIZE;
-} 
+// static int obtener_puntero(int bloque_inicial)
+// {
+//     return bloque_inicial * BLOCK_SIZE;
+// } 
 
 /******************************************************/
