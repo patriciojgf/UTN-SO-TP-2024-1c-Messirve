@@ -115,7 +115,7 @@ void init_memoria(char* path_config)
     iniciar_configuracion(path_config);
     iniciar_estructuras();
     iniciar_semaforos();
-    iniciar_espacio_de_usuario();
+    // iniciar_espacio_de_usuario();
     // iniciar_tabla_de_pagina();
     iniciar_mutex();
     iniciar_memoria_usuario();
