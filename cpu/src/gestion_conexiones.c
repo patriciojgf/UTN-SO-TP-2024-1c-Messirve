@@ -78,7 +78,7 @@ void atender_peticiones_interrupt(){
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
                 pthread_mutex_lock(&mutex_ejecucion_proceso);
 
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
                 motivo_interrupt=INT_FINALIZAR_PROCESO;
@@ -120,7 +120,7 @@ void atender_peticiones_interrupt(){
                 pthread_detach(hilo_llego_interrupcion_f_q);       
 
 		        pthread_mutex_lock(&mutex_ejecucion_proceso);
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 log_warning(logger_cpu,"fin de quantum");
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- QUANTUM ----");
                 size=0;
@@ -144,7 +144,7 @@ void atender_peticiones_interrupt(){
 		        pthread_mutex_unlock(&mutex_ejecucion_proceso);
                 break;
             case INT_SIGNAL:
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 log_warning(logger_cpu,"int SIGNAL");
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
@@ -181,12 +181,12 @@ void atender_peticiones_dispatch(){
             case PCB:
                 //log_info(logger_cpu,"[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----");
                 _recibir_nuevo_contexto(socket_cliente_dispatch);
-                log_info(logger_cpu,"[ATENDER DISPATCH]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER DISPATCH]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 flag_ejecucion = true;             
                 ejecutar_proceso(); 
                 break;
             case SIGNAL:
-                log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 void*  buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
                 sem_post(&s_signal_kernel);
 				free(buffer_recibido);
@@ -265,7 +265,7 @@ void atender_peticiones_memoria(){
                 // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 buffer = recibir_buffer(&size, socket_memoria);
                 memcpy(&respuesta_memoria, buffer, sizeof(int));
-                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d> - RESPUESTA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,respuesta_memoria);
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d> - RESPUESTA <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC, respuesta_memoria);
                 sem_post(&s_resize);
                 free(buffer);
                 break;
@@ -315,8 +315,8 @@ static void _recibir_nuevo_contexto(int socket){
     int desplazamiento = 0;
     memcpy(&(contexto_cpu->pid), buffer + desplazamiento, sizeof(int));
     desplazamiento += sizeof(int);
-    memcpy(&(contexto_cpu->program_counter), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
+    // memcpy(&(contexto_cpu->program_counter), buffer + desplazamiento, sizeof(uint32_t));
+    // desplazamiento += sizeof(uint32_t);
     memcpy(&(contexto_cpu->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
     desplazamiento += sizeof(uint8_t);
     memcpy(&(contexto_cpu->registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));

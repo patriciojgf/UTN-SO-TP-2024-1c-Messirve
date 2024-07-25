@@ -1,6 +1,6 @@
 #include <consola.h>
 
-static void ejecutar_script(const char* path);
+static void ejecutar_script(char* path);
 
 static void listar_los_pid_por_lista(){
     log_info(logger_kernel, "!------------------------!");
@@ -174,6 +174,7 @@ static void _ejecutar_comando_validado(char* leido) {
 }
 
 void procesar_comandos_consola() {
+    _iniciar_planificacion();
     // Leer el primer comando.
     char* leido = readline("> ");
     // Continuar leyendo mientras la línea no esté vacía.
@@ -212,8 +213,10 @@ void cambiar_multiprogramacion(int nuevo_grado_mult)
     pthread_mutex_unlock(&mutex_grado_multiprogramacion);  // Liberar el mutex
 }
 
-static void ejecutar_script(const char* path) {
-    FILE* archivo = fopen(path, "r");
+static void ejecutar_script(char* path) {
+    char path_completo[30] = "./scripts/";
+    strcat(path_completo, path);
+    FILE* archivo = fopen(path_completo, "r");
     if (!archivo) {
         log_error(logger_kernel, "No se pudo abrir el archivo de script: %s", path);
         return;

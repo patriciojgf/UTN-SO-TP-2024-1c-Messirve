@@ -147,6 +147,7 @@ int get_marco_proceso(t_proceso* proceso, int nro_pagina){
 }
 
 t_proceso* crear_proceso(int pid, char* path_instrucciones) {
+    log_info(logger_memoria,"path: <%s>",path_instrucciones);
     t_proceso* proceso = malloc(sizeof(t_proceso));
     proceso->id = pid;
     proceso->path_instrucciones = path_instrucciones;
@@ -170,8 +171,8 @@ static t_list* leer_archivo_instrucciones(char* path) {
     //log_protegido_mem(string_from_format("leer_archivo_instrucciones"));
     char* full_path = string_new();
     string_append(&full_path, config_get_string_value(config_memoria, "PATH_INSTRUCCIONES"));
-    string_append(&full_path, "/");
     string_append(&full_path, path);
+    log_info(logger_memoria,"full_path: <%s>",full_path);
     FILE* archivo = fopen(full_path, "r");
     if (archivo == NULL) {
         log_error(logger_memoria, "No se pudo abrir el archivo de instrucciones");

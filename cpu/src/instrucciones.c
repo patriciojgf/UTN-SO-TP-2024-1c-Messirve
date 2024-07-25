@@ -51,14 +51,18 @@ void ejecutar_proceso(){
         // Enviar solicitud de instrucción.
         t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
         int pid_a_enviar = contexto_cpu->pid;
-        int pc_a_enviar = contexto_cpu->program_counter;
+        // int pc_a_enviar = contexto_cpu->program_counter;
         agregar_datos_sin_tamaño_a_paquete(paquete, &pid_a_enviar, sizeof(int));
-        agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
+        // agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
+		int pc_a_enviar = contexto_cpu->registros_cpu.PC;
+		log_info(logger_cpu,"PID: <%d> - FETCH - Program Counter: <%d>",contexto_cpu->pid,pc_a_enviar);
+		agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
         enviar_paquete(paquete, socket_memoria);
         eliminar_paquete(paquete);
         sem_wait(&s_instruccion_actual);
+
+
 		//log obligatorio: “PID: <PID> - FETCH - Program Counter: <PROGRAM_COUNTER>”.
-		log_info(logger_cpu,"PID: <%d> - FETCH - Program Counter: <%d>",contexto_cpu->pid,contexto_cpu->program_counter);
         // Decodificar la instrucción actual.
         char** instruccion_separada = string_split(instruccion_actual, " ");
         u_int8_t identificador = _get_identificador(instruccion_separada[0]);
@@ -72,6 +76,7 @@ void ejecutar_proceso(){
         // Ejecutar la instrucción.
 
 		int motivo_desalojo = -1;
+		contexto_cpu->registros_cpu.PC++;
 
         switch (inst_decodificada->identificador) {
             case EXIT: _f_exit(inst_decodificada); break;
@@ -144,7 +149,7 @@ void ejecutar_proceso(){
 				int size = 0;
 				t_paquete* paquete_signal = crear_paquete(CONTEXTO_EJECUCION);
 				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->pid, sizeof(int));
-				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->program_counter, sizeof(int));
+				// agregar_datos_sin_tamaño_a_paquete(paquete_signal, &contexto_cpu->program_counter, sizeof(int));
 				empaquetar_registros_cpu(paquete_signal, contexto_cpu->registros_cpu);
 				empaquetar_instruccion_cpu(paquete_signal, inst_decodificada);
 				agregar_datos_sin_tamaño_a_paquete(paquete_signal, &motivo, sizeof(int));
@@ -160,7 +165,7 @@ void ejecutar_proceso(){
 				free(buffer_recibido);
 				if(!mensajeOk){
 					motivo_desalojo=INT_SIGNAL;
-					log_info(logger_cpu,"[EJECUTAR PROCESO]: -- PID <%d> - PC<%d> - SIGNAL NO OK",contexto_cpu->pid,contexto_cpu->program_counter);
+					log_info(logger_cpu,"[EJECUTAR PROCESO]: -- PID <%d> - PC<%d> - SIGNAL NO OK",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
 				}
 				break;
             default: 
@@ -168,8 +173,8 @@ void ejecutar_proceso(){
 				exit(EXIT_FAILURE);
                 break;
         }
-        contexto_cpu->program_counter++;
-		contexto_cpu->registros_cpu.PC = contexto_cpu->program_counter;
+        // contexto_cpu->program_counter++;
+		// contexto_cpu->registros_cpu.PC = contexto_cpu->program_counter;
 		pthread_mutex_unlock(&mutex_ejecucion_proceso);
 
 		check_recibiendo_interrupcion();
@@ -214,11 +219,11 @@ void ejecutar_proceso(){
 
 ////
 void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
-	log_info(logger_cpu,"[DEVUELVO CONTEXTO]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);                
+	log_info(logger_cpu,"[DEVUELVO CONTEXTO]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);                
 	//log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
-	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
+	// agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->program_counter, sizeof(int));
 	//agrego registros_cpu al paquete
 	empaquetar_registros_cpu(paquete, contexto_cpu->registros_cpu);
 	empaquetar_instruccion_cpu(paquete, instruccion);
@@ -319,6 +324,7 @@ static int _mov_in(t_instruccion* instruccion){
 	//log obligario
 	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
 	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
+	return 0;
 }
 
 static int _mov_out(t_instruccion* instruccion){
@@ -349,7 +355,7 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
     int direccion_logica_actual = *(uint8_t*)registro_dir_info.direccion;
     int valor_tamano_a_escribir = *(uint8_t*)registro_tam_info.direccion;
 
-    log_info(logger_cpu,"[_io_std]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d>", contexto_cpu->pid, contexto_cpu->program_counter, direccion_logica_actual, valor_tamano_a_escribir);
+    log_info(logger_cpu,"[_io_std]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir);
 
     t_solicitud_io* pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
     int total_escrito = 0;
@@ -361,12 +367,11 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
         int direccion_fisica_actual = mmu(direccion_logica_actual);
 
         if (direccion_fisica_actual == -1) {
-            log_warning(logger_cpu, "falta implementar PAGE FAULT");
             eliminar_pedido_memoria(pedido_io);
             return NULL;
         }
 
-        log_info(logger_cpu, "[_io_std]: -- PID <%d> - PC<%d> - DIRECCION FISICA <%d> - Bytes a escribir <%d>", contexto_cpu->pid, contexto_cpu->program_counter, direccion_fisica_actual, bytes_a_escribir);
+        log_info(logger_cpu, "[_io_std]: -- PID <%d> - PC<%d> - DIRECCION FISICA <%d> - Bytes a escribir <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_fisica_actual, bytes_a_escribir);
         agregar_a_pedido_memoria(pedido_io, " ", bytes_a_escribir, direccion_fisica_actual);
 
         direccion_logica_actual += bytes_a_escribir; // Mover la dirección lógica a la siguiente posición a escribir
@@ -391,11 +396,11 @@ static int _resize(t_instruccion* instruccion){
 	eliminar_paquete(paquete);
 	
 	sem_wait(&s_resize);
-	log_info(logger_cpu,"[RESIZE]: -- PID <%d> - PC<%d> - RESPUESTA_MEMORIA <%d>",contexto_cpu->pid,contexto_cpu->program_counter,respuesta_memoria);
+	log_info(logger_cpu,"[RESIZE]: -- PID <%d> - PC<%d> - RESPUESTA_MEMORIA <%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC,respuesta_memoria);
 	if(respuesta_memoria == -1){
 		// En caso de que la respuesta de la memoria sea Out of Memory, 
 		// se deberá devolver el contexto de ejecución al Kernel informando de esta situación.
-		log_info(logger_cpu,"[_RESIZE]: -- PID <%d> - PC<%d> - RESIZE NO OK",contexto_cpu->pid,contexto_cpu->program_counter);
+		log_info(logger_cpu,"[_RESIZE]: -- PID <%d> - PC<%d> - RESIZE NO OK",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
 		return -1;
 	}
 	return 0;
@@ -417,6 +422,7 @@ static void _set(t_instruccion* instruccion){
     } else if (reg_info.tamano == sizeof(uint32_t)) {
         *(uint32_t*)reg_info.direccion = nuevo_valor; // Asigna el nuevo valor
     }
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - Program Counter: <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC);
 	// Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
 
 }
@@ -474,7 +480,7 @@ static void _jnz(t_instruccion* instruccion){
     uint32_t registro_valor = *(uint32_t*)dir_registro_info.direccion;
     if (registro_valor != 0) {
         uint32_t nueva_pc = atoi(list_get(instruccion->parametros, 1));
-        contexto_cpu->program_counter = nueva_pc;
+        // contexto_cpu->program_counter = nueva_pc;
         contexto_cpu->registros_cpu.PC = nueva_pc;
     }
 }
@@ -589,8 +595,11 @@ static info_registro_cpu _get_direccion_registro(char* string_registro) {
     } else if (!strcmp(string_registro, "DI")) {
         info.direccion = &(contexto_cpu->registros_cpu.DI);
         info.tamano = sizeof(uint32_t);
-    }
-    return info;
+    } else if (!strcmp(string_registro, "PC")) {
+        info.direccion = &(contexto_cpu->registros_cpu.PC);
+        info.tamano = sizeof(uint32_t);
+	}
+	return info;
 }
 
 char* recibir_instruccion(int socket_cliente){

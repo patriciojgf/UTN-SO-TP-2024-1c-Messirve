@@ -6,6 +6,12 @@
 #include "planificador_cp.h"
 #include "planificador_lp.h"
 
+typedef struct {
+    t_pcb* pcb;
+    sem_t semaforo_pedido_ok;
+    t_interfaz* interfaz; // Agregar este campo
+} t_pedido_stdin2;
+
 // t_recurso* obtener_recurso(char* recurso);
 // void liberar_recursos_pcb(t_pcb* pcb);
 // void liberar_estructuras_memoria(t_pcb* pcb);
@@ -19,5 +25,6 @@ void atender_cpu_int_signal(t_pcb* pcb);
 void atender_cpu_int_finalizar_proceso(t_pcb* pcb);
 void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion);
 void atender_cpu_io_stdout_write(t_pcb* pcb, t_instruccion* instruccion);
+int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion);
 
 #endif /*ATENDER_CPU_H*/

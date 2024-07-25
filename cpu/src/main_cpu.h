@@ -64,7 +64,7 @@ int CANTIDAD_ENTRADAS_TLB;
 char* ALGORITMO_TLB;
 
 int pid;
-int program_counter;
+// int program_counter;
 
 t_registros_cpu registros_cpu;
 

@@ -3,7 +3,7 @@
 typedef struct {
     t_pcb* pcb;
     t_instruccion* instruccion;
-} t_args_io_stdin_read;
+} t_args_io;
 
 static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion);
 static void _handshake_cliente_kernel(int socket, char* nombre_destino);
@@ -12,12 +12,19 @@ static void _gestionar_nueva_interfaz(void *void_args);
 static void _atender_peticiones_io(t_interfaz *interfaz);
 static void _agregar_a_lista_interfaces(t_interfaz *interfaz_nueva);
 
-static void* thread_atender_cpu_io_stdin_read(void* args) {
-    t_args_io_stdin_read* argumentos = (t_args_io_stdin_read*) args;
-    atender_cpu_io_stdin_read(argumentos->pcb, argumentos->instruccion);
-    free(argumentos);  
-    return NULL;
-}
+// static void* thread_atender_cpu_io_stdin_read(void* args) {
+//     t_args_io* argumentos = (t_args_io*) args;
+//     atender_cpu_io_stdin_read(argumentos->pcb, argumentos->instruccion);
+//     free(argumentos);  
+//     return NULL;
+// }
+
+// static void* thread_atender_cpu_io_stdin_write(void* args) {
+//     t_args_io* argumentos = (t_args_io*) args;
+//     atender_cpu_io_stdout_write(argumentos->pcb, argumentos->instruccion);
+//     free(argumentos);  
+//     return NULL;
+// }
 
 void init_conexiones(){
 	socket_servidor_io = iniciar_servidor(PUERTO_ESCUCHA);
@@ -157,33 +164,33 @@ void atender_peticiones_memoria(){
 /*----------------------Dispatch---------------------------------------------------*/
 void atender_peticiones_dispatch(){
 	while(1){
-		log_info(logger_kernel,"[atender_peticiones_dispatch]");
+		// log_info(logger_kernel,"[atender_peticiones_dispatch]");
 		int cod_op = recibir_operacion(socket_dispatch);
-		log_info(logger_kernel,"[atender_peticiones_dispatch] - recibir_operacion");
+		// log_info(logger_kernel,"[atender_peticiones_dispatch] - recibir_operacion");
 		// //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: Recibi operacion"));
 		switch (cod_op) {
 			case CONTEXTO_EJECUCION:
-				log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION");
+				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION");
 				// log_info(logger_kernel,"[ATENDER DISPATCH]:CONTEXTO_EJECUCION]");
 		        // //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: CONTEXTO_EJECUCION"));
 				int motivo;
 				t_instruccion* instrucciones=malloc(sizeof(t_instruccion));
 				instrucciones->parametros =list_create();
 				_recibir_contexto_cpu(proceso_exec, &motivo, instrucciones);	
-				log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - _recibir_contexto_cpu");
+				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - _recibir_contexto_cpu");
 
 				pthread_mutex_lock(&mutex_finalizar_proceso);
 				if(proceso_finalizando && (motivo != INT_FINALIZAR_PROCESO)){
 					// log_info(logger_kernel,"[ATENDER DISPATCH]:Recibi operacion pero estoy esperando FINALIZAR_PROCESO");
-					log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");
+					// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");
 					pthread_mutex_unlock(&mutex_finalizar_proceso);	
 					continue;	
 				}
 				pthread_mutex_unlock(&mutex_finalizar_proceso);		
-				log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");		
+				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");		
 				switch(motivo){
 					case INT_FINALIZAR_PROCESO:	
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_FINALIZAR_PROCESO");	
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_FINALIZAR_PROCESO");	
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_FINALIZAR_PROCESO", proceso_exec->pid);
 						atender_cpu_int_finalizar_proceso(proceso_exec);
 						pthread_mutex_lock(&mutex_finalizar_proceso);
@@ -191,72 +198,75 @@ void atender_peticiones_dispatch(){
         				pthread_mutex_unlock(&mutex_finalizar_proceso);
 						break;
 					case PAGE_FAULT:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - PAGE_FAULT");	
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - PAGE_FAULT");	
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_exit(proceso_exec,"PAGE_FAULT");
 						break;
 					case OUT_OF_MEMORY:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - OUT_OF_MEMORY");	
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - OUT_OF_MEMORY");	
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_exit(proceso_exec,"OUT_OF_MEMORY");
 						break;
 					case EXIT:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - EXIT");	
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - EXIT");	
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - EXIT", proceso_exec->pid));						
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_exit(proceso_exec,"SUCCESS");
 						break;
 					case IO_GEN_SLEEP:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_GEN_SLEEP");	
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_GEN_SLEEP");	
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid);
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_gen_sleep(proceso_exec,instrucciones);
 						break;
 					case IO_STDIN_READ:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_STDIN_READ");
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_STDIN_READ");
 						sem_post(&sem_pcb_desalojado);
-						// atender_cpu_io_stdin_read(proceso_exec,instrucciones);
+						// // Preparar los argumentos para el hilo
+						// t_args_io* argumentos = malloc(sizeof(t_args_io));
+						// argumentos->pcb = proceso_exec;
+						// argumentos->instruccion = instrucciones;	
+						// // Crear y lanzar el hilo					
+						// pthread_t hilo_io_stdin_read;
+						// pthread_create(&hilo_io_stdin_read, NULL, thread_atender_cpu_io_stdin_read, (void*) argumentos);
+						// pthread_detach(hilo_io_stdin_read);	
+						// sem_wait(&s_pedido_io_enviado);		
+						if(preparar_enviar_solicitud_io(proceso_exec, instrucciones) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
+						break;
 
-						// Preparar los argumentos para el hilo
-						t_args_io_stdin_read* argumentos = malloc(sizeof(t_args_io_stdin_read));
-						argumentos->pcb = proceso_exec;
-						argumentos->instruccion = instrucciones;	
-						// Crear y lanzar el hilo					
-						pthread_t hilo_io_stdin_read;
-						pthread_create(&hilo_io_stdin_read, NULL, thread_atender_cpu_io_stdin_read, (void*) argumentos);
-						pthread_detach(hilo_io_stdin_read);	
-
-						sem_wait(&s_pedido_io_enviado);									
 						break;
 					case IO_STDOUT_WRITE:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_STDOUT_WRITE");
-						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_STDOUT_WRITE", proceso_exec->pid);
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_STDOUT_WRITE");
 						sem_post(&sem_pcb_desalojado);
-						atender_cpu_io_stdout_write(proceso_exec,instrucciones);
+						if(preparar_enviar_solicitud_io(proceso_exec, instrucciones) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
 						break;
 					case FIN_QUANTUM:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - FIN_QUANTUM");
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - FIN_QUANTUM");
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid));
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_fin_quantum(proceso_exec);
 						break;
 					case WAIT:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - WAIT");
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - WAIT");
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - WAIT", proceso_exec->pid);
 						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - WAIT", proceso_exec->pid));
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_wait(proceso_exec,instrucciones);
 						break;
 					case SIGNAL:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - SIGNAL");
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - SIGNAL");
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - SIGNAL", proceso_exec->pid);
 						//sem_post(&sem_pcb_desalojado); //no se desaloja
 						atender_cpu_signal(proceso_exec,obtener_recurso(list_get(instrucciones->parametros, 0)));
 						break;
 					case INT_SIGNAL:
-						log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_SIGNAL");
+						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_SIGNAL");
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_SIGNAL", proceso_exec->pid);
 						atender_cpu_int_signal(proceso_exec);
 						break;
@@ -285,23 +295,23 @@ void atender_peticiones_interrupt(){
 
 /*GENERICAS*/
 static void _atender_peticiones_io(t_interfaz *interfaz){
-		log_info(logger_kernel,"[_atender_peticiones_io]");
+		// log_info(logger_kernel,"[_atender_peticiones_io]");
 		while(1){
     		// //log_protegido_kernel(string_from_format("[ATENDER INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 			int cod_op = recibir_operacion(interfaz->socket);
-			log_info(logger_kernel,"[_atender_peticiones_io] - recibir_operacion");
+			// log_info(logger_kernel,"[_atender_peticiones_io] - recibir_operacion");
 			int size_temp =0;
 			void* buffer_temp;
 			switch (cod_op){
 				case IO_GEN_SLEEP:	    
-					log_info(logger_kernel,"[_atender_peticiones_io] - IO_GEN_SLEEP");
+					// log_info(logger_kernel,"[_atender_peticiones_io] - IO_GEN_SLEEP");
     				// log_info(logger_kernel,"[ATENDER PETICION IO GEN]: SLEEP TERMINADO ");
 					t_pedido_sleep* pedido = list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido->semaforo_pedido_ok);
 					//free(pedido);
 					break;
 				case IO_STDIN_READ:
-					log_info(logger_kernel,"[_atender_peticiones_io] - IO_STDIN_READ");
+					// log_info(logger_kernel,"[_atender_peticiones_io] - IO_STDIN_READ");
 					// log_info(logger_kernel,"[ATENDER PETICION IO GEN]: IO_STDIN_READ TERMINADO ");
 					size_temp =0;
 					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
@@ -310,7 +320,7 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					sem_post(&pedido_stdin->semaforo_pedido_ok);
 					break;
 				case IO_STDOUT_WRITE:
-					log_info(logger_kernel,"[_atender_peticiones_io] - IO_STDOUT_WRITE");
+					// log_info(logger_kernel,"[_atender_peticiones_io] - IO_STDOUT_WRITE");
 					// log_info(logger_kernel,"[ATENDER PETICION IO GEN]: IO_STDOUT_WRITE TERMINADO ");
 					size_temp =0;
 					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
@@ -319,7 +329,7 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					sem_post(&pedido_stdiout->semaforo_pedido_ok);
 					break;
 				case -1:
-					log_info(logger_kernel,"[_atender_peticiones_io] - -1");
+					// log_info(logger_kernel,"[_atender_peticiones_io] - -1");
 					// log_info(logger_kernel,"[ATENDER PETICION IO GEN]: INTERFAZ <%s> DESCONECTADA",interfaz->nombre_io);
 					desconectar_interfaz(interfaz);
 					pthread_exit(NULL);
@@ -406,15 +416,14 @@ static void _handshake_cliente_kernel(int socket, char* nombre_destino){
 
 /*----------------------Dispatch---------------------------------------------------*/
 static void _recibir_contexto_cpu(t_pcb *pcb, int* motivo, t_instruccion* instruccion){
-		log_info(logger_kernel,"[_recibir_contexto_cpu]");
-		// //log_protegido_kernel(string_from_format("[_recibir_contexto_cpu]"));
+		//log_info(logger_kernel,"[_recibir_contexto_cpu]");
 		int size;
 		void* buffer = recibir_buffer(&size, socket_dispatch);
 		int desplazamiento = 0;		
 		memcpy(&(pcb->pid), buffer + desplazamiento, sizeof(int));
 		desplazamiento += sizeof(int);
-		memcpy(&(pcb->program_counter), buffer + desplazamiento, sizeof(int));
-		desplazamiento += sizeof(int);
+		// memcpy(&(pcb->program_counter), buffer + desplazamiento, sizeof(int));
+		// desplazamiento += sizeof(int);
 		//Registros CPU
 		memcpy(&(pcb->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
 		desplazamiento += sizeof(uint8_t);
@@ -471,6 +480,19 @@ void envio_interrupcion(int pid, int motivo){
 }
 
 void desconectar_interfaz(t_interfaz* interfaz){
+	//elimino de la lista lista_interfaz_socket	
+	pthread_mutex_lock(&mutex_lista_interfaz);
+	list_remove_element(lista_interfaz_socket, interfaz);
+	pthread_mutex_unlock(&mutex_lista_interfaz);
+
+	pthread_mutex_lock(&mutex_plan_blocked);
+	for(int i = 0; i < list_size(interfaz->cola_procesos); i++){
+		t_pcb* pcb_desbloqueado = list_remove(interfaz->cola_procesos, 0);
+		list_remove_element(lista_plan_blocked, pcb_desbloqueado);
+		mover_proceso_a_ready(pcb_desbloqueado);
+	}
+	pthread_mutex_unlock(&mutex_plan_blocked);
+
 	close(interfaz->socket);
 	list_destroy_and_destroy_elements(interfaz->cola_procesos,free);
 	free(interfaz->nombre_io);

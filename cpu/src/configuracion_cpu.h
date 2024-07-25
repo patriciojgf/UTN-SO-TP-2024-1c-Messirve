@@ -86,7 +86,7 @@ typedef struct config_cpu
 
 typedef struct{
     int pid; // Identificador del proceso.
-    int program_counter; // Número de la próxima instrucción a ejecutar.
+    // int program_counter; // Número de la próxima instrucción a ejecutar.
     t_registros_cpu registros_cpu; // Registros de la CPU.
 } t_contexto;
 

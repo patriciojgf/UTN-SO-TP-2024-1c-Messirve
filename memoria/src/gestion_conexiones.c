@@ -229,6 +229,7 @@ static void atender_peticiones_cpu(void *void_args){
                 usleep(RETARDO_RESPUESTA * 1000);
                 //atender_fetch_instruccion(pid,PC);
                 //t_proceso* proceso = get_proceso_memoria(pid);
+                // char* instruccion = get_instruccion_proceso(get_proceso_memoria(pid),PC);
                 char* instruccion = get_instruccion_proceso(get_proceso_memoria(pid),PC);
                 t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION_RESPUESTA);
                 agregar_a_paquete(paquete, instruccion, strlen(instruccion)+1);
