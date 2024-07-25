@@ -245,6 +245,21 @@ void atender_peticiones_dispatch(){
 							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
 						}
 						break;
+					case IO_FS_CREATE:
+						sem_post(&sem_pcb_desalojado);
+						break;
+					case IO_FS_DELETE:
+						sem_post(&sem_pcb_desalojado);
+						break;
+					case IO_FS_TRUNCATE:
+						sem_post(&sem_pcb_desalojado);
+						break;
+					case IO_FS_WRITE:
+						sem_post(&sem_pcb_desalojado);
+						break;
+					case IO_FS_READ:
+						sem_post(&sem_pcb_desalojado);
+						break;
 					case FIN_QUANTUM:
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - FIN_QUANTUM");
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);

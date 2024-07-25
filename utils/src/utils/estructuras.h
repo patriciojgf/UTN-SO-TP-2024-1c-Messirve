@@ -97,6 +97,19 @@ typedef struct {
     t_dato_memoria* datos_memoria;
 } t_solicitud_io;
 
+typedef struct {
+    int pid;
+    char* nombre_archivo;
+    int bytes;
+} t_solicitud_fs;
+
+typedef struct {
+    int pid;
+    char* nombre_archivo;
+    int tamanio_maximo;
+    int puntero_archivo;
+    t_list* solicitudes;
+} t_solicitud_rw_fs;
 
 /*IO READ - FIN*/
 
