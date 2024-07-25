@@ -6,6 +6,7 @@
 #include "init_estructuras.h"
 #include "mem_estructuras.h"
 #include "proceso.h"
+#include "gestion_mem_usuario.h"
 
 void init_conexiones();
 void gestionar_conexiones_entrantes();

@@ -1,0 +1,11 @@
+#!/bin/bash
+FILE=bin/entradasalida
+CONFIG_FILE=${1:-./cfg/SLP1.config}
+NOMBRE_INTERFAZ=${2:-SLP1}
+
+make clean all
+make
+
+if test -f "./$FILE"; then
+    ./$FILE "$CONFIG_FILE" "$NOMBRE_INTERFAZ"
+fi

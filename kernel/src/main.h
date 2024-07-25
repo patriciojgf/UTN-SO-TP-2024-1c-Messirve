@@ -74,6 +74,7 @@ t_list* lista_interfaz_socket;
 sem_t sem_multiprogramacion;
 sem_t s_init_proceso_a_memoria, s_memoria_liberada_pcb;
 sem_t sem_pcb_desalojado;
+sem_t s_pedido_io_enviado;
 sem_t sem_plan_exec_libre;
 sem_t sem_plan_ready;
 sem_t sem_plan_new;

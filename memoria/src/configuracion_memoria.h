@@ -39,6 +39,11 @@ extern t_list* lista_procesos_en_memoria;
 extern t_list* lista_instrucciones;
 extern t_list* lista_interfaz_socket;
 
+
+// manejo de memoria
+extern t_list* listado_marcos;
+extern void* memoria_espacio_usuario;
+
 ////----mutex
 extern pthread_mutex_t mutex_lista_interfaz;
 

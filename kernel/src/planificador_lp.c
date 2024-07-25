@@ -6,7 +6,6 @@
 // Función para mover PCB a READY
 // Se usa en el planificador LP y cuando los procesos se desbloqueen
 void mover_proceso_a_ready(t_pcb* pcb) {
-        log_info(logger_kernel, "mover_proceso_a_ready");
         check_detener_planificador();
         pcb->estado_anterior = pcb->estado_actual;
         pcb->estado_actual = estado_READY;
@@ -106,7 +105,6 @@ void planificador_lp_new_ready() {
         sem_wait(&sem_plan_new);            // Esperar a que haya nuevos procesos en la cola NEW.
         sem_wait(&sem_multiprogramacion);   // Esperar a que haya capacidad bajo el límite de multiprogramación.
         check_detener_planificador();       // Verificar si la planificación debe pausarse.
-        log_warning(logger_kernel, "planificador_lp_new_ready");
 
         // pthread_mutex_lock(&mutex_procesos_planificados); // Bloquear el mutex de procesos planificados.
         pthread_mutex_lock(&mutex_plan_new); // Bloquear el mutex de la lista NEW.
@@ -135,7 +133,6 @@ void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb) {
         pthread_mutex_lock(&mutex_plan_new);
         list_add(lista_plan_new, nuevo_pcb);
         nuevo_pcb->estado_actual = estado_NEW;
-        log_info(logger_kernel, "Se crea el proceso %d en NEW", nuevo_pcb->pid);
         sem_post(&sem_plan_new);
         pthread_mutex_unlock(&mutex_plan_new);
 
@@ -146,7 +143,6 @@ void planificador_lp_nuevo_proceso(t_pcb* nuevo_pcb) {
 }
 
 void enviar_proceso_a_memoria(t_pcb* pcb, char* path){
-    log_info(logger_kernel, "enviar_proceso_a_memoria");
     t_paquete* paquete_a_enviar = crear_paquete(INICIAR_PROCESO_MEMORIA);
     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(pcb->pid),sizeof(int));
     agregar_a_paquete(paquete_a_enviar,path,strlen(path)+1);
@@ -207,14 +203,13 @@ void liberar_recursos_pcb(t_pcb* pcb){
     }
     pthread_mutex_unlock(&mutex_lista_recursos);
 
-    log_info(logger_kernel,"liberar_recursos_pcb");  
+    // log_info(logger_kernel,"liberar_recursos_pcb");  
     // Liberar cualquier recurso que realmente haya sido asignado al PCB.
     while (!list_is_empty(pcb->recursos_asignados)) {
-        log_info(logger_kernel,"(!list_is_empty(pcb->recursos_asignados))");  
+        // log_info(logger_kernel,"(!list_is_empty(pcb->recursos_asignados))");  
         t_recurso* recurso_asignado = list_remove(pcb->recursos_asignados, 0);
         atender_cpu_signal(pcb, recurso_asignado); 
     }
-    log_info(logger_kernel,"(list_destroy))");  
     list_destroy(pcb->recursos_asignados);
     pcb->recursos_asignados = NULL; // Asegurar que la referencia en el PCB no apunte a una lista ya destruida.
 

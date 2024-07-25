@@ -34,13 +34,26 @@ static void iniciar_estructuras(){
     lista_procesos_en_memoria = list_create();
 }
 
-static void iniciar_espacio_de_usuario()
+static void iniciar_memoria_usuario()
 {
     memoria_espacio_usuario = malloc(TAM_MEMORIA);
-    if(memoria_espacio_usuario == NULL)
+	if(memoria_espacio_usuario == NULL)
     {
-        error_show("Se produjo un error al iniciar espacio_usuario");
-        exit(1);
+			log_error(logger_memoria, "Fallo Malloc");
+	    	exit(1);
+	}
+
+    int cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
+    log_info(logger_memoria, "Cantidad de marcos: %d", cantidad_marcos);
+    listado_marcos = list_create();
+    for(int i = 0; i < cantidad_marcos; i++)
+    {
+        t_marco* marcos = malloc(sizeof(t_marco));
+        marcos->id = i;
+        marcos->pid = -1;
+        marcos->pagina_asignada = -1;
+        marcos->bit_de_uso = 0;
+        list_add(listado_marcos, marcos);
     }
 }
 
@@ -105,4 +118,5 @@ void init_memoria(char* path_config)
     iniciar_espacio_de_usuario();
     // iniciar_tabla_de_pagina();
     iniciar_mutex();
+    iniciar_memoria_usuario();
 }

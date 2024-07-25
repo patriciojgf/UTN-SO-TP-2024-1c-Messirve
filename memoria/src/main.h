@@ -6,7 +6,6 @@
 
 #include "mem_estructuras.h"
 #include "gestion_conexiones.h"
-#include "atender_cpu.h"
 #include "proceso.h"
 
 //semaforos
@@ -47,6 +46,7 @@ pthread_mutex_t mutex_lista_interfaz;
 
 /*----MEMORIA USUARIO-------------*/
 void *memoria_espacio_usuario;
+t_list* listado_marcos;
 
 int conectarKernel(int* socket_kernel);
 int conectarCpu(int* socket_cpu);

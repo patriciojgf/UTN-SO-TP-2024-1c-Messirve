@@ -57,7 +57,7 @@ typedef enum
 	// EJECUTAR_SCRIPT,
 	FETCH_INSTRUCCION,
 	FETCH_INSTRUCCION_RESPUESTA,
-	HELPER,
+	//HELPER,
 	NUEVA_IO,
 /*MENSAJES - KERNEL-MEMORIA - INICIO*/
 	INICIAR_PROCESO_MEMORIA,
@@ -70,6 +70,12 @@ typedef enum
 	TAMANIO_PAGINA,
 	ENVIAR_MARCO,
 /*MENSAJES - CPU-MEMORIA - FIN*/
+
+/*MENSAJES - CPU-MEMRIA -INICIO*/
+	PEDIDO_MARCO,
+	LEER_MEMORIA,
+	ESCRIBIR_MEMORIA,
+/*MENSAJES - CPU-MEMRIA -FIN*/
 
 /*INSTRUCCIONES - INICIO*/
 	NO_RECONOCIDO,
@@ -94,7 +100,9 @@ typedef enum
 	EXIT,
 	FIN_QUANTUM,
 	INT_SIGNAL,
-	INT_FINALIZAR_PROCESO
+	INT_FINALIZAR_PROCESO,
+	PAGE_FAULT,
+	OUT_OF_MEMORY
 /*INSTRUCCIONES - FIN*/
     /*agregar el resto*/
 }op_code;
@@ -184,7 +192,8 @@ t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud, int motivo);
 void enviar_solicitud_io(int socket, t_solicitud_io* solicitud, int motivo);
 t_solicitud_io* recibir_solicitud_io(int socket);
 t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud);
-void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, uint32_t direccion_fisica);
+void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, int size_dato, uint32_t direccion_fisica);
 void eliminar_pedido_memoria(t_solicitud_io* solicitud) ;
 void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text);
+void liberar_solicitud_io(t_solicitud_io* solicitud);
 #endif /* CONEXIONES_H_ */
