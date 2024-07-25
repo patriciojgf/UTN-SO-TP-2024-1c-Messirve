@@ -39,14 +39,19 @@ void planificador_cp(){
     proceso_exec = NULL;
     //log_protegido_kernel(string_from_format("[planificador_cp]"));
     while(1){
+        // log_info(logger_kernel,"planificador_cp: while");
         sem_wait(&sem_plan_ready);
+        // log_info(logger_kernel,"planificador_cp: sem_plan_ready");
         sem_wait(&sem_plan_exec_libre); //espero que haya lugar para ejecutar     
+        // log_info(logger_kernel,"planificador_cp: sem_plan_exec_libre");
         
         //verifico si la planificacion esta activa.
         check_detener_planificador();
 
-        pthread_mutex_lock(&mutex_plan_ready);
+        pthread_mutex_lock(&mutex_plan_ready);    
+        // log_info(logger_kernel,"planificador_cp: mutex_plan_ready");
         pthread_mutex_lock(&mutex_plan_ready_vrr);
+        // log_info(logger_kernel,"planificador_cp: mutex_plan_ready_vrr");
         if(!list_is_empty(lista_plan_ready) || !list_is_empty(lista_plan_ready_vrr)){   
             pthread_mutex_lock(&mutex_plan_exec); //bloqueo el acceso al proceso_exec hasta que quede planificado el nuevo
             if(proceso_exec==NULL){
@@ -159,7 +164,7 @@ static void _quantum_wait(t_pcb* pcb){
 static void _esperar_liberar_quantum(t_pcb* pcb){
     pthread_create(&hilo_esperar_quantum, NULL, (void*)_quantum_wait, pcb);
     pthread_detach(hilo_esperar_quantum);
-
+    log_info(logger_kernel,"_esperar_liberar_quantum");
     sem_wait(&sem_pcb_desalojado);
     pthread_cancel(hilo_esperar_quantum);
 }

@@ -5,8 +5,6 @@ static void _handshake_cliente_memoria(int socket, char* nombre_destino);
 static void _recibir_nuevo_contexto(int socket);
 // static int _get_retardo();
 
-
-
 // --------------------------------------------------------------------------//
 // ------------- CONEXIONES E HILOS -----------------------------------------//
 // --------------------------------------------------------------------------//
@@ -80,7 +78,7 @@ void atender_peticiones_interrupt(){
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
                 pthread_mutex_lock(&mutex_ejecucion_proceso);
 
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
                 motivo_interrupt=INT_FINALIZAR_PROCESO;
@@ -122,7 +120,7 @@ void atender_peticiones_interrupt(){
                 pthread_detach(hilo_llego_interrupcion_f_q);       
 
 		        pthread_mutex_lock(&mutex_ejecucion_proceso);
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 log_warning(logger_cpu,"fin de quantum");
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- QUANTUM ----");
                 size=0;
@@ -146,7 +144,7 @@ void atender_peticiones_interrupt(){
 		        pthread_mutex_unlock(&mutex_ejecucion_proceso);
                 break;
             case INT_SIGNAL:
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 log_warning(logger_cpu,"int SIGNAL");
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
@@ -186,12 +184,12 @@ void atender_peticiones_dispatch(){
             case PCB:
                 //log_info(logger_cpu,"[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----");
                 _recibir_nuevo_contexto(socket_cliente_dispatch);
-                log_info(logger_cpu,"[ATENDER DISPATCH]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER DISPATCH]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 flag_ejecucion = true;             
                 ejecutar_proceso(); 
                 break;
             case SIGNAL:
-                log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 void*  buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
                 sem_post(&s_signal_kernel);
 				free(buffer_recibido);
@@ -207,17 +205,26 @@ void atender_peticiones_memoria(){
     while(1){
         //log_info(logger_cpu,"[ATENDER MEMORIA]: ---- ESPERANDO OPERACION ----");
         int cod_op = recibir_operacion(socket_memoria);
+        int size, tam_inst, desplazamiento;
+        size = 0;
+        tam_inst = 0;
+        desplazamiento = 0;
+        void *buffer;
         //log_info(logger_cpu,"[ATENDER MEMORIA]: ---- COD OP ----");
         switch(cod_op){
             case FETCH_INSTRUCCION_RESPUESTA:
-                log_info(logger_cpu,"[ATENDER MEMORIA]: -- FETCH_INSTRUCCION_RESPUESTA -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- FETCH_INSTRUCCION_RESPUESTA -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 if (instruccion_actual != NULL) {
                     free(instruccion_actual);
                     instruccion_actual = NULL;
                 }
-                int size, tam_inst, desplazamiento = 0;
-                void *buffer = recibir_buffer(&size, socket_memoria);
-                memcpy(&tam_inst,buffer +desplazamiento, sizeof(int));;
+                buffer = recibir_buffer(&size, socket_memoria);
+                if (buffer == NULL) {
+                    log_error(logger_cpu, "Error al recibir buffer");
+                    break;
+                }
+                
+                memcpy(&tam_inst,buffer +desplazamiento, sizeof(int));
                 desplazamiento+=sizeof(int);
                 instruccion_actual = malloc(tam_inst+1); 
                 memcpy(instruccion_actual, buffer + desplazamiento, tam_inst);
@@ -231,9 +238,52 @@ void atender_peticiones_memoria(){
                 TAM_PAG = tam_pag;
                 log_protegido_cpu(string_from_format("TAM_PAG: %d", TAM_PAG));
             break;
+            case PEDIDO_MARCO:
+                respuesta_memoria=-1;
+                int marco_recibido=-1;                
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA PEDIDO_MARCO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                buffer = recibir_buffer(&size, socket_memoria);
+                memcpy(&marco_recibido, buffer + desplazamiento, sizeof(int));
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA PEDIDO_MARCO -- PID <%d> - PC<%d> - MARCO <%d>",contexto_cpu->pid,contexto_cpu->program_counter,marco_recibido);
+                respuesta_memoria=marco_recibido;
+                sem_post(&s_pedido_marco);
+                free(buffer);
+                break;
+            case LEER_MEMORIA:
+                respuesta_memoria_char = NULL;
+                int size_char_recibido = 0;
+
+                buffer = recibir_buffer(&size, socket_memoria);
+                memcpy(&(size_char_recibido), buffer, sizeof(int));
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA LEER_MEMORIA -- PID <%d> - PC<%d> - SIZE <%d>",contexto_cpu->pid,contexto_cpu->program_counter,size_char_recibido);
+                desplazamiento += sizeof(int);
+
+                respuesta_memoria_char=malloc(size_char_recibido+1);
+                memcpy(respuesta_memoria_char, buffer + desplazamiento, size_char_recibido);
+                respuesta_memoria_char[size_char_recibido] = '\0'; 
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA LEER_MEMORIA -- PID <%d> - PC<%d> - CONTENIDO <%s>",contexto_cpu->pid,contexto_cpu->program_counter,respuesta_memoria_char);
+                sem_post(&s_pedido_lectura_m);
+                free(buffer);
+                break;
+            case ESCRIBIR_MEMORIA:
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA ESCRIBIR_MEMORIA -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                buffer = recibir_buffer(&size, socket_memoria);
+                free(buffer);
+                sem_post(&s_pedido_escritura_m);
+                break;            
+            case RESIZE:
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
+                buffer = recibir_buffer(&size, socket_memoria);
+                memcpy(&respuesta_memoria, buffer, sizeof(int));
+                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d> - RESPUESTA <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC, respuesta_memoria);
+                sem_post(&s_resize);
+                free(buffer);
+                break;
             case -1:
                 log_error(logger_cpu,"Se desconecto MEMORIA");
                 exit(EXIT_FAILURE);
+                free(buffer);
+                break;
             default:
                 log_error(logger_cpu, "[atender_peticiones_memoria]: cod_op no identificado <%d>",cod_op);
                 exit(EXIT_FAILURE);
@@ -255,7 +305,9 @@ static void _handshake_cliente_memoria(int socket, char* nombre_destino){
     int resultado_hs = handshake_cliente(HANDSHAKE_CPU,socket);
     switch(resultado_hs){
         case HANDSHAKE_OK:
-            ////log_info(logger_cpu,"[GESTION CONEXIONES]: Handshake con %s: OK\n", nombre_destino));
+            //Recibo el tamaño de pagina
+            recv(socket, &tamanio_pagina, sizeof(int), MSG_WAITALL);
+            log_info(logger_cpu,"[GESTION CONEXIONES]: Handshake con %s: OK, tamaño de pagina %d \n", nombre_destino,tamanio_pagina);
             break;
         default:
             log_error(logger_cpu, "ERROR EN HANDSHAKE: Operacion N* %d desconocida\n", resultado_hs);
@@ -278,8 +330,8 @@ static void _recibir_nuevo_contexto(int socket){
     int desplazamiento = 0;
     memcpy(&(contexto_cpu->pid), buffer + desplazamiento, sizeof(int));
     desplazamiento += sizeof(int);
-    memcpy(&(contexto_cpu->program_counter), buffer + desplazamiento, sizeof(uint32_t));
-    desplazamiento += sizeof(uint32_t);
+    // memcpy(&(contexto_cpu->program_counter), buffer + desplazamiento, sizeof(uint32_t));
+    // desplazamiento += sizeof(uint32_t);
     memcpy(&(contexto_cpu->registros_cpu.AX), buffer + desplazamiento, sizeof(uint8_t));
     desplazamiento += sizeof(uint8_t);
     memcpy(&(contexto_cpu->registros_cpu.BX), buffer + desplazamiento, sizeof(uint8_t));

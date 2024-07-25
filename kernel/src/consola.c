@@ -1,6 +1,6 @@
 #include <consola.h>
 
-static void ejecutar_script(const char* path);
+static void ejecutar_script(char* path);
 
 static void listar_los_pid_por_lista(){
     log_info(logger_kernel, "!------------------------!");
@@ -25,7 +25,7 @@ static void listar_los_pid_por_lista(){
 
 static void _detener_planificacion(){
     if(planificacion_detenida == 1){
-        log_info(logger_kernel, "DETENER_PLANIFICACION ya se encuentra activo");
+        // log_info(logger_kernel, "DETENER_PLANIFICACION ya se encuentra activo");
     }
     else{
         planificacion_detenida = 1;
@@ -35,12 +35,12 @@ static void _detener_planificacion(){
 
 static void _iniciar_planificacion(){
     if(planificacion_detenida == 0){
-        log_info(logger_kernel, "INICIAR_PLANIFICACION ya se encuentra activo");
+        // log_info(logger_kernel, "INICIAR_PLANIFICACION ya se encuentra activo");
     }
     else{
         planificacion_detenida = 0;
         sem_post(&sem_planificacion_activa);
-        log_info(logger_kernel, "_iniciar_planificacion:sem_planificacion_activa");
+        // log_info(logger_kernel, "_iniciar_planificacion:sem_planificacion_activa");
     }    
 }
 
@@ -129,7 +129,7 @@ static void _ejecutar_comando_validado(char* leido) {
         }
         case INICIAR_PROCESO: {
             t_pcb* pcb_inicializado = crear_pcb(comando_consola[1]);
-            log_info(logger_kernel, "El id del pcb es: %d", pcb_inicializado->pid);
+            // log_info(logger_kernel, "El id del pcb es: %d", pcb_inicializado->pid);
             pthread_t hilo_iniciar_proceso;
             pthread_create(&hilo_iniciar_proceso, NULL, (void*)planificador_lp_nuevo_proceso, pcb_inicializado);
             pthread_detach(hilo_iniciar_proceso);
@@ -161,9 +161,10 @@ static void _ejecutar_comando_validado(char* leido) {
             listar_los_pid_por_lista();    
             break;
         }
-        case HELPER:
+        case HELPER:{
             _help(); 
-            break;
+            break;            
+        }
         default:
             log_warning(logger_kernel, "Operación no soportada.");
             break;
@@ -173,6 +174,7 @@ static void _ejecutar_comando_validado(char* leido) {
 }
 
 void procesar_comandos_consola() {
+    _iniciar_planificacion();
     // Leer el primer comando.
     char* leido = readline("> ");
     // Continuar leyendo mientras la línea no esté vacía.
@@ -211,8 +213,10 @@ void cambiar_multiprogramacion(int nuevo_grado_mult)
     pthread_mutex_unlock(&mutex_grado_multiprogramacion);  // Liberar el mutex
 }
 
-static void ejecutar_script(const char* path) {
-    FILE* archivo = fopen(path, "r");
+static void ejecutar_script(char* path) {
+    char path_completo[30] = "./scripts/";
+    strcat(path_completo, path);
+    FILE* archivo = fopen(path_completo, "r");
     if (!archivo) {
         log_error(logger_kernel, "No se pudo abrir el archivo de script: %s", path);
         return;

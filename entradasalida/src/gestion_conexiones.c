@@ -1,7 +1,7 @@
 #include "gestion_conexiones.h"
 
 static void _handshake_cliente(int socket, char* nombre_destino);
-static void _atender_peticiones_memoria();
+// static void _atender_peticiones_memoria();
 static void _atender_peticiones_kernel();
 static void _identifico_nombre(int socket);
 static void _lectura_consola(int size_lectura, char* buffer);
@@ -60,27 +60,27 @@ void gestionar_conexion_kernel(){
 // ------------- FUNCIONES DE LOGICA POR MODULO------------------------------//
 // --------------------------------------------------------------------------//
 
-static void _atender_peticiones_memoria(){
-    while(1){
-        int cod_op = recibir_operacion(socket_cliente_memoria);
-        switch(cod_op){
-            case MENSAJE:
-                recibir_mensaje(socket_cliente_memoria, logger_io);
-                break;
-            case IO_STDIN_READ:           
-                sem_post(&sem_io_stdin_read_ok);
-                break;
-            case -1:
-                log_error(logger_io,"El MEMORIA se desconecto");
-                // break;
-                exit(EXIT_FAILURE);
-            default:
-                log_warning(logger_io, "Memoria: Operacion desconocida.");
-                // break;
-                exit(EXIT_FAILURE);
-        }
-    }
-}
+// static void _atender_peticiones_memoria(){
+//     while(1){
+//         int cod_op = recibir_operacion(socket_cliente_memoria);
+//         switch(cod_op){
+//             case MENSAJE:
+//                 recibir_mensaje(socket_cliente_memoria, logger_io);
+//                 break;
+//             case IO_STDIN_READ:           
+//                 sem_post(&sem_io_stdin_read_ok);
+//                 break;
+//             case -1:
+//                 log_error(logger_io,"El MEMORIA se desconecto");
+//                 // break;
+//                 exit(EXIT_FAILURE);
+//             default:
+//                 log_warning(logger_io, "Memoria: Operacion desconocida.");
+//                 // break;
+//                 exit(EXIT_FAILURE);
+//         }
+//     }
+// }
 
 static void _atender_peticiones_kernel(){
     while(1){
@@ -106,6 +106,11 @@ static void _atender_peticiones_kernel(){
                 log_info(logger_io,"IO_STDOUT_WRITE: enviar_solicitud_io");
 
                 int cod_mensaje = recibir_operacion(socket_cliente_memoria);
+                if(cod_mensaje == -1){
+                    log_error(logger_io,"falla en conexion con memoria");
+                    liberar_solicitud_io(solicitud_recibida_kernel);
+                    continue;
+                }
                 int size_mensaje =0;
                 void* buffer_mensaje = recibir_buffer(&size_mensaje, socket_cliente_memoria);
                 
@@ -125,7 +130,7 @@ static void _atender_peticiones_kernel(){
                 agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                 enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
                 eliminar_paquete(paquete_para_kernel);                                    
-
+                liberar_solicitud_io(solicitud_recibida_kernel);                
                 break;
 
             case IO_STDIN_READ:
@@ -145,20 +150,24 @@ static void _atender_peticiones_kernel(){
                 enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel,IO_STDIN_READ);
                 // Limpiar
                 free(input_text);
-
+                log_info(logger_io,"IO_STDIN_READ: solicitud enviada a memoria");
                 //espero handshake ok
                 int cod_hand = recibir_operacion(socket_cliente_memoria);
                 int size_temp =0;
                 void* buffer_temp = recibir_buffer(&size_temp, socket_cliente_memoria);
                 free(buffer_temp);
+                log_info(logger_io,"IO_STDIN_READ: handshake recibido de memoria");
                 //envio el ok a kernel
                 if (cod_hand == IO_STDIN_READ){                    
                     paquete_para_kernel = crear_paquete(IO_STDIN_READ);
                     agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                     enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
-                    eliminar_paquete(paquete_para_kernel);                   
+                    eliminar_paquete(paquete_para_kernel);     
+                    log_info(logger_io,"IO_STDIN_READ: handshake enviado a kernel");              
                 }
                 else{
+                    //liberar memoria de t_solicitud_io
+                    liberar_solicitud_io(solicitud_recibida_kernel);
                     log_error(logger_io,"falla en conexion con memoria");
                 }
                 break;

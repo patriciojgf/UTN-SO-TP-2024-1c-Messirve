@@ -20,9 +20,6 @@ static void iniciar_configuracion(char* config_path){
 
     if(strcmp(TIPO_INTERFAZ, "GENERICA") == 0){
         IP_MEMORIA = config_get_string_value(config_io, "IP_MEMORIA");
-        PUERTO_MEMORIA = config_get_string_value(config_io, "PUERTO_MEMORIA");
-        BLOCK_SIZE = atoi(config_get_string_value(config_io, "BLOCK_SIZE"));
-        BLOCK_COUNT = atoi(config_get_string_value(config_io, "BLOCK_COUNT"));
         IP_KERNEL = config_get_string_value(config_io, "IP_KERNEL");
         PUERTO_KERNEL = config_get_string_value(config_io, "PUERTO_KERNEL");
         TIEMPO_UNIDAD_TRABAJO = atoi(config_get_string_value(config_io, "TIEMPO_UNIDAD_TRABAJO"));

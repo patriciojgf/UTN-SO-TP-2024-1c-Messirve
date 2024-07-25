@@ -77,6 +77,7 @@ static void init_semaforos(){
     sem_init(&sem_plan_ready,0,0);
     sem_init(&sem_plan_new,0,0);
     sem_init(&sem_planificacion_activa,0,0);
+    sem_init(&s_pedido_io_enviado,0,0);
 }
 
 static void init_pthread_mutex(){
