@@ -202,7 +202,7 @@ static void _atender_peticiones_kernel(){
                 size=0;
                 void *buffer_delete = recibir_buffer(&size, socket_cliente_kernel);           
                 char* nombre_archivo_delete;
-                memcpy(&nombre_archivo_delete, buffer_create, sizeof(int));
+                memcpy(&nombre_archivo_delete, buffer_delete, sizeof(int));
                 log_info(logger_io, "[IO_FS_DELETE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
                 liberar_bloques_de_archivo(nombre_archivo_delete);
                 break;
@@ -218,21 +218,35 @@ static void _atender_peticiones_kernel(){
                 size=0;
                 void *buffer_truncate = recibir_buffer(&size, socket_cliente_kernel);           
                 char* nombre_archivo_truncate;
-                memcpy(&nombre_archivo_truncate, buffer_create, sizeof(int));
+                memcpy(&nombre_archivo_truncate, buffer_truncate, sizeof(int));
                 log_info(logger_io, "[IO_FS_TRUNCATE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
                 truncar_archivo(solicitud_recibida_kernel, nombre_archivo_truncate);
                 break;
             case IO_FS_WRITE:
-                log_info(logger_io, "Proximamente hace su magia...");
+                log_info(logger_io, "Iniciando [IO_FS_WRITE]");
                 usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                //se debería conectar con memoria para que haga su magia?
-                //params = leer_memoria();
-                //escribir_archivo(params);
+                //TODO: recibir estructura, crear estructura?
+                // leer_memoria();
+                size=0;
+                void *buffer_write = recibir_buffer(&size, socket_cliente_kernel);           
+                char* nombre_archivo_write;
+                memcpy(&nombre_archivo_write, buffer_write, sizeof(int));
+                void* datos = malloc(size); //TODO: cambiar al que corresponda
+                escribir_archivo(datos, nombre_archivo_write, 0, 0); //reemplazar puntero y tamaño
+                free(datos);
                 break;
             case IO_FS_READ:
-                log_info(logger_io, "Proximamente hace su magia...");
+                log_info(logger_io, "Iniciando [IO_FS_READ]");
                 usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                //se debería conectar con memoria para que haga su magia? 
+                //TODO: recibir estructura, crear estructura?
+                // leer_memoria();
+                size=0;
+                void *buffer_read = recibir_buffer(&size, socket_cliente_kernel);           
+                char* nombre_archivo_read;
+                memcpy(&nombre_archivo_read, buffer_read, sizeof(int));
+                void* datos_lectura = leer_archivo(nombre_archivo_read, 0, 0); //reemplazar puntero y tamaño
+                //escribir_memoria(params);
+                free(datos_lectura);
                 //void* data = leer_archivo_fs(params);
                 //escribir_memoria(data);
                 break;

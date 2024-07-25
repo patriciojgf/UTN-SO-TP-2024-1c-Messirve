@@ -187,6 +187,8 @@ bool crear_archivo_metadata(char* nombre_archivo, int bloque_inicial)
     //     log_error(logger_io, "Error al truncar el archivo de bitmap.");
     //     return false;
     // }
+    free(path);
+    config_destroy(metadata);
 
     return true;
 }

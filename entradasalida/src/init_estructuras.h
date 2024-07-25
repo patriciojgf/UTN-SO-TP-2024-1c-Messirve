@@ -4,6 +4,7 @@
 #include <commons/bitarray.h>
 #include <configuracion_io.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
 

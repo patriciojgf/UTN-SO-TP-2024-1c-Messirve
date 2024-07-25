@@ -1,11 +1,9 @@
 #include <dialfs.h>
 
 static void compactar(char* nombre_archivo);
-static void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio);
 static void ocupar_bloque(int index);
 static int obtener_bloques_libres(int inicio);
 static int obtener_bloques_ocupados(int inicio);
-static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio);
 static void liberar_bloque(int index);
 static bool se_puede_agrandar(int inicio, int bloques_a_actualizar);
 
@@ -53,14 +51,14 @@ int liberar_bloques_de_archivo(char* nombre_archivo)
 void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
 {
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
-    t_config* metada_aux = config_create(path); 
-    if(metada_aux == NULL)
+    t_config* metadata_aux = config_create(path); 
+    if(metadata_aux == NULL)
     {
         log_error(logger_io, "Error al leer archivo metadata.");
         return;
     }
-    int tamanio_archivo_aux = config_get_int_value(metada_aux, "TAMANIO_ARCHIVO");
-    int bloque_inicial_aux = config_get_int_value(metada_aux, "BLOQUE_INICIAL");
+    int tamanio_archivo_aux = config_get_int_value(metadata_aux, "TAMANIO_ARCHIVO");
+    int bloque_inicial_aux = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
 
     int bloques_actuales = ceil(((double)tamanio_archivo_aux) / BLOCK_SIZE);
     if(!bloques_actuales)
@@ -83,7 +81,7 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
         if(!se_puede_agrandar(inicio, bloques_a_actualizar))
         {
             log_info(logger_io, "Compatación hace su magia...");  
-            usleep(TIEMPO_UNIDAD_TRABAJO*1000);
+            usleep(RETRASO_COMPACTACION * 1000);
             compactar(nombre_archivo);
         }
 
@@ -110,14 +108,13 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
     }
 
     //actualizar metadata
-    config_set_value(metada_aux, "TAMANIO_ARCHIVO", string_itoa(nuevo_bloques));
+    config_set_value(metadata_aux, "TAMANIO_ARCHIVO", string_itoa(nuevo_bloques));
+    config_save(metadata_aux);
     free(path);
-    config_destroy(metada_aux);
+    config_destroy(metadata_aux);
 }
 
-/*************** FUNCIONES AUXILIARES *****************/
-
-static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
+void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
 {
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
@@ -133,7 +130,7 @@ static void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
     return datos;
 }
 
-static void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio)
+void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio)
 {
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
@@ -147,6 +144,8 @@ static void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int
     fclose(archivo);
     config_destroy(metadata_aux);
 }
+
+/*************** FUNCIONES AUXILIARES *****************/
 
 static void compactar(char* nombre_archivo)
 {
