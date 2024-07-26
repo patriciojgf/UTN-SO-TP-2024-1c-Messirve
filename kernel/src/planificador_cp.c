@@ -164,7 +164,7 @@ static void _quantum_wait(t_pcb* pcb){
 static void _esperar_liberar_quantum(t_pcb* pcb){
     pthread_create(&hilo_esperar_quantum, NULL, (void*)_quantum_wait, pcb);
     pthread_detach(hilo_esperar_quantum);
-    log_info(logger_kernel,"_esperar_liberar_quantum");
+    // log_info(logger_kernel,"_esperar_liberar_quantum");
     sem_wait(&sem_pcb_desalojado);
     pthread_cancel(hilo_esperar_quantum);
 }

@@ -2,23 +2,35 @@
 
 static void ejecutar_script(char* path);
 
-static void listar_los_pid_por_lista(){
+static void listar_los_pid_por_lista() {
+    char* pids_new = listado_pids(lista_plan_new);
+    char* pids_ready = listado_pids(lista_plan_ready);
+    char* pids_ready_vrr = ALGORITMO_PLANIFICACION == VRR ? listado_pids(lista_plan_ready_vrr) : NULL;
+    char* pids_blocked = listado_pids(lista_plan_blocked);
+    char* pids_exit = listado_pids(lista_plan_exit);
+
     log_info(logger_kernel, "!------------------------!");
     log_info(logger_kernel, "Listado de PID por ESTADO");
-    log_info(logger_kernel, "NEW: %s", listado_pids(lista_plan_new));
-    log_info(logger_kernel, "READY: %s", listado_pids(lista_plan_ready));
-    if(ALGORITMO_PLANIFICACION==VRR){
-        log_info(logger_kernel, "READY Prioridad: %s", listado_pids(lista_plan_ready_vrr));
+    log_info(logger_kernel, "NEW: %s", pids_new ? pids_new : "[]");
+    log_info(logger_kernel, "READY: %s", pids_ready ? pids_ready : "[]");
+    if (ALGORITMO_PLANIFICACION == VRR) {
+        log_info(logger_kernel, "READY Prioridad: %s", pids_ready_vrr ? pids_ready_vrr : "[]");
     }
-    if(proceso_exec==NULL){
+    if (proceso_exec == NULL) {
         log_info(logger_kernel, "EXEC: []");
-    }
-    else{
+    } else {
         log_info(logger_kernel, "EXEC: [%d]", proceso_exec->pid);
-    }    
-    log_info(logger_kernel, "BLOCKED: %s", listado_pids(lista_plan_blocked));
-    log_info(logger_kernel, "EXIT: %s", listado_pids(lista_plan_exit));
+    }
+    log_info(logger_kernel, "BLOCKED: %s", pids_blocked ? pids_blocked : "[]");
+    log_info(logger_kernel, "EXIT: %s", pids_exit ? pids_exit : "[]");
     log_info(logger_kernel, "!------------------------!");
+
+    // Liberar memoria
+    free(pids_new);
+    free(pids_ready);
+    free(pids_ready_vrr);
+    free(pids_blocked);
+    free(pids_exit);
 }
 
 
@@ -214,8 +226,11 @@ void cambiar_multiprogramacion(int nuevo_grado_mult)
 }
 
 static void ejecutar_script(char* path) {
-    char path_completo[30] = "./scripts/";
-    strcat(path_completo, path);
+    char path_completo[256] = "./scripts/";
+    if (strncat(path_completo, path, sizeof(path_completo) - strlen(path_completo) - 1) == NULL) {
+        log_error(logger_kernel, "Error al concatenar el path del script: %s", path);
+        return;
+    }
     FILE* archivo = fopen(path_completo, "r");
     if (!archivo) {
         log_error(logger_kernel, "No se pudo abrir el archivo de script: %s", path);

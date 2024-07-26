@@ -112,7 +112,7 @@ static void init_recursos(){
 }
 
 static void agrego_instruccion_permitida(t_list* listado_instrucciones, char* instruccion_nueva, t_codigo_consola codigo_inst, int cantidad_parametros){
-    t_instruccion_consola* instruccion = malloc(sizeof(t_codigo_consola));
+    t_instruccion_consola* instruccion = malloc(sizeof(t_instruccion_consola));
     instruccion->cod_identificador = codigo_inst;
     instruccion->cantidad_parametros = cantidad_parametros;
     instruccion->nombre = instruccion_nueva;

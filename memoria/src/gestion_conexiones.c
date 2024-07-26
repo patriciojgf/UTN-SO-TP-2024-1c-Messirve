@@ -347,10 +347,13 @@ static void atender_peticiones_kernel(void *void_args){
                 pid=0; desplazamiento = 0; size = 0;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
-                log_warning(logger_memoria, "revisar liberar estructuras memoria");
-                eliminar_espacio_de_usuario(); //TODO: le debería pasar el proceso? 
-                _confirmar_memoria_liberada();
-                break;
+                finalizar_proceso(pid);
+                confirmar_memoria_liberada();
+                break; 
+                // log_warning(logger_memoria, "revisar liberar estructuras memoria");
+                // eliminar_espacio_de_usuario(); //TODO: le debería pasar el proceso? 
+                // _confirmar_memoria_liberada();
+                // break;
             //TODO: revisar si es necesario, se agrega con el merge
             case OBTENER_MARCO:
                 int _size, pid, _desplazamiento = 0;
@@ -363,6 +366,9 @@ static void atender_peticiones_kernel(void *void_args){
                 agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar,&(marco),sizeof(int));
                 enviar_paquete(paquete_a_enviar, socket_cliente_cpu);
                 eliminar_paquete(paquete_a_enviar);
+                // finalizar_proceso(pid);
+                // confirmar_memoria_liberada();
+                break; 
             case -1:
                 log_error(logger_memoria,"El KERNEL se desconecto");
                 exit(EXIT_FAILURE);

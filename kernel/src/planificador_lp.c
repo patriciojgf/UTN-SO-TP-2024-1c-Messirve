@@ -226,20 +226,33 @@ void liberar_recursos_pcb(t_pcb* pcb){
 /* AUXILIARES ESTADOS */
 /*--------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------*/
-char* listado_pids(t_list* lista){
-    char* pids = string_new();
-    string_append(&pids, "[");
-    for(int i = 0; i<list_size(lista); i++){
+// Función que obtiene una lista de PIDs en formato de cadena
+char* listado_pids(t_list* lista) {
+    // Calcular el tamaño máximo necesario para la cadena
+    int tamaño_maximo = list_size(lista) * 12; // Considerando un máximo de 10 dígitos por PID, más coma y espacio
+    char* pids = malloc(tamaño_maximo);
+    if (!pids) {
+        return NULL;
+    }
+    pids[0] = '\0'; // Inicializar cadena vacía
+
+    strcat(pids, "["); // Agregar corchete de apertura
+
+    for (int i = 0; i < list_size(lista); i++) {
         t_pcb* pcb = list_get(lista, i);
-        char* pid = string_itoa(pcb->pid);
-        string_append(&pids, pid);
-        free(pid);
-        if(i != list_size(lista)-1){
-            string_append(&pids, ",");
+        char pid[12];
+        sprintf(pid, "%d", pcb->pid); // Convertir PID a cadena
+
+        strcat(pids, pid); // Agregar PID a la cadena principal
+
+        if (i != list_size(lista) - 1) {
+            strcat(pids, ","); // Agregar coma entre los PIDs
         }
     }
-    string_append(&pids, "]");
-    return pids;
+
+    strcat(pids, "]"); // Agregar corchete de cierre
+
+    return pids; // Retornar la cadena resultante
 }
 
 void finalizar_proceso(int pid) {
@@ -267,15 +280,11 @@ void finalizar_proceso(int pid) {
     pthread_mutex_t* mutexes[] = {&mutex_plan_new, &mutex_plan_ready, &mutex_plan_ready_vrr, &mutex_plan_blocked};
 
     for (int i = 0; i < 4 ; i++) {
-        log_info(logger_kernel, "Buscando en lista %d", i);
         // pthread_mutex_lock(mutexes[i]);
         pcb = buscar_pcb_por_pid(pid, listas[i]);
-        log_info(logger_kernel, "Buscando en lista %d", i);
         if (pcb != NULL) {
             list_remove_element(listas[i], pcb); 
-            log_info(logger_kernel, "Buscando en lista %d", i);
             mutex_actual = mutexes[i];
-            log_info(logger_kernel, "Buscando en lista %d", i);
             // lista_actual = listas[i];
             break;
         }
