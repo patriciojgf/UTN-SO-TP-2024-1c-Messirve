@@ -54,7 +54,6 @@ static void iniciar_configuracion(char* config_path){
 }
 
 static void init_listas_planificacion(){
-    log_warning(logger_kernel,"creando las listas");
     lista_plan_new = list_create();
     lista_plan_ready = list_create();
     lista_plan_ready_vrr = list_create();

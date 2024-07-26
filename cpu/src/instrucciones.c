@@ -20,7 +20,18 @@ static int calcular_bytes_segun_registro(char* registro);
 //
 
 static void mostrar_valores_registros_cpu(){
-	
+    log_info(logger_cpu, "Valores actuales de los registros de la CPU:");
+    log_info(logger_cpu, "PC: %u", contexto_cpu->registros_cpu.PC);
+    log_info(logger_cpu, "AX: %u", contexto_cpu->registros_cpu.AX);
+    log_info(logger_cpu, "BX: %u", contexto_cpu->registros_cpu.BX);
+    log_info(logger_cpu, "CX: %u", contexto_cpu->registros_cpu.CX);
+    log_info(logger_cpu, "DX: %u", contexto_cpu->registros_cpu.DX);
+    log_info(logger_cpu, "EAX: %u", contexto_cpu->registros_cpu.EAX);
+    log_info(logger_cpu, "EBX: %u", contexto_cpu->registros_cpu.EBX);
+    log_info(logger_cpu, "ECX: %u", contexto_cpu->registros_cpu.ECX);
+    log_info(logger_cpu, "EDX: %u", contexto_cpu->registros_cpu.EDX);
+    log_info(logger_cpu, "SI: %u", contexto_cpu->registros_cpu.SI);
+    log_info(logger_cpu, "DI: %u", contexto_cpu->registros_cpu.DI);	
 }
 
 static int min(int a, int b) {
@@ -297,7 +308,7 @@ static int _mov_in(t_instruccion* instruccion){
 	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
 	// en el Registro Dirección y lo almacena en el Registro Datos.
 	log_info(logger_cpu, "--------------------------------------------MOV IN---------------------------------------------");
-
+	mostrar_valores_registros_cpu();
 	//Busco los registros de la instruccion en formato char
 	char* registro_datos = list_get(instruccion->parametros, 0);
 	char* registro_direccion = list_get(instruccion->parametros, 1);
@@ -328,25 +339,30 @@ static int _mov_in(t_instruccion* instruccion){
 	//log obligario
 	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
 	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
+	mostrar_valores_registros_cpu();
 	return 0;
 }
 
 static int _mov_out(t_instruccion* instruccion){
 	log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
+	mostrar_valores_registros_cpu();
 // MOV_OUT (Registro Dirección, Registro Datos): 
 // Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
 // obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.	
 	char* registro_direccion	= list_get(instruccion->parametros, 0);
     char* registro_datos		= list_get(instruccion->parametros, 1);
 	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
-	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s> - <%s>",contexto_cpu->pid, registro_direccion, registro_datos);
-
+	
     info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
     info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s>:<%u> - <%s>:<%u>",contexto_cpu->pid, registro_direccion, leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano), registro_datos, leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano));
+
 	int direccion_logica = leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano);
 	int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 
 	int se_pudo_escribir = escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
+	mostrar_valores_registros_cpu();
+	log_info(logger_cpu,"---------------------------------");
 	return se_pudo_escribir;
 }
 
@@ -411,6 +427,8 @@ static int _resize(t_instruccion* instruccion){
 }
 
 static void _set(t_instruccion* instruccion){
+	log_info(logger_cpu, "--------------------------------------------SET--------------------------------------------");
+	mostrar_valores_registros_cpu();
     char* nombre_registro = list_get(instruccion->parametros, 0);
     char* valor_string = list_get(instruccion->parametros, 1);
     uint32_t nuevo_valor = (uint32_t)atoi(valor_string); // Convierte el valor string a uint32_t una sola vez
@@ -428,7 +446,8 @@ static void _set(t_instruccion* instruccion){
     }
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - Program Counter: <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC);
 	// Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
-
+	mostrar_valores_registros_cpu();
+	log_info(logger_cpu, "-------------------");
 }
 
 

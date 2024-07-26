@@ -22,6 +22,10 @@ static int min(int a, int b) {
 /*----*/
 
 int escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor) {
+    log_info(logger_cpu,"escribir_valor_en_memoria - valor: %s", valor);
+    log_info(logger_cpu,"escribir_valor_en_memoria - valor: %d", *valor);
+    log_info(logger_cpu,"escribir_valor_en_memoria - valor: %u", *valor);
+
     int total_escrito = 0;
 
     while (total_escrito < cantidad_bytes) {
@@ -117,26 +121,31 @@ int mmu(int direccion_logica){
     int desplazamiento = direccion_logica % tamanio_pagina;
     int marco = -1;
     int direccion_fisica = -1;
-
-    marco = tlb_buscar_pagina(numero_pagina);
-    if(marco == -1){
-        //log obligatorio: TLB Miss: “PID: <PID> - TLB MISS - Pagina: <NUMERO_PAGINA>”
-        log_info(logger_cpu, "PID: %d - TLB MISS - Pagina: %d", contexto_cpu->pid, numero_pagina);
-        log_info(logger_cpu, "-------------");
-        log_info(logger_cpu, "TLB a actualizar:");
-        mostar_entradas_tbl();
-        //No esta presente en TLB
-        //Busco en tabla de paginas
+    //Si tbl tiene 0 entradas no busco
+    if(CANTIDAD_ENTRADAS_TLB == 0){
         marco = memoria_pido_marco(numero_pagina);
+    }
+    else{
+        marco = tlb_buscar_pagina(numero_pagina);
         if(marco == -1){
-            return -1;
-        } 
-        else{
-            //Actualizo TLB
-            tlb_agregar_pagina(contexto_cpu->pid, numero_pagina, marco);
-            log_info(logger_cpu, "Actualice TLB:");
-            mostar_entradas_tbl();
+            //log obligatorio: TLB Miss: “PID: <PID> - TLB MISS - Pagina: <NUMERO_PAGINA>”
+            log_info(logger_cpu, "PID: %d - TLB MISS - Pagina: %d", contexto_cpu->pid, numero_pagina);
             log_info(logger_cpu, "-------------");
+            log_info(logger_cpu, "TLB a actualizar:");
+            mostar_entradas_tbl();
+            //No esta presente en TLB
+            //Busco en tabla de paginas
+            marco = memoria_pido_marco(numero_pagina);
+            if(marco == -1){
+                return -1;
+            } 
+            else{
+                //Actualizo TLB
+                tlb_agregar_pagina(contexto_cpu->pid, numero_pagina, marco);
+                log_info(logger_cpu, "Actualice TLB:");
+                mostar_entradas_tbl();
+                log_info(logger_cpu, "-------------");
+            }
         }
     }
     direccion_fisica = marco * tamanio_pagina + desplazamiento;
