@@ -4,6 +4,7 @@ static void atender_peticiones_kernel(void *void_args);
 static void atender_peticiones_cpu(void *void_args);
 static void atender_peticiones_stdin(void *void_args);
 static void atender_peticiones_stdout(void *void_args);
+static void atender_peticiones_dialfs(void *void_args);
 static void _confirmar_memoria_liberada();
 static void _enviar_tamanio_a_cpu(int socket_cliente_cpu);
 static int _get_marco(int pid);
@@ -87,6 +88,18 @@ static void identificar_conexion_y_derivar(int socket_cliente, int cod_op){
             break;
 
         case HANDSHAKE_IO_DIALFS: 
+            log_info(logger_memoria,"HANDSHAKE_IO_DIALFS");
+			recibir_operacion(socket_cliente);
+            int size_dislfs = 0;
+            void *buffer_dialfs = recibir_buffer(&size_dislfs, socket_cliente);
+            free(buffer_dialfs);
+
+            argumentos = malloc(sizeof(int));
+			*argumentos = socket_cliente;            
+            pthread_t hilo_gestionar_dialfs;
+            pthread_create(&hilo_gestionar_dialfs, NULL, (void*) atender_peticiones_dialfs, argumentos);
+            pthread_detach(hilo_gestionar_dialfs);
+            break;
         default:
             log_error(logger_memoria,"identificar_conexion_y_derivar: HANDSHAKE NO IDENTIFICADO, valor: %d", cod_op);
             exit(EXIT_FAILURE);
@@ -179,6 +192,61 @@ static void atender_peticiones_stdin(void *void_args){
             enviar_paquete(paquete, *socket);
             eliminar_paquete(paquete);      
             //desconecto      
+        }
+        else if (code_op == -1){
+            close(*socket);
+            break;
+        }
+        else {
+            log_error(logger_memoria,"atender_peticiones_stdin: Operacion desconocida");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+}
+
+static void atender_peticiones_dialfs(void *void_args){
+    int* socket = (int*) void_args;
+    while(1){
+        int code_op = recibir_operacion(*socket);
+        if (code_op == IO_FS_CREATE){
+            t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
+
+            //TODO: comento por el momento
+            // for(int i=0; i<solicitud->cantidad_accesos; i++){
+            //     // log_info(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
+            //     // log_info(logger_memoria,"los datos <%s>",solicitud->datos_memoria[i].datos);
+            //     mem_escribir_dato_direccion_fisica(
+            //         solicitud->datos_memoria[i].direccion_fisica,   //direccion
+            //         solicitud->datos_memoria[i].datos,              //dato
+            //         // strlen(solicitud->datos_memoria[i].datos)+1,    //tamaño
+            //         solicitud->datos_memoria[i].tamano,
+            //         solicitud->pid);                                //pid
+
+            //     // mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, strlen(solicitud->datos_memoria[i].datos)+1);
+            // }
+            //liberar memoria de t_solicitud_io
+            liberar_solicitud_io(solicitud);
+
+            //confirmo a entradasalida
+            int mensajeOK =1;
+            t_paquete* paquete = crear_paquete(IO_FS_CREATE);
+            agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
+            enviar_paquete(paquete, *socket);
+            eliminar_paquete(paquete);      
+            //desconecto      
+        }
+        else if(code_op == IO_FS_DELETE){
+            t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
+            //liberar memoria de t_solicitud_io
+            liberar_solicitud_io(solicitud);
+
+            //confirmo a entradasalida
+            int mensajeOK =1;
+            t_paquete* paquete = crear_paquete(IO_FS_CREATE);
+            agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
+            enviar_paquete(paquete, *socket);
+            eliminar_paquete(paquete);   
         }
         else if (code_op == -1){
             close(*socket);
