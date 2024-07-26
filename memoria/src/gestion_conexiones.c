@@ -340,10 +340,9 @@ static void atender_peticiones_kernel(void *void_args){
                 pid=0; desplazamiento = 0; size = 0;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
-                log_warning(logger_memoria, "falta implementar liberar estructuras memoria");
+                finalizar_proceso(pid);
                 confirmar_memoria_liberada();
                 break; 
-
             case -1:
                 log_error(logger_memoria,"El KERNEL se desconecto");
                 exit(EXIT_FAILURE);

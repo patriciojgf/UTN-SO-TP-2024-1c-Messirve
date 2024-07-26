@@ -77,7 +77,7 @@ static void liberar_un_marco(int pid){
 int resize_proceso(int pid, int new_size) {
     log_info(logger_memoria, "resize_proceso - PID <%d> - NEW_SIZE <%d>", pid, new_size);
     int old_size = get_proceso_memoria(pid)->cantidad_de_paginas;
-    int marcos_a_asignar = (new_size/TAM_PAGINA) - old_size;
+    int marcos_a_asignar = (new_size + TAM_PAGINA - 1) / TAM_PAGINA - old_size;
 
     if(cantidad_marcos_libres()<marcos_a_asignar){
         log_error(logger_memoria, "No hay marcos suficientes <%d> para asignar al proceso PID <%d>, hay <%d>.", marcos_a_asignar, pid, cantidad_marcos_libres());
@@ -157,6 +157,42 @@ t_proceso* crear_proceso(int pid, char* path_instrucciones) {
     proceso->instrucciones = leer_archivo_instrucciones(path_instrucciones);
     return proceso;
 }
+
+void finalizar_proceso(int pid) {
+    t_proceso* proceso = get_proceso_memoria(pid);
+    // Liberar marcos asociados al proceso
+    for (int i = 0; i < list_size(listado_marcos); i++) {
+        t_marco* marco = list_get(listado_marcos, i);
+        if (marco->pid == pid) {
+            marco->pid = -1;
+            marco->pagina_asignada = -1;
+            marco->bit_de_uso = 0;
+        }
+    }
+    // Liberar la tabla de páginas
+    if (proceso->tabla_de_paginas != NULL) {
+        while (!list_is_empty(proceso->tabla_de_paginas)) {
+            list_remove_and_destroy_element(proceso->tabla_de_paginas, 0, free);
+        }
+        list_destroy(proceso->tabla_de_paginas);
+    }
+    // Liberar instrucciones
+    if (proceso->instrucciones != NULL) {
+        while (!list_is_empty(proceso->instrucciones)) {
+            list_remove_and_destroy_element(proceso->instrucciones, 0, free);
+        }
+        list_destroy(proceso->instrucciones);
+    }
+    // Liberar path_instrucciones
+    //Lo saco porque ya se esta liberando al crear el proceso
+    // if (proceso->path_instrucciones != NULL) {
+    //     free(proceso->path_instrucciones);
+    //     proceso->path_instrucciones = NULL; 
+    // }
+    // Finalmente, liberar el propio proceso
+    free(proceso);
+}
+
 
 void eliminar_proceso(t_proceso* proceso) {
     log_warning(logger_memoria, "VALIDAR QUE SE ILIMINEN ASI)");

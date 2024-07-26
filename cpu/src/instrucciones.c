@@ -19,6 +19,10 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion);
 static int calcular_bytes_segun_registro(char* registro);
 //
 
+static void mostrar_valores_registros_cpu(){
+	
+}
+
 static int min(int a, int b) {
     return (a < b) ? a : b;
 }

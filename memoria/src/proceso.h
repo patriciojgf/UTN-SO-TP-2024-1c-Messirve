@@ -5,6 +5,8 @@
 #include "init_estructuras.h"
 
 t_proceso* crear_proceso(int pid, char* path_instrucciones);
+void finalizar_proceso(int pid);
+
 int resize_proceso(int pid, int new_size);
 void eliminar_proceso(t_proceso* proceso);
 

@@ -8,9 +8,18 @@ static void tlb_agregar_pagina(int pid, int pagina, int marco);
 static int memoria_pido_marco(int pagina);
 /*----*/
 
+static void mostar_entradas_tbl(){
+    for(int i = 0; i < list_size(lista_tlb); i++){
+        t_fila_tlb* entrada = list_get(lista_tlb, i);
+        log_info(logger_cpu, "TLB - Entrada <%d> - PID <%d> - Pagina <%d> - Marco <%d> - TIME <%ld>", i, entrada->pid, entrada->pagina, entrada->marco, entrada->timestamp);
+    }
+}
+
 static int min(int a, int b) {
     return (a < b) ? a : b;
 }
+
+/*----*/
 
 int escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor) {
     int total_escrito = 0;
@@ -113,6 +122,9 @@ int mmu(int direccion_logica){
     if(marco == -1){
         //log obligatorio: TLB Miss: “PID: <PID> - TLB MISS - Pagina: <NUMERO_PAGINA>”
         log_info(logger_cpu, "PID: %d - TLB MISS - Pagina: %d", contexto_cpu->pid, numero_pagina);
+        log_info(logger_cpu, "-------------");
+        log_info(logger_cpu, "TLB a actualizar:");
+        mostar_entradas_tbl();
         //No esta presente en TLB
         //Busco en tabla de paginas
         marco = memoria_pido_marco(numero_pagina);
@@ -122,6 +134,9 @@ int mmu(int direccion_logica){
         else{
             //Actualizo TLB
             tlb_agregar_pagina(contexto_cpu->pid, numero_pagina, marco);
+            log_info(logger_cpu, "Actualice TLB:");
+            mostar_entradas_tbl();
+            log_info(logger_cpu, "-------------");
         }
     }
     direccion_fisica = marco * tamanio_pagina + desplazamiento;
@@ -155,29 +170,37 @@ static int tlb_buscar_pagina(int num_pagina) {
 }
 
 //tlb_eliminar_entrada: elimina una entrada de la tlb siguiendo el algoritmo de reemplazo
-static int tlb_eliminar_entrada(){
-    // Busca la entrada con el timestamp más antiguo para reutilizar
-    t_fila_tlb* entrada_a_reutilizar = NULL;
-    int indice_a_reutilizar = -1;
-    time_t min_timestamp = time(NULL);    
-    for(int i = 0; i < list_size(lista_tlb); i++){
+static int tlb_eliminar_entrada() {
+    if (list_is_empty(lista_tlb)) {
+        log_error(logger_cpu, "La lista TLB está vacía");
+        exit(EXIT_FAILURE); // Manejo del error en caso de que la lista esté vacía
+    }
+
+    // Inicializar con la primera entrada
+    t_fila_tlb* entrada_a_reutilizar = list_get(lista_tlb, 0);
+    
+    int indice_a_reutilizar = 0;
+    time_t min_timestamp = entrada_a_reutilizar->timestamp;
+
+    for (int i = 1; i < list_size(lista_tlb); i++) {
         t_fila_tlb* entrada = list_get(lista_tlb, i);
-        if(entrada->timestamp < min_timestamp){
+        if (entrada->timestamp < min_timestamp) {
             min_timestamp = entrada->timestamp;
             entrada_a_reutilizar = entrada;
             indice_a_reutilizar = i;
         }
     }
+
     if (entrada_a_reutilizar) {
         entrada_a_reutilizar->pid = -1;  // Indica que la entrada está libre
         entrada_a_reutilizar->pagina = -1;
         entrada_a_reutilizar->marco = -1;
         entrada_a_reutilizar->timestamp = time(NULL);  // Actualizar el timestamp al momento actual
-    }
-    else{
+    } else {
         log_error(logger_cpu, "No se encontró ninguna entrada para reutilizar en la TLB");
         exit(EXIT_FAILURE);
     }
+
     return indice_a_reutilizar;
 }
 
@@ -194,19 +217,26 @@ static int tlb_busco_entrada_libre(){
     return indice_entrada;
 }
 
+
+
 static void tlb_agregar_pagina(int pid, int pagina, int marco){
     int indice_entrada = tlb_busco_entrada_libre();
-    if(indice_entrada != -1){
+    if(indice_entrada == -1){
         indice_entrada = tlb_eliminar_entrada();
     }
 
     //piso los valores de la lista_tlb en el indice indice_entrada
     t_fila_tlb* entrada = list_get(lista_tlb, indice_entrada);
+    if(entrada->pagina != -1){
+        log_info(logger_cpu,"Voy a reemplazar en TBL la pagina <%d> - marco <%d>", entrada->pagina, entrada->marco);
+    }
+    log_info(logger_cpu,"PID <%d> - Voy a agregar la entrada de la TLB en el índice <%d> - pagina <%d> - marco <%d>", pid, indice_entrada, pagina, marco);
     entrada->pid = pid;
     entrada->pagina = pagina;
     entrada->marco = marco;
     if(strcmp(ALGORITMO_TLB, "LRU") == 0){
         entrada->timestamp = time(NULL); // Actualizamos el timestamp para LRU
+        log_info(logger_cpu,"TLB - Actualizo el timestamp al valor <%ld>", entrada->timestamp);
     }
 }
 
