@@ -247,9 +247,11 @@ void atender_peticiones_dispatch(){
 						break;
 					case IO_FS_CREATE:
 						sem_post(&sem_pcb_desalojado);
+						atender_cpu_io_fs_create(proceso_exec, instrucciones);
 						break;
 					case IO_FS_DELETE:
 						sem_post(&sem_pcb_desalojado);
+						atender_cpu_io_fs_delete(proceso_exec, instrucciones);
 						break;
 					case IO_FS_TRUNCATE:
 						sem_post(&sem_pcb_desalojado);

@@ -376,7 +376,8 @@ void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
     }
 }
 
-void atender_cpu_io_fs_create(t_pcb* pcb)
+//TODO: continuar
+void atender_cpu_io_fs_create(t_pcb* pcb, t_instruccion* instruccion)
 {
     log_info(logger_kernel,"[ATENDER CPU IO_FS_CREATE]");
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
@@ -384,6 +385,7 @@ void atender_cpu_io_fs_create(t_pcb* pcb)
 
     if(recibir_operacion(socket_dispatch) == IO_FS_CREATE)
     {
+        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
         //TODO: crear estructura necesaria
         t_pedido_sleep* pedido = malloc(sizeof(t_pedido_sleep)); 
         pedido->pcb = pcb;
@@ -414,7 +416,8 @@ void atender_cpu_io_fs_create(t_pcb* pcb)
     }
 }
 
-void atender_cpu_io_fs_delete(t_pcb* pcb)
+//TODO: continuar
+void atender_cpu_io_fs_delete(t_pcb* pcb, t_instruccion* instruccion)
 {
     log_info(logger_kernel,"[ATENDER CPU IO_FS_DELETE]");
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
@@ -422,6 +425,7 @@ void atender_cpu_io_fs_delete(t_pcb* pcb)
 
     if(recibir_operacion(socket_dispatch) == IO_FS_DELETE)
     {
+        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
         //TODO: crear estructura necesaria
         t_pedido_sleep* pedido = malloc(sizeof(t_pedido_sleep)); 
         pedido->pcb = pcb;
@@ -444,6 +448,124 @@ void atender_cpu_io_fs_delete(t_pcb* pcb)
         //sem_post(&interfaz->semaforo);  // Ntificar al hilo que maneja esta interfaz
         // _enviar_peticiones_io_gen(interfaz);
         enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu, IO_FS_DELETE);
+    }
+    else
+    {
+        log_error(logger_kernel,"atender_cpu_io_stdin_read: error en la operacion recibida.");
+    }
+}
+
+
+//TODO: continuar
+void atender_cpu_io_fs_truncate(t_pcb* pcb, t_instruccion* instruccion)
+{
+    log_info(logger_kernel,"[ATENDER CPU IO_FS_TRUNCATE]");
+    char* nombre_interfaz = list_get(instruccion->parametros, 0);
+    t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
+
+    if(recibir_operacion(socket_dispatch) == IO_FS_TRUNCATE)
+    {
+        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
+        //TODO: crear estructura necesaria
+        t_pedido_sleep* pedido = malloc(sizeof(t_pedido_sleep)); 
+        pedido->pcb = pcb;
+        pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
+        sem_init(&pedido->semaforo_pedido_ok,0,0);
+
+        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+
+        pthread_mutex_lock(&mutex_plan_exec);
+        proceso_exec = NULL;
+        pthread_mutex_unlock(&mutex_plan_exec);
+
+        //planificador_cp();
+        sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
+
+		pthread_mutex_lock(&interfaz->mutex_cola_block);
+        list_add(interfaz->cola_procesos, pedido);    
+		pthread_mutex_unlock(&interfaz->mutex_cola_block);
+
+        //sem_post(&interfaz->semaforo);  // Ntificar al hilo que maneja esta interfaz
+        // _enviar_peticiones_io_gen(interfaz);
+        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu, IO_FS_TRUNCATE);
+    }
+    else
+    {
+        log_error(logger_kernel,"atender_cpu_io_stdin_read: error en la operacion recibida.");
+    }
+}
+
+//TODO: continuar
+void atender_cpu_io_fs_read(t_pcb* pcb, t_instruccion* instruccion)
+{
+    log_info(logger_kernel,"[ATENDER CPU IO_FS_READ]");
+    char* nombre_interfaz = list_get(instruccion->parametros, 0);
+    t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
+
+    if(recibir_operacion(socket_dispatch) == IO_FS_READ)
+    {
+        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
+        //TODO: crear estructura necesaria
+        t_pedido_sleep* pedido = malloc(sizeof(t_pedido_sleep)); 
+        pedido->pcb = pcb;
+        pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
+        sem_init(&pedido->semaforo_pedido_ok,0,0);
+
+        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+
+        pthread_mutex_lock(&mutex_plan_exec);
+        proceso_exec = NULL;
+        pthread_mutex_unlock(&mutex_plan_exec);
+
+        //planificador_cp();
+        sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
+
+		pthread_mutex_lock(&interfaz->mutex_cola_block);
+        list_add(interfaz->cola_procesos, pedido);    
+		pthread_mutex_unlock(&interfaz->mutex_cola_block);
+
+        //sem_post(&interfaz->semaforo);  // Ntificar al hilo que maneja esta interfaz
+        // _enviar_peticiones_io_gen(interfaz);
+        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu, IO_FS_READ);
+    }
+    else
+    {
+        log_error(logger_kernel,"atender_cpu_io_stdin_read: error en la operacion recibida.");
+    }
+}
+
+//TODO: continuar
+void atender_cpu_io_fs_write(t_pcb* pcb, t_instruccion* instruccion)
+{
+    log_info(logger_kernel,"[ATENDER CPU IO_FS_WRITE]");
+    char* nombre_interfaz = list_get(instruccion->parametros, 0);
+    t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
+
+    if(recibir_operacion(socket_dispatch) == IO_FS_WRITE)
+    {
+        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
+        //TODO: crear estructura necesaria
+        t_pedido_sleep* pedido = malloc(sizeof(t_pedido_sleep)); 
+        pedido->pcb = pcb;
+        pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
+        sem_init(&pedido->semaforo_pedido_ok,0,0);
+
+        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+
+        pthread_mutex_lock(&mutex_plan_exec);
+        proceso_exec = NULL;
+        pthread_mutex_unlock(&mutex_plan_exec);
+
+        //planificador_cp();
+        sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
+
+		pthread_mutex_lock(&interfaz->mutex_cola_block);
+        list_add(interfaz->cola_procesos, pedido);    
+		pthread_mutex_unlock(&interfaz->mutex_cola_block);
+
+        //sem_post(&interfaz->semaforo);  // Ntificar al hilo que maneja esta interfaz
+        // _enviar_peticiones_io_gen(interfaz);
+        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu, IO_FS_WRITE);
     }
     else
     {
