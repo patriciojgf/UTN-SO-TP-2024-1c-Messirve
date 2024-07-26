@@ -140,6 +140,21 @@ void ejecutar_proceso(){
 				}
 				// pedido_io_stdin_read=_io_std(inst_decodificada);
 				break;
+			case IO_FS_CREATE:
+				motivo_desalojo = IO_FS_CREATE;
+				break;
+			case IO_FS_DELETE:
+				motivo_desalojo = IO_FS_DELETE;
+				break;
+			case IO_FS_TRUNCATE:
+				motivo_desalojo = IO_FS_TRUNCATE;
+				break;
+			case IO_FS_READ:
+				motivo_desalojo = IO_FS_READ;
+				break;
+			case IO_FS_WRITE:
+				motivo_desalojo = IO_FS_WRITE;
+				break;
 			case WAIT:
 				motivo_desalojo = WAIT;
 				break;
