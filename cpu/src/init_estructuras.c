@@ -74,7 +74,7 @@ void init_cpu(char* path_config){
     log_protegido_cpu(string_from_format("Iniciando tlb"));
     TLB = list_create();
     iniciar_tlb();
-    log_tlb();
+    // log_tlb();
     log_protegido_cpu(string_from_format("CPU iniciado correctamente"));
     iniciar_mutex();
     // iniciar_tlb();
