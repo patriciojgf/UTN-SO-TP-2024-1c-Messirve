@@ -162,6 +162,7 @@ static void compactar(int pid, char* nombre_archivo)
     void* archivo_void = leer_archivo(nombre_archivo, 0, bloques * BLOCK_SIZE);
     int bloques_libre = obtener_bloques_libres(0);
     int bloques_ocupado = obtener_bloques_ocupados(bloques_libre);
+    
     while(bloques_ocupado != -1)
     {
         bloques_libre = obtener_bloques_libres(bloques_libre);
