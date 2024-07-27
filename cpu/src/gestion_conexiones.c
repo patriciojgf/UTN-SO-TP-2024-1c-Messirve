@@ -117,7 +117,7 @@ void atender_peticiones_interrupt(){
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:FIN_QUANTUM hilo_llego_interrupcion");
                 pthread_t hilo_llego_interrupcion_f_q;
                 pthread_create(&hilo_llego_interrupcion_f_q, NULL, (void*)ejecutando_interrupcion, NULL);
-                pthread_detach(hilo_llego_interrupcion_f_q);       
+                pthread_detach(hilo_llego_interrupcion_f_q);    
 
 		        pthread_mutex_lock(&mutex_ejecucion_proceso);
                 log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);

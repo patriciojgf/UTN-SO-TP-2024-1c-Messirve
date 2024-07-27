@@ -197,8 +197,10 @@ void ejecutar_proceso(){
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 
 		//Desalojos por instrucciones ejecutadas
+		log_info(logger_cpu,"Desalojos por instrucciones ejecutadas");
 		if(motivo_desalojo > -1){
 			flag_ejecucion = false;
+			log_info(logger_cpu,"motivo_desalojo > -1");
 			devolver_contexto_a_dispatch(motivo_desalojo, inst_decodificada);
 			if (motivo_desalojo == IO_STDIN_READ){
 				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdin_read,motivo_desalojo);
@@ -209,6 +211,7 @@ void ejecutar_proceso(){
 		}
 
         // Verificar interrupciones.
+		log_info(logger_cpu,"Verificar interrupciones <%d> <%d>",flag_interrupt,flag_ejecucion);
         if (flag_interrupt && flag_ejecucion) {
             //log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
             devolver_contexto_a_dispatch(motivo_interrupt, inst_decodificada);
@@ -552,29 +555,81 @@ static void _f_exit(t_instruccion *inst){
 
 // AUXILIARES
 void check_recibiendo_interrupcion(){
+	log_info(logger_cpu,"check_recibiendo_interrupcion");
     pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
     if(llego_interrupcion == 1){
+		log_info(logger_cpu,"check_recibiendo_interrupcion1");
         sem_wait(&sem_check_recibiendo_interrupcion);
+		log_info(logger_cpu,"check_recibiendo_interrupcion2");
     }
+	log_info(logger_cpu,"check_recibiendo_interrupcion3");
     pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
 }
 
 void ejecutando_interrupcion_fin(){
+	log_info(logger_cpu,"ejecutando_interrupcion_fin");
     if(llego_interrupcion == 0){
+		log_info(logger_cpu,"ejecutando_interrupcion_fin1");
     }
     else{
+		log_info(logger_cpu,"ejecutando_interrupcion_fin2");
         llego_interrupcion = 0;
+		log_info(logger_cpu,"ejecutando_interrupcion_fin3");
         sem_post(&sem_check_recibiendo_interrupcion);
+		log_info(logger_cpu,"ejecutando_interrupcion_fin4");
     }    
 }
 
 void ejecutando_interrupcion(){
+	log_info(logger_cpu,"ejecutando_interrupcion");
     if(llego_interrupcion == 1){
+		log_info(logger_cpu,"ejecutando_interrupcion1");
     }
     else{
+		log_info(logger_cpu,"ejecutando_interrupcion2");
         llego_interrupcion = 1;
         check_recibiendo_interrupcion();
+		log_info(logger_cpu,"ejecutando_interrupcion3");
     }
+}
+
+
+pthread_mutex_t mutex_interrupt = PTHREAD_MUTEX_INITIALIZER;
+// sem_t sem_interrupt;
+volatile bool processing_interrupt = false;
+
+// void init_interrupt_handling() {
+//     sem_init(&sem_interrupt, 0, 0); // Inicializa el semáforo en 0
+// }
+
+void handle_interrupt(int pid) {
+    pthread_mutex_lock(&mutex_interrupt);
+    if (!processing_interrupt) {
+        processing_interrupt = true;
+        pthread_mutex_unlock(&mutex_interrupt);
+
+        log_info(logger_cpu, "[INTERRUPT]: Handling interrupt for PID <%d>", pid);
+
+        // Lógica de manejo de la interrupción aquí.
+        // Simulación de alguna operación que podría tardar.
+        
+        // Concluir la interrupción
+        sem_post(&sem_interrupt);
+    } else {
+        pthread_mutex_unlock(&mutex_interrupt);
+        log_info(logger_cpu, "[INTERRUPT]: Interrupt already being processed, waiting...");
+
+        // Espera a que la interrupción actual termine de procesarse
+        sem_wait(&sem_interrupt);
+        
+        // Luego intenta manejar la interrupción nuevamente
+        handle_interrupt(pid);
+    }
+}
+
+void cleanup_interrupt_handling() {
+    pthread_mutex_destroy(&mutex_interrupt);
+    sem_destroy(&sem_interrupt);
 }
 
 
