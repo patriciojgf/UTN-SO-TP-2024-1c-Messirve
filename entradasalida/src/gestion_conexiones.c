@@ -123,7 +123,9 @@ static void _atender_peticiones_kernel(){
                 desplazamiento += sizeof(int);
                 mensaje_recibido_de_memoria=malloc(size_mensaje_recibido_de_memoria);
                 memcpy(mensaje_recibido_de_memoria, buffer_mensaje + desplazamiento, size_mensaje_recibido_de_memoria);
-
+                //log obligatorio
+                //Todos - Operación: “PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
+                log_info(logger_io,"PID: <%d> - Operacion <STDOUT_WRITE>", solicitud_recibida_kernel->pid);
                 log_info(logger_io,"Texto leido de memoria: <%s>",mensaje_recibido_de_memoria);
                 free(buffer_mensaje);
                 free(mensaje_recibido_de_memoria); 
@@ -145,6 +147,9 @@ static void _atender_peticiones_kernel(){
                 }        
                 // Reservar memoria para la entrada y leer desde la consola
                 char* input_text = malloc(solicitud_recibida_kernel->size_solicitud + 1);  // +1 para el carácter nulo
+                //log obligatorio
+                //Todos - Operación: “PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
+                log_info(logger_io,"PID: <%d> - Operacion <STDIN_READ>", solicitud_recibida_kernel->pid);
                 _lectura_consola(solicitud_recibida_kernel->size_solicitud, input_text);
                 // Llenar los datos de memoria en la solicitud con el texto leído
                 llenar_datos_memoria(solicitud_recibida_kernel, input_text);
@@ -240,8 +245,14 @@ static void _atender_peticiones_kernel(){
             case IO_GEN_SLEEP:
                 size=0;
                 void *buffer = recibir_buffer(&size, socket_cliente_kernel);           
-                int tiempo_sleep;
-                memcpy(&tiempo_sleep, buffer, sizeof(int));
+                int tiempo_sleep=0;
+                int pid_gen_sleep=-1;
+                memcpy(&pid_gen_sleep, buffer, sizeof(int));
+                memcpy(&tiempo_sleep, buffer + sizeof(int), sizeof(int));
+                //log obligatorio
+                //Todos - Operación: “PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
+                log_info(logger_io,"PID: <%d> - Operacion <SLEEP>", pid_gen_sleep);
+                log_info(logger_io,"Tiempo: <%d>", tiempo_sleep);
                 usleep(tiempo_sleep*TIEMPO_UNIDAD_TRABAJO*1000);
                 int handshake = IO_GEN_SLEEP;
                 send(socket_cliente_kernel, &handshake, sizeof(handshake), 0);
@@ -355,8 +366,7 @@ static void _atender_peticiones_kernel(){
 
 static void _lectura_consola(int size_lectura, char* buffer) {
     // char prompt[50];  // Asegúrate de que el buffer del prompt sea suficientemente grande
-    // snprintf(prompt, sizeof(prompt), "Ingrese un texto de hasta %d caracteres y presione Enter: ", size_lectura);
-
+    // snprintf(prompt, sizeof(prompt), "Ingrese un texto de hasta %d caracteres y presione Enter: ", size_lectura);    
     char* input = readline("> ");;
     if (input) {
         strncpy(buffer, input, size_lectura);

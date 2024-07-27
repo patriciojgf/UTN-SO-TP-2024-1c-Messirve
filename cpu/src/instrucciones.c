@@ -24,7 +24,18 @@ static int calcular_bytes_segun_registro(char* registro);
 //
 
 static void mostrar_valores_registros_cpu(){
-	
+    log_info(logger_cpu, "Valores actuales de los registros de la CPU:");
+    log_info(logger_cpu, "PC: %u", contexto_cpu->registros_cpu.PC);
+    log_info(logger_cpu, "AX: %u", contexto_cpu->registros_cpu.AX);
+    log_info(logger_cpu, "BX: %u", contexto_cpu->registros_cpu.BX);
+    log_info(logger_cpu, "CX: %u", contexto_cpu->registros_cpu.CX);
+    log_info(logger_cpu, "DX: %u", contexto_cpu->registros_cpu.DX);
+    log_info(logger_cpu, "EAX: %u", contexto_cpu->registros_cpu.EAX);
+    log_info(logger_cpu, "EBX: %u", contexto_cpu->registros_cpu.EBX);
+    log_info(logger_cpu, "ECX: %u", contexto_cpu->registros_cpu.ECX);
+    log_info(logger_cpu, "EDX: %u", contexto_cpu->registros_cpu.EDX);
+    log_info(logger_cpu, "SI: %u", contexto_cpu->registros_cpu.SI);
+    log_info(logger_cpu, "DI: %u", contexto_cpu->registros_cpu.DI);	
 }
 
 static int min(int a, int b) {
@@ -217,8 +228,10 @@ void ejecutar_proceso(){
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 
 		//Desalojos por instrucciones ejecutadas
+		log_info(logger_cpu,"Desalojos por instrucciones ejecutadas");
 		if(motivo_desalojo > -1){
 			flag_ejecucion = false;
+			log_info(logger_cpu,"motivo_desalojo > -1");
 			devolver_contexto_a_dispatch(motivo_desalojo, inst_decodificada);
 			if (motivo_desalojo == IO_STDIN_READ){
 				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdin_read,motivo_desalojo);
@@ -238,6 +251,7 @@ void ejecutar_proceso(){
 		}
 
         // Verificar interrupciones.
+		log_info(logger_cpu,"Verificar interrupciones <%d> <%d>",flag_interrupt,flag_ejecucion);
         if (flag_interrupt && flag_ejecucion) {
             //log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
             devolver_contexto_a_dispatch(motivo_interrupt, inst_decodificada);
@@ -326,7 +340,7 @@ static int _mov_in(t_instruccion* instruccion){
 	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
 	// en el Registro Dirección y lo almacena en el Registro Datos.
 	log_info(logger_cpu, "--------------------------------------------MOV IN---------------------------------------------");
-
+	mostrar_valores_registros_cpu();
 	//Busco los registros de la instruccion en formato char
 	char* registro_datos = list_get(instruccion->parametros, 0);
 	char* registro_direccion = list_get(instruccion->parametros, 1);
@@ -357,25 +371,30 @@ static int _mov_in(t_instruccion* instruccion){
 	//log obligario
 	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
 	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
+	mostrar_valores_registros_cpu();
 	return 0;
 }
 
 static int _mov_out(t_instruccion* instruccion){
 	log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
+	mostrar_valores_registros_cpu();
 // MOV_OUT (Registro Dirección, Registro Datos): 
 // Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
 // obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.	
 	char* registro_direccion	= list_get(instruccion->parametros, 0);
     char* registro_datos		= list_get(instruccion->parametros, 1);
 	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
-	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s> - <%s>",contexto_cpu->pid, registro_direccion, registro_datos);
-
+	
     info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
     info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s>:<%u> - <%s>:<%u>",contexto_cpu->pid, registro_direccion, leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano), registro_datos, leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano));
+
 	int direccion_logica = leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano);
 	int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 
 	int se_pudo_escribir = escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
+	mostrar_valores_registros_cpu();
+	log_info(logger_cpu,"---------------------------------");
 	return se_pudo_escribir;
 }
 
@@ -473,6 +492,8 @@ static int _resize(t_instruccion* instruccion){
 }
 
 static void _set(t_instruccion* instruccion){
+	log_info(logger_cpu, "--------------------------------------------SET--------------------------------------------");
+	mostrar_valores_registros_cpu();
     char* nombre_registro = list_get(instruccion->parametros, 0);
     char* valor_string = list_get(instruccion->parametros, 1);
     uint32_t nuevo_valor = (uint32_t)atoi(valor_string); // Convierte el valor string a uint32_t una sola vez
@@ -490,7 +511,8 @@ static void _set(t_instruccion* instruccion){
     }
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - Program Counter: <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC);
 	// Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
-
+	mostrar_valores_registros_cpu();
+	log_info(logger_cpu, "-------------------");
 }
 
 
@@ -595,29 +617,81 @@ static void _f_exit(t_instruccion *inst){
 
 // AUXILIARES
 void check_recibiendo_interrupcion(){
+	log_info(logger_cpu,"check_recibiendo_interrupcion");
     pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
     if(llego_interrupcion == 1){
+		log_info(logger_cpu,"check_recibiendo_interrupcion1");
         sem_wait(&sem_check_recibiendo_interrupcion);
+		log_info(logger_cpu,"check_recibiendo_interrupcion2");
     }
+	log_info(logger_cpu,"check_recibiendo_interrupcion3");
     pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
 }
 
 void ejecutando_interrupcion_fin(){
+	log_info(logger_cpu,"ejecutando_interrupcion_fin");
     if(llego_interrupcion == 0){
+		log_info(logger_cpu,"ejecutando_interrupcion_fin1");
     }
     else{
+		log_info(logger_cpu,"ejecutando_interrupcion_fin2");
         llego_interrupcion = 0;
+		log_info(logger_cpu,"ejecutando_interrupcion_fin3");
         sem_post(&sem_check_recibiendo_interrupcion);
+		log_info(logger_cpu,"ejecutando_interrupcion_fin4");
     }    
 }
 
 void ejecutando_interrupcion(){
+	log_info(logger_cpu,"ejecutando_interrupcion");
     if(llego_interrupcion == 1){
+		log_info(logger_cpu,"ejecutando_interrupcion1");
     }
     else{
+		log_info(logger_cpu,"ejecutando_interrupcion2");
         llego_interrupcion = 1;
         check_recibiendo_interrupcion();
+		log_info(logger_cpu,"ejecutando_interrupcion3");
     }
+}
+
+
+pthread_mutex_t mutex_interrupt = PTHREAD_MUTEX_INITIALIZER;
+// sem_t sem_interrupt;
+volatile bool processing_interrupt = false;
+
+// void init_interrupt_handling() {
+//     sem_init(&sem_interrupt, 0, 0); // Inicializa el semáforo en 0
+// }
+
+void handle_interrupt(int pid) {
+    pthread_mutex_lock(&mutex_interrupt);
+    if (!processing_interrupt) {
+        processing_interrupt = true;
+        pthread_mutex_unlock(&mutex_interrupt);
+
+        log_info(logger_cpu, "[INTERRUPT]: Handling interrupt for PID <%d>", pid);
+
+        // Lógica de manejo de la interrupción aquí.
+        // Simulación de alguna operación que podría tardar.
+        
+        // Concluir la interrupción
+        sem_post(&sem_interrupt);
+    } else {
+        pthread_mutex_unlock(&mutex_interrupt);
+        log_info(logger_cpu, "[INTERRUPT]: Interrupt already being processed, waiting...");
+
+        // Espera a que la interrupción actual termine de procesarse
+        sem_wait(&sem_interrupt);
+        
+        // Luego intenta manejar la interrupción nuevamente
+        handle_interrupt(pid);
+    }
+}
+
+void cleanup_interrupt_handling() {
+    pthread_mutex_destroy(&mutex_interrupt);
+    sem_destroy(&sem_interrupt);
 }
 
 
