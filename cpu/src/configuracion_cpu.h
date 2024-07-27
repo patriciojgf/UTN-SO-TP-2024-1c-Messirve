@@ -42,7 +42,6 @@ extern sem_t s_resize;
 extern sem_t s_signal_kernel;
 extern sem_t s_fetch_espere_instruccion;
 extern sem_t sem_check_recibiendo_interrupcion;
-extern sem_interrupt;
 
 //mutex
 extern pthread_mutex_t mutex_ejecucion_proceso;

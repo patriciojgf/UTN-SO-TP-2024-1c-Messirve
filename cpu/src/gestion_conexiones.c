@@ -71,13 +71,17 @@ void atender_peticiones_interrupt(){
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO mutex_ejecucion_proceso");
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
 
-                pthread_t hilo_llego_interrupcion;
-                pthread_create(&hilo_llego_interrupcion, NULL, (void*)ejecutando_interrupcion, NULL);
-                pthread_detach(hilo_llego_interrupcion);                
+                // pthread_t hilo_llego_interrupcion;
+                // pthread_create(&hilo_llego_interrupcion, NULL, (void*)ejecutando_interrupcion, NULL);
+                // pthread_detach(hilo_llego_interrupcion);                
 
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
-                pthread_mutex_lock(&mutex_ejecucion_proceso);
 
+                pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
+                pthread_mutex_lock(&mutex_ejecucion_proceso);
+                
+                llego_interrupcion = 1;
+                
                 log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
@@ -110,16 +114,21 @@ void atender_peticiones_interrupt(){
                     log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
                 }
                 free(buffer);
-                ejecutando_interrupcion_fin();
+                // ejecutando_interrupcion_fin();
                 pthread_mutex_unlock(&mutex_ejecucion_proceso);
+                pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
                 break;
             case FIN_QUANTUM:
                 log_info(logger_cpu,"[ATENDER INTERRUPT]:FIN_QUANTUM hilo_llego_interrupcion");
-                pthread_t hilo_llego_interrupcion_f_q;
-                pthread_create(&hilo_llego_interrupcion_f_q, NULL, (void*)ejecutando_interrupcion, NULL);
-                pthread_detach(hilo_llego_interrupcion_f_q);    
+                // pthread_t hilo_llego_interrupcion_f_q;
+                // pthread_create(&hilo_llego_interrupcion_f_q, NULL, (void*)ejecutando_interrupcion, NULL);
+                // pthread_detach(hilo_llego_interrupcion_f_q);    
 
+                pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
 		        pthread_mutex_lock(&mutex_ejecucion_proceso);
+                
+                llego_interrupcion = 1;
+
                 log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 log_warning(logger_cpu,"fin de quantum");
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- QUANTUM ----");
@@ -140,8 +149,9 @@ void atender_peticiones_interrupt(){
 
                 }
                 free(buffer);
-                ejecutando_interrupcion_fin();
+                // ejecutando_interrupcion_fin();
 		        pthread_mutex_unlock(&mutex_ejecucion_proceso);
+                pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
                 break;
             case INT_SIGNAL:
                 log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);

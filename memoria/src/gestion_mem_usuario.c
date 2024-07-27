@@ -8,7 +8,7 @@ void mem_escribir_dato_direccion_fisica(int dir_fisica, void* dato, int size, in
     // Validar que la dirección y tamaño no excedan el espacio de memoria
     if (dir_fisica + size > TAM_MEMORIA || dir_fisica < 0) {
         log_error(logger_memoria, "Intento de escritura fuera de los límites de la memoria por PID: %d, dirección: %d, tamaño: %d", pid, dir_fisica, size);
-        return -1;
+        //return -1;
     }
     // Realizar la copia de datos al espacio de memoria
     memcpy(memoria_espacio_usuario + dir_fisica, dato, size);    

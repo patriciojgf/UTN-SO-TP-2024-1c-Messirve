@@ -61,9 +61,14 @@ void planificador_cp(){
                     //valido si hay prioridad
                     if(!list_is_empty(lista_plan_ready_vrr)){
                         pcb_ready = list_remove(lista_plan_ready_vrr, 0); //saco el pcb de ready para pasarlo a exec
+                        log_info(logger_kernel,"VQUANTUM DISPONIBLE: PID <%d> - Q<%d>",pcb_ready->pid,pcb_ready->quantum);
                     }
                     else{
                         pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
+                        if(pcb_ready->quantum == -1){
+                             pcb_ready->quantum = QUANTUM;
+                        }                         
+                        log_info(logger_kernel,"QUANTUM DISPONIBLE: PID <%d> - Q<%d>",pcb_ready->pid,pcb_ready->quantum);
                     }
                 } else if ((ALGORITMO_PLANIFICACION==RR)||(ALGORITMO_PLANIFICACION==FIFO)){
                     pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
@@ -175,7 +180,12 @@ static void _esperar_vrr(t_pcb* pcb){
     temporal_stop(quantum_usado);
     int ms_quantum_usado = temporal_gettime(quantum_usado);
     temporal_destroy(quantum_usado);
-    if(ms_quantum_usado < QUANTUM){
-        pcb->quantum = QUANTUM-ms_quantum_usado;
+    if(pcb->quantum == -1){
+        pcb->quantum = QUANTUM;
+    }else
+    {
+        if(ms_quantum_usado < QUANTUM){
+            pcb->quantum = QUANTUM-ms_quantum_usado;
+        }
     }
 }

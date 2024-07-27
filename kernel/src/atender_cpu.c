@@ -148,6 +148,7 @@ void atender_cpu_fin_quantum(t_pcb* pcb){
     // list_add(lista_plan_ready, pcb);
     // pthread_mutex_unlock(&mutex_plan_ready);
     // sem_post(&sem_plan_ready);
+    pcb->quantum = -1;
     mover_proceso_a_ready(pcb);
 
     pthread_mutex_lock(&mutex_plan_exec);

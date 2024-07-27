@@ -18,7 +18,7 @@ void mover_proceso_a_ready(t_pcb* pcb) {
         pthread_mutex_lock(&mutex_plan_ready_vrr);
 
         //valido si estamos en VRR
-        if (ALGORITMO_PLANIFICACION==VRR && pcb->quantum < QUANTUM) {
+        if (ALGORITMO_PLANIFICACION==VRR && pcb->quantum < QUANTUM && pcb->quantum != -1) {
             list_add(lista_plan_ready_vrr, pcb);
             //Log obligatorio
             char* pids = listado_pids(lista_plan_ready_vrr);

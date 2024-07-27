@@ -186,6 +186,10 @@ void atender_peticiones_dispatch(){
 				if(proceso_finalizando && (motivo != INT_FINALIZAR_PROCESO)){
 					// log_info(logger_kernel,"[ATENDER DISPATCH]:Recibi operacion pero estoy esperando FINALIZAR_PROCESO");
 					// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");
+					
+					//estoy esta bien?
+					proceso_finalizando = false;
+					
 					pthread_mutex_unlock(&mutex_finalizar_proceso);	
 					continue;	
 				}
@@ -271,9 +275,9 @@ void atender_peticiones_dispatch(){
 						sem_post(&sem_pcb_desalojado);
 						break;
 					case FIN_QUANTUM:
-						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - FIN_QUANTUM");
-						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid);
-						//log_protegido_kernel(string_from_format("[ATENDER DISPATCH]:PID: <%d> - FIN_QUANTUM", proceso_exec->pid));
+						//log obligatorio
+						//“PID: <PID> - Desalojado por fin de Quantum”
+						log_info(logger_kernel,"PID: <%d> - Desalojado por fin de Quantum", proceso_exec->pid);
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_fin_quantum(proceso_exec);
 						break;

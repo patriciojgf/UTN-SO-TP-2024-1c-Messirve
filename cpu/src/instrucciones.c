@@ -223,7 +223,9 @@ void ejecutar_proceso(){
 		// contexto_cpu->registros_cpu.PC = contexto_cpu->program_counter;
 		pthread_mutex_unlock(&mutex_ejecucion_proceso);
 
-		check_recibiendo_interrupcion();
+
+        pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
+		pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
 
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 
@@ -340,7 +342,7 @@ static int _mov_in(t_instruccion* instruccion){
 	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
 	// en el Registro Dirección y lo almacena en el Registro Datos.
 	log_info(logger_cpu, "--------------------------------------------MOV IN---------------------------------------------");
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	//Busco los registros de la instruccion en formato char
 	char* registro_datos = list_get(instruccion->parametros, 0);
 	char* registro_direccion = list_get(instruccion->parametros, 1);
@@ -371,13 +373,13 @@ static int _mov_in(t_instruccion* instruccion){
 	//log obligario
 	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
 	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	return 0;
 }
 
 static int _mov_out(t_instruccion* instruccion){
 	log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 // MOV_OUT (Registro Dirección, Registro Datos): 
 // Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
 // obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.	
@@ -393,7 +395,7 @@ static int _mov_out(t_instruccion* instruccion){
 	int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 
 	int se_pudo_escribir = escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	log_info(logger_cpu,"---------------------------------");
 	return se_pudo_escribir;
 }
@@ -423,7 +425,6 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
             return NULL;
         }
 
-        log_info(logger_cpu, "[_io_std]: -- PID <%d> - PC<%d> - DIRECCION FISICA <%d> - Bytes a escribir <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_fisica_actual, bytes_a_escribir);
         agregar_a_pedido_memoria(pedido_io, " ", bytes_a_escribir, direccion_fisica_actual);
 
         direccion_logica_actual += bytes_a_escribir; // Mover la dirección lógica a la siguiente posición a escribir
@@ -481,19 +482,16 @@ static int _resize(t_instruccion* instruccion){
 	eliminar_paquete(paquete);
 	
 	sem_wait(&s_resize);
-	log_info(logger_cpu,"[RESIZE]: -- PID <%d> - PC<%d> - RESPUESTA_MEMORIA <%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC,respuesta_memoria);
 	if(respuesta_memoria == -1){
 		// En caso de que la respuesta de la memoria sea Out of Memory, 
 		// se deberá devolver el contexto de ejecución al Kernel informando de esta situación.
-		log_info(logger_cpu,"[_RESIZE]: -- PID <%d> - PC<%d> - RESIZE NO OK",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
 		return -1;
 	}
 	return 0;
 }
 
 static void _set(t_instruccion* instruccion){
-	log_info(logger_cpu, "--------------------------------------------SET--------------------------------------------");
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
     char* nombre_registro = list_get(instruccion->parametros, 0);
     char* valor_string = list_get(instruccion->parametros, 1);
     uint32_t nuevo_valor = (uint32_t)atoi(valor_string); // Convierte el valor string a uint32_t una sola vez
@@ -511,7 +509,7 @@ static void _set(t_instruccion* instruccion){
     }
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - Program Counter: <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC);
 	// Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	log_info(logger_cpu, "-------------------");
 }
 
@@ -573,40 +571,6 @@ static void _jnz(t_instruccion* instruccion){
     }
 }
 
-
-// static void _mov_out(t_instruccion* instruccion){
-// 	// (Registro Dirección, Registro Datos): 
-// 	// Lee el valor del Registro Datos y lo escribe 
-// 	// en la dirección física de memoria obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.
-// 	char* registro_datos = list_get(instruccion->parametros, 1);
-// 	info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
-// 	uint8_t valor_del_registro_datos = *(uint8_t*)registro_datos_info.direccion;
-
-// 	char* registro_direccion = list_get(instruccion->parametros, 0);
-// 	info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
-// 	uint8_t valor_direccion_logica = *(uint8_t*)registro_direccion_info.direccion;
-	
-// 	//guardar valor_del_registro_datos en la direccion fisica correspondiente a valor_direccion_logica
-// }
-
-// static void _copy_string(t_instruccion* instruccion){
-// 	// (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad 
-// 	// de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
-// 	log_warning(logger_cpu,"falta implementar la parte de memoria");
-
-// 	uint32_t direccion_logica_destino = contexto_cpu->registros_cpu.DI;
-// 	log_warning(logger_cpu,"traducir la direccion a fisica");
-
-//     int tamano_a_copiar = atoi(list_get(instruccion->parametros, 0));
-
-// 	char* string_a_guardar = malloc(tamano_a_copiar + 1);
-// 	memcpy(string_a_guardar, (char*)contexto_cpu->registros_cpu.SI, tamano_a_copiar);
-// 	string_a_guardar[tamano_a_copiar] = '\0';
-
-// 	log_warning(logger_cpu,"pasarle a memoria el pedido");
-// 	free(string_a_guardar);
-// }
-
 static void _f_exit(t_instruccion *inst){ 
 	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <EXIT>",contexto_cpu->pid);
@@ -616,6 +580,19 @@ static void _f_exit(t_instruccion *inst){
 
 
 // AUXILIARES
+void ejecutando_interrupcion(){
+	log_info(logger_cpu,"ejecutando_interrupcion");
+    if(llego_interrupcion == 1){
+		log_info(logger_cpu,"ejecutando_interrupcion1");
+    }
+    else{
+		log_info(logger_cpu,"ejecutando_interrupcion2");
+        llego_interrupcion = 1;
+        check_recibiendo_interrupcion();
+		log_info(logger_cpu,"ejecutando_interrupcion3");
+    }
+}
+
 void check_recibiendo_interrupcion(){
 	log_info(logger_cpu,"check_recibiendo_interrupcion");
     pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
@@ -641,61 +618,6 @@ void ejecutando_interrupcion_fin(){
 		log_info(logger_cpu,"ejecutando_interrupcion_fin4");
     }    
 }
-
-void ejecutando_interrupcion(){
-	log_info(logger_cpu,"ejecutando_interrupcion");
-    if(llego_interrupcion == 1){
-		log_info(logger_cpu,"ejecutando_interrupcion1");
-    }
-    else{
-		log_info(logger_cpu,"ejecutando_interrupcion2");
-        llego_interrupcion = 1;
-        check_recibiendo_interrupcion();
-		log_info(logger_cpu,"ejecutando_interrupcion3");
-    }
-}
-
-
-pthread_mutex_t mutex_interrupt = PTHREAD_MUTEX_INITIALIZER;
-// sem_t sem_interrupt;
-volatile bool processing_interrupt = false;
-
-// void init_interrupt_handling() {
-//     sem_init(&sem_interrupt, 0, 0); // Inicializa el semáforo en 0
-// }
-
-void handle_interrupt(int pid) {
-    pthread_mutex_lock(&mutex_interrupt);
-    if (!processing_interrupt) {
-        processing_interrupt = true;
-        pthread_mutex_unlock(&mutex_interrupt);
-
-        log_info(logger_cpu, "[INTERRUPT]: Handling interrupt for PID <%d>", pid);
-
-        // Lógica de manejo de la interrupción aquí.
-        // Simulación de alguna operación que podría tardar.
-        
-        // Concluir la interrupción
-        sem_post(&sem_interrupt);
-    } else {
-        pthread_mutex_unlock(&mutex_interrupt);
-        log_info(logger_cpu, "[INTERRUPT]: Interrupt already being processed, waiting...");
-
-        // Espera a que la interrupción actual termine de procesarse
-        sem_wait(&sem_interrupt);
-        
-        // Luego intenta manejar la interrupción nuevamente
-        handle_interrupt(pid);
-    }
-}
-
-void cleanup_interrupt_handling() {
-    pthread_mutex_destroy(&mutex_interrupt);
-    sem_destroy(&sem_interrupt);
-}
-
-
-
 
 
 //
