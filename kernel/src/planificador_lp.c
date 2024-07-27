@@ -21,12 +21,14 @@ void mover_proceso_a_ready(t_pcb* pcb) {
         if (ALGORITMO_PLANIFICACION==VRR && pcb->quantum < QUANTUM) {
             list_add(lista_plan_ready_vrr, pcb);
             //Log obligatorio
-            log_info(logger_kernel,"Cola Ready Prioridad: %s", listado_pids(lista_plan_ready_vrr));
+            char* pids = listado_pids(lista_plan_ready_vrr);
+            log_info(logger_kernel,"Cola Ready Prioridad: %s", pids);
         }
         else{ 
             list_add(lista_plan_ready, pcb);
             //Log obligatorio
-            log_info(logger_kernel,"Cola Ready: %s", listado_pids(lista_plan_ready));
+            char* pids = listado_pids(lista_plan_ready);
+            log_info(logger_kernel,"Cola Ready: %s", pids);
         }
         // cantidad_procesos_planificados++;  // Incrementar contador de procesos planificados
         sem_post(&sem_plan_ready);

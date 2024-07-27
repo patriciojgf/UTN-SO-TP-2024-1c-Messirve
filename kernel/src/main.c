@@ -12,11 +12,8 @@ int main(int argc, char **argv) {
 
 	/*---------- Hilos para planificadores --------------*/
 	gestionar_conexion_memoria();
-	log_info(logger_kernel,"[main IO]: gestionar_conexion_memoria");
 	gestionar_conexion_interrupt();
-	log_info(logger_kernel,"[main IO]: gestionar_conexion_interrupt");
 	gestionar_conexion_dispatch();
-	log_info(logger_kernel,"[main IO]: gestionar_conexion_dispatch");
 
 	pthread_t hilo_gestionar_conexion_io;
 	pthread_create(&hilo_gestionar_conexion_io, NULL, (void*) gestionar_conexion_io, NULL);
@@ -32,7 +29,6 @@ int main(int argc, char **argv) {
 	pthread_detach(hilo_planificador_cp);       	
 
 	
-	log_info(logger_kernel,"[main IO]: leerConsola");
 	pthread_t t5;
 	pthread_create(&t5, NULL, (void*) leerConsola, NULL);
 	pthread_join(t5, NULL);

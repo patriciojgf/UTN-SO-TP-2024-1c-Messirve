@@ -23,6 +23,7 @@ typedef struct {
 void ejecutando_interrupcion();
 void ejecutando_interrupcion_fin();
 void check_recibiendo_interrupcion();
+void handle_interrupt(int pid);
 
 // char* fetch_instruccion();
 void ejecutar_proceso();

@@ -1,7 +1,7 @@
 #!/bin/bash
 FILE=bin/entradasalida
-CONFIG_FILE=${1:-./cfg/TECLADO.config}
-NOMBRE_INTERFAZ=${2:-TECLADO}
+CONFIG_FILE=${1:-./cfg/MONITOR.config}
+NOMBRE_INTERFAZ=${2:-MONITOR}
 
 make clean all
 make

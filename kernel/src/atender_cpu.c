@@ -1,6 +1,6 @@
 #include "atender_cpu.h"
 
-static void _enviar_peticiones_io_gen(t_interfaz *interfaz);
+static void _enviar_peticiones_io_gen(t_interfaz *interfaz,int pid);
 static t_interfaz* _obtener_interfaz(char* nombre);
 
 /*---------------------------------------------------------*/
@@ -504,7 +504,7 @@ void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
 		pthread_mutex_unlock(&interfaz->mutex_cola_block);
 
         //sem_post(&interfaz->semaforo);  // Notificar al hilo que maneja esta interfaz
-        _enviar_peticiones_io_gen(interfaz);
+        _enviar_peticiones_io_gen(interfaz,pcb->pid);
     }
     else{
         //habria que enviar a exit?  
@@ -720,7 +720,7 @@ void atender_cpu_io_fs_write(t_pcb* pcb, t_instruccion* instruccion)
 /*AUXILIARES INTERFAZ*/
 /*--------------------------------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------------------------------*/
-static void _enviar_peticiones_io_gen(t_interfaz *interfaz){
+static void _enviar_peticiones_io_gen(t_interfaz *interfaz, int pid){
     //log_protegido_kernel(string_from_format("[ENVIAR PETICION INTERFAZ IO GEN %s]: INICIADA ---- ESPERANDO ----", interfaz->nombre_io));
 
     //espero que haya algun pedido creado
@@ -732,6 +732,7 @@ static void _enviar_peticiones_io_gen(t_interfaz *interfaz){
     pthread_mutex_unlock(&interfaz->mutex_cola_block);
 
     t_paquete* paquete_pedido = crear_paquete(IO_GEN_SLEEP);
+    agregar_datos_sin_tamaño_a_paquete(paquete_pedido, &pid, sizeof(int));
     agregar_datos_sin_tamaño_a_paquete(paquete_pedido, &pedido->tiempo_sleep, sizeof(int));
     enviar_paquete(paquete_pedido, interfaz->socket);
     eliminar_paquete(paquete_pedido);
