@@ -244,7 +244,7 @@ static void* manejar_respuesta_io(void* arg) {
 //     }
 //     return 0;
 // }
-int atender_io_fs_create(t_pcb* pcb, t_instruccion* instruccion) {
+int atender_io_fs_create_delete(t_pcb* pcb, t_instruccion* instruccion, int operacion) {
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
     char* nombre_archivo = list_get(instruccion->parametros, 1);
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
@@ -272,7 +272,7 @@ int atender_io_fs_create(t_pcb* pcb, t_instruccion* instruccion) {
     list_add(interfaz->cola_procesos, pedido_en_espera);
     pthread_mutex_unlock(&interfaz->mutex_cola_block);
 
-    t_paquete* paquete_pedido_io_fs = crear_paquete(IO_FS_CREATE);
+    t_paquete* paquete_pedido_io_fs = crear_paquete(operacion);
     agregar_datos_sin_tamaño_a_paquete(paquete_pedido_io_fs, &pid_pedido, sizeof(int));
     agregar_a_paquete(paquete_pedido_io_fs, nombre_archivo,strlen(nombre_archivo)+1);    
     enviar_paquete(paquete_pedido_io_fs, interfaz->socket);
@@ -280,9 +280,9 @@ int atender_io_fs_create(t_pcb* pcb, t_instruccion* instruccion) {
     pthread_t hilo_respuesta_io;
     pthread_create(&hilo_respuesta_io, NULL, manejar_respuesta_io, (void*) pedido_en_espera);
     pthread_detach(hilo_respuesta_io);
-    
+
     return 0;
-}    
+}
 
 int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion) {
     // Espera recibir una operación específica para IO

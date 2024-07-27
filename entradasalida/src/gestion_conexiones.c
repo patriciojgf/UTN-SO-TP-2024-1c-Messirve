@@ -88,6 +88,7 @@ static void _atender_peticiones_kernel(){
         int mensajeOK =1;
         int size=0;
         t_paquete* paquete_para_kernel;
+        int pid =0;
         int cod_op = recibir_operacion(socket_cliente_kernel);
         switch(cod_op){
             case MENSAJE:
@@ -184,42 +185,53 @@ static void _atender_peticiones_kernel(){
                 log_info(logger_io, "Iniciando [IO_FS_CREATE]");
                 usleep(TIEMPO_UNIDAD_TRABAJO*1000);
                 size=0;
-                int pid_fs_create =-1;
+                pid=0;
                 int largo_nombre_archivo_fs_create =0;
+
                 void *buffer_fs_create = recibir_buffer(&size, socket_cliente_kernel);
-                memcpy(&pid_fs_create, buffer_fs_create, sizeof(int));
+                memcpy(&pid, buffer_fs_create, sizeof(int));
                 memcpy(&largo_nombre_archivo_fs_create, buffer_fs_create + sizeof(int), sizeof(int));
                 char* nombre_archivo_create = malloc(largo_nombre_archivo_fs_create);
                 memcpy(nombre_archivo_create, buffer_fs_create + sizeof(int) + sizeof(int), largo_nombre_archivo_fs_create);
                 //log obligatorio
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
-                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_CREATE>",pid_fs_create);
+                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_CREATE>",pid);
                 log_info(logger_io, "Archivo <%s>",nombre_archivo_create);
-                crear_archivo(nombre_archivo_create);
+                crear_archivo(nombre_archivo_create);                
                 free(nombre_archivo_create);
+
                 paquete_para_kernel = crear_paquete(IO_FS_CREATE);
                 agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                 enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
-                eliminar_paquete(paquete_para_kernel);     
-                log_info(logger_io,"IO_FS_CREATE: ok enviado a kernel");   
+                eliminar_paquete(paquete_para_kernel);
 
+                log_info(logger_io,"IO_FS_CREATE: ok enviado a kernel");   
                 break;
             case IO_FS_DELETE:
                 log_info(logger_io, "Iniciando [IO_FS_DELETE]");
                 usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                //recibo el nombre del archivo a eliminar
-                solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
-                if (solicitud_recibida_kernel == NULL) 
-                {
-                    error_show("Error al recibir la solicitud IO\n");
-                    continue;
-                }
                 size=0;
-                void *buffer_delete = recibir_buffer(&size, socket_cliente_kernel);           
-                char* nombre_archivo_delete;
-                memcpy(&nombre_archivo_delete, buffer_delete, sizeof(int));
-                log_info(logger_io, "[IO_FS_DELETE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
+                pid=0;
+                int largo_nombre_archivo_fs_delete = 0;
+                
+                void *buffer_fs_delete = recibir_buffer(&size, socket_cliente_kernel);
+                memcpy(&pid, buffer_fs_delete, sizeof(int));
+                memcpy(&largo_nombre_archivo_fs_delete, buffer_fs_delete + sizeof(int), sizeof(int));
+                char* nombre_archivo_delete = malloc(largo_nombre_archivo_fs_delete);
+                memcpy(nombre_archivo_delete, buffer_fs_delete + sizeof(int) + sizeof(int), largo_nombre_archivo_fs_delete);
+                //log obligatorio
+                //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
+                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_DELETE>",pid);
+                log_info(logger_io, "Archivo <%s>",nombre_archivo_create);
                 liberar_bloques_de_archivo(nombre_archivo_delete);
+                free(nombre_archivo_delete);
+
+                paquete_para_kernel = crear_paquete(IO_FS_DELETE);
+                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
+                eliminar_paquete(paquete_para_kernel); 
+
+                log_info(logger_io,"IO_FS_DELETE: ok enviado a kernel");   
                 break;
             case IO_FS_TRUNCATE:
                 log_info(logger_io, "Iniciando [IO_FS_TRUNCATE]");

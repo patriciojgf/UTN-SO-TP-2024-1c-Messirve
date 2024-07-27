@@ -15,7 +15,7 @@ typedef struct {
 // t_recurso* obtener_recurso(char* recurso);
 // void liberar_recursos_pcb(t_pcb* pcb);
 // void liberar_estructuras_memoria(t_pcb* pcb);
-int atender_io_fs_create(t_pcb* pcb, t_instruccion* instruccion);
+int atender_io_fs_create_delete(t_pcb* pcb, t_instruccion* instruccion, int cod_operacion);
 void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion);
 void atender_cpu_exit(t_pcb* pcb, char* motivo_exit);
 void atender_cpu_fin_quantum(t_pcb* pcb);
