@@ -20,23 +20,23 @@ static void _f_exit(t_instruccion *inst);
 static info_registro_cpu _get_direccion_registro(char* string_registro);
 static t_solicitud_io* _io_std(t_instruccion* instruccion);
 static t_solicitud_fs_rw* _io_fs_rw(t_instruccion* instruccion);
-static int calcular_bytes_segun_registro(char* registro);
+// static int calcular_bytes_segun_registro(char* registro);
 //
 
-static void mostrar_valores_registros_cpu(){
-    log_info(logger_cpu, "Valores actuales de los registros de la CPU:");
-    log_info(logger_cpu, "PC: %u", contexto_cpu->registros_cpu.PC);
-    log_info(logger_cpu, "AX: %u", contexto_cpu->registros_cpu.AX);
-    log_info(logger_cpu, "BX: %u", contexto_cpu->registros_cpu.BX);
-    log_info(logger_cpu, "CX: %u", contexto_cpu->registros_cpu.CX);
-    log_info(logger_cpu, "DX: %u", contexto_cpu->registros_cpu.DX);
-    log_info(logger_cpu, "EAX: %u", contexto_cpu->registros_cpu.EAX);
-    log_info(logger_cpu, "EBX: %u", contexto_cpu->registros_cpu.EBX);
-    log_info(logger_cpu, "ECX: %u", contexto_cpu->registros_cpu.ECX);
-    log_info(logger_cpu, "EDX: %u", contexto_cpu->registros_cpu.EDX);
-    log_info(logger_cpu, "SI: %u", contexto_cpu->registros_cpu.SI);
-    log_info(logger_cpu, "DI: %u", contexto_cpu->registros_cpu.DI);	
-}
+// static void mostrar_valores_registros_cpu(){
+//     log_info(logger_cpu, "Valores actuales de los registros de la CPU:");
+//     log_info(logger_cpu, "PC: %u", contexto_cpu->registros_cpu.PC);
+//     log_info(logger_cpu, "AX: %u", contexto_cpu->registros_cpu.AX);
+//     log_info(logger_cpu, "BX: %u", contexto_cpu->registros_cpu.BX);
+//     log_info(logger_cpu, "CX: %u", contexto_cpu->registros_cpu.CX);
+//     log_info(logger_cpu, "DX: %u", contexto_cpu->registros_cpu.DX);
+//     log_info(logger_cpu, "EAX: %u", contexto_cpu->registros_cpu.EAX);
+//     log_info(logger_cpu, "EBX: %u", contexto_cpu->registros_cpu.EBX);
+//     log_info(logger_cpu, "ECX: %u", contexto_cpu->registros_cpu.ECX);
+//     log_info(logger_cpu, "EDX: %u", contexto_cpu->registros_cpu.EDX);
+//     log_info(logger_cpu, "SI: %u", contexto_cpu->registros_cpu.SI);
+//     log_info(logger_cpu, "DI: %u", contexto_cpu->registros_cpu.DI);	
+// }
 
 static int min(int a, int b) {
     return (a < b) ? a : b;
@@ -371,8 +371,8 @@ static int _mov_in(t_instruccion* instruccion){
 	//genero un log para ver el valor leido y escrito en el registro
 	int dato_leido_int = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 	//log obligario
-	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
-	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
+	// Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
+	log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
 	// mostrar_valores_registros_cpu();
 	return 0;
 }
@@ -392,9 +392,10 @@ static int _mov_out(t_instruccion* instruccion){
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s>:<%u> - <%s>:<%u>",contexto_cpu->pid, registro_direccion, leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano), registro_datos, leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano));
 
 	int direccion_logica = leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano);
-	int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
+	// int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 
 	int se_pudo_escribir = escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
+	
 	// mostrar_valores_registros_cpu();
 	log_info(logger_cpu,"---------------------------------");
 	return se_pudo_escribir;
@@ -798,14 +799,14 @@ static t_list* _parametros_instruccion(char* instruccion, u_int8_t cantidad_para
 	return parametros;
 }
 
-static int calcular_bytes_segun_registro(char* registro){
-	log_info(logger_cpu,"calcular_bytes_segun_registro - REGISTRO: <%s>",registro);
-	int bytes = -1;
-	if(strcmp(registro,"AX")==0 || strcmp(registro,"BX")==0 || strcmp(registro,"CX")==0 || strcmp(registro,"DX")==0){
-		bytes=1;
-	}
-	if(strcmp(registro,"EAX")==0 || strcmp(registro,"EBX")==0 || strcmp(registro,"ECX")==0 || strcmp(registro,"EDX")==0 || strcmp(registro,"SI")==0 || strcmp(registro,"DI")==0){
-		bytes=4;
-	}
-	return bytes;
-}
+// static int calcular_bytes_segun_registro(char* registro){
+// 	log_info(logger_cpu,"calcular_bytes_segun_registro - REGISTRO: <%s>",registro);
+// 	int bytes = -1;
+// 	if(strcmp(registro,"AX")==0 || strcmp(registro,"BX")==0 || strcmp(registro,"CX")==0 || strcmp(registro,"DX")==0){
+// 		bytes=1;
+// 	}
+// 	if(strcmp(registro,"EAX")==0 || strcmp(registro,"EBX")==0 || strcmp(registro,"ECX")==0 || strcmp(registro,"EDX")==0 || strcmp(registro,"SI")==0 || strcmp(registro,"DI")==0){
+// 		bytes=4;
+// 	}
+// 	return bytes;
+// }

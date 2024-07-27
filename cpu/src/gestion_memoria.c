@@ -7,7 +7,17 @@ static int tlb_busco_entrada_libre();
 static void tlb_agregar_pagina(int pid, int pagina, int marco);
 static int memoria_pido_marco(int pagina);
 /*----*/
-
+// static int leer_valor_registro_como_int(void* direccion, size_t tamano) {
+//     uint32_t valor = 0;
+//     if (tamano == 1) {
+//         valor = *(uint8_t*)direccion;
+//     } else if (tamano == 2) {
+//         valor = *(uint16_t*)direccion;
+//     } else if (tamano == 4) {
+//         valor = *(uint32_t*)direccion;
+//     }
+//     return (int)valor;  // Convertimos explícitamente a int para manejar la dirección como entero.
+// }
 static void mostar_entradas_tbl(){
     for(int i = 0; i < list_size(lista_tlb); i++){
         t_fila_tlb* entrada = list_get(lista_tlb, i);
@@ -22,9 +32,6 @@ static int min(int a, int b) {
 /*----*/
 
 int escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor) {
-    log_info(logger_cpu,"escribir_valor_en_memoria - valor: %s", valor);
-    log_info(logger_cpu,"escribir_valor_en_memoria - valor: %d", *valor);
-    log_info(logger_cpu,"escribir_valor_en_memoria - valor: %u", *valor);
 
     int total_escrito = 0;
 
