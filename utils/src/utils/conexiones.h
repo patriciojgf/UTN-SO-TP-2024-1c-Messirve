@@ -196,4 +196,12 @@ void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, int size_da
 void eliminar_pedido_memoria(t_solicitud_io* solicitud) ;
 void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text);
 void liberar_solicitud_io(t_solicitud_io* solicitud);
+
+t_solicitud_fs_rw* crear_pedido_fs_rw(int pid, uint32_t size_solicitud, int puntero_archivo) ;
+t_solicitud_fs_rw* recibir_solicitud_io_fs_rw(int socket);
+void agregar_a_pedido_fs_rw(t_solicitud_fs_rw* solicitud, char* dato, int size_dato, uint32_t direccion_fisica);
+void eliminar_pedido_fs_rw(t_solicitud_fs_rw* solicitud);
+t_paquete* empaquetar_solicitud_fs_rw(t_solicitud_fs_rw* solicitud, int motivo);
+void enviar_solicitud_io_fs_rw(int socket, t_solicitud_fs_rw* solicitud, int motivo);
+
 #endif /* CONEXIONES_H_ */

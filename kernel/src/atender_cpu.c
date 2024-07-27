@@ -389,7 +389,54 @@ int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion) {
     return 0;
 }
 
+int preparar_enviar_solicitud_fw_rw(t_pcb* pcb, t_instruccion* instruccion) {
+    // Espera recibir una operación específica para IO
+    int cod = recibir_operacion(socket_dispatch);
+    if (cod != IO_FS_WRITE && cod != IO_FS_READ) {
+        log_error(logger_kernel, "Operación recibida incorrecta: %d", cod);
+        return -1;
+    }
+    t_solicitud_fs_rw* solicitud_recibida_cpu = recibir_solicitud_io_fs_rw(socket_dispatch);
+    char* nombre_interfaz = list_get(instruccion->parametros, 0);
+    char* nombre_archivo = list_get(instruccion->parametros, 1);
+    t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
+    if (interfaz == NULL) {
+        log_error(logger_kernel, "No se encontró la interfaz: %s", nombre_interfaz);
+        return -1;
+    }
+    log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
+    t_pedido_stdin2* pedido_en_espera = malloc(sizeof(t_pedido_stdin2));
+    if (!pedido_en_espera) {
+        log_error(logger_kernel, "No se pudo asignar memoria para el pedido en espera");
+        return -1;
+    }
+    pedido_en_espera->pcb = pcb;
+    pedido_en_espera->interfaz = interfaz;
+    sem_init(&pedido_en_espera->semaforo_pedido_ok, 0, 0);
 
+    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));    
+
+    pthread_mutex_lock(&mutex_plan_exec);
+    proceso_exec = NULL;
+    pthread_mutex_unlock(&mutex_plan_exec);
+    sem_post(&sem_plan_exec_libre);
+
+    pthread_mutex_lock(&interfaz->mutex_cola_block);
+    list_add(interfaz->cola_procesos, pedido_en_espera);
+    pthread_mutex_unlock(&interfaz->mutex_cola_block);
+
+    enviar_solicitud_io_fs_rw(interfaz->socket, solicitud_recibida_cpu, cod);
+    t_paquete* paquete_info_extra = crear_paquete(cod);
+    agregar_a_paquete(paquete_info_extra, nombre_archivo, strlen(nombre_archivo) + 1);
+
+
+    // Crear y lanzar el hilo para manejar la respuesta
+    pthread_t hilo_respuesta_io;
+    pthread_create(&hilo_respuesta_io, NULL, manejar_respuesta_io, (void*) pedido_en_espera);
+    pthread_detach(hilo_respuesta_io);
+
+    return 0;
+}
 
 void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){ 
     char* nombre_interfaz = list_get(instruccion->parametros, 0);

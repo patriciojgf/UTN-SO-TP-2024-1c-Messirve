@@ -85,6 +85,7 @@ void gestionar_conexion_kernel(){
 static void _atender_peticiones_kernel(){
     while(1){
         t_solicitud_io* solicitud_recibida_kernel;
+        t_solicitud_fs_rw* solicitud_recibida_fs_rw;
         int mensajeOK =1;
         int size=0;
         t_paquete* paquete_para_kernel;
@@ -172,6 +173,70 @@ static void _atender_peticiones_kernel(){
                     log_error(logger_io,"falla en conexion con memoria");
                 }
                 break;
+            case IO_FS_WRITE:
+                log_info(logger_io, "Iniciando [IO_FS_WRITE]");
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
+                size=0;
+                pid=0;
+                int largo_nombre_archivo_fs_write = 0;                
+                solicitud_recibida_fs_rw = recibir_solicitud_io_fs_rw(socket_cliente_kernel);
+                if (solicitud_recibida_fs_rw == NULL) {
+                    fprintf(stderr, "Error al recibir la solicitud IO\n");
+                    continue;
+                }
+                void *buffer_fs_write = recibir_buffer(&size, socket_cliente_kernel);                     
+                memcpy(&largo_nombre_archivo_fs_write, buffer_fs_write, sizeof(int));
+                char* nombre_archivo_fs_write = malloc(largo_nombre_archivo_fs_write);
+                memcpy(nombre_archivo_fs_write, buffer_fs_write + sizeof(int), largo_nombre_archivo_fs_write);
+                free(buffer_fs_write);
+
+                //aca hacer lo que tiene que hacer
+                //en solicitud_recibida_fs_rw esta cada direccion de memoria fisica, y la cantidad de bytes que va a leer/escribir ahi.
+                //hay un campo libre para guardar datos (en caso de tener que escribir a memoria le metes el dato ahi)
+
+                void* datos = malloc(size); //TODO: cambiar al que corresponda
+                escribir_archivo(datos, nombre_archivo_fs_write, 0, 0); //reemplazar puntero y tamaño
+                free(datos);
+
+                free(nombre_archivo_fs_write);
+
+                paquete_para_kernel = crear_paquete(IO_FS_WRITE);
+                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
+                eliminar_paquete(paquete_para_kernel); 
+                break;  
+            case IO_FS_READ:
+                log_info(logger_io, "Iniciando [IO_FS_READ]");
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
+                size=0;
+                pid=0;
+                int largo_nombre_archivo_fs_read = 0;                
+                solicitud_recibida_fs_rw = recibir_solicitud_io_fs_rw(socket_cliente_kernel);
+                if (solicitud_recibida_fs_rw == NULL) {
+                    fprintf(stderr, "Error al recibir la solicitud IO\n");
+                    continue;
+                }
+                void *buffer_fs_read = recibir_buffer(&size, socket_cliente_kernel);                     
+                memcpy(&largo_nombre_archivo_fs_read, buffer_fs_read, sizeof(int));
+                char* nombre_archivo_fs_read = malloc(largo_nombre_archivo_fs_read);
+                memcpy(nombre_archivo_fs_read, buffer_fs_read + sizeof(int), largo_nombre_archivo_fs_read);
+                free(buffer_fs_read);
+
+                //aca hacer lo que tiene que hacer
+                //en solicitud_recibida_fs_rw esta cada direccion de memoria fisica, y la cantidad de bytes que va a leer/escribir ahi.
+                //hay un campo libre para guardar datos (en caso de tener que escribir a memoria le metes el dato ahi)
+                
+                void* datos_lectura = leer_archivo(nombre_archivo_fs_read, 0, 0); //reemplazar puntero y tamaño
+                //escribir_memoria(params);
+                free(datos_lectura);
+
+                free(nombre_archivo_fs_read);
+
+                paquete_para_kernel = crear_paquete(IO_FS_WRITE);
+                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
+                eliminar_paquete(paquete_para_kernel); 
+                break;                 
             case IO_GEN_SLEEP:
                 size=0;
                 void *buffer = recibir_buffer(&size, socket_cliente_kernel);           
@@ -260,34 +325,6 @@ static void _atender_peticiones_kernel(){
                 eliminar_paquete(paquete_para_kernel); 
 
                 log_info(logger_io,"IO_FS_TRUNCATE: ok enviado a kernel");          
-                break;
-            case IO_FS_WRITE:
-                log_info(logger_io, "Iniciando [IO_FS_WRITE]");
-                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                //TODO: recibir estructura, crear estructura?
-                // leer_memoria();
-                size=0;
-                void *buffer_write = recibir_buffer(&size, socket_cliente_kernel);           
-                char* nombre_archivo_write;
-                memcpy(&nombre_archivo_write, buffer_write, sizeof(int));
-                void* datos = malloc(size); //TODO: cambiar al que corresponda
-                escribir_archivo(datos, nombre_archivo_write, 0, 0); //reemplazar puntero y tamaño
-                free(datos);
-                break;
-            case IO_FS_READ:
-                log_info(logger_io, "Iniciando [IO_FS_READ]");
-                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                //TODO: recibir estructura, crear estructura?
-                // leer_memoria();
-                size=0;
-                void *buffer_read = recibir_buffer(&size, socket_cliente_kernel);           
-                char* nombre_archivo_read;
-                memcpy(&nombre_archivo_read, buffer_read, sizeof(int));
-                void* datos_lectura = leer_archivo(nombre_archivo_read, 0, 0); //reemplazar puntero y tamaño
-                //escribir_memoria(params);
-                free(datos_lectura);
-                //void* data = leer_archivo_fs(params);
-                //escribir_memoria(data);
                 break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");

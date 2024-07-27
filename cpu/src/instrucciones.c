@@ -11,8 +11,6 @@ static void _jnz(t_instruccion* instruccion);
 
 //fs
 static void envio_pedido_fs_truncate(int socket,t_instruccion* instruccion);
-static void _fs_write(t_instruccion* instruccion);
-static void _fs_read(t_instruccion* instruccion);
 
 static int _resize(t_instruccion* instruccion);
 static void _copy_string(t_instruccion* instruccion);
@@ -21,6 +19,7 @@ static int _mov_out(t_instruccion* instruccion);
 static void _f_exit(t_instruccion *inst);
 static info_registro_cpu _get_direccion_registro(char* string_registro);
 static t_solicitud_io* _io_std(t_instruccion* instruccion);
+static t_solicitud_fs_rw* _io_fs_rw(t_instruccion* instruccion);
 static int calcular_bytes_segun_registro(char* registro);
 //
 
@@ -56,7 +55,8 @@ void ejecutar_proceso(){
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 		t_solicitud_io* pedido_io_stdin_read;
 		t_solicitud_io* pedido_io_stdout_write;
-		t_solicitud_rw_fs* pedido_io_fs_rw;
+		t_solicitud_fs_rw* pedido_io_fs_read;
+		t_solicitud_fs_rw* pedido_io_fs_write;
 
         // Enviar solicitud de instrucción.
         t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
@@ -160,10 +160,20 @@ void ejecutar_proceso(){
 				motivo_desalojo = IO_FS_TRUNCATE;
 				break;
 			case IO_FS_READ:
-				motivo_desalojo = IO_FS_READ;
+				pedido_io_fs_read=_io_fs_rw(inst_decodificada);
+				if(pedido_io_fs_read == NULL){
+					motivo_desalojo = PAGE_FAULT;
+				} else{
+					motivo_desalojo = IO_FS_READ;
+				}
 				break;
 			case IO_FS_WRITE:
-				motivo_desalojo = IO_FS_WRITE;
+				pedido_io_fs_write=_io_fs_rw(inst_decodificada);
+				if(pedido_io_fs_write == NULL){
+					motivo_desalojo = PAGE_FAULT;
+				} else{
+					motivo_desalojo = IO_FS_WRITE;
+				}
 				break;
 			case WAIT:
 				motivo_desalojo = WAIT;
@@ -218,6 +228,12 @@ void ejecutar_proceso(){
 			}
 			if (motivo_desalojo == IO_FS_TRUNCATE){
 				envio_pedido_fs_truncate(socket_cliente_dispatch, inst_decodificada);
+			}
+			if (motivo_desalojo == IO_FS_READ){
+				enviar_solicitud_io_fs_rw(socket_cliente_dispatch, pedido_io_fs_read,motivo_desalojo);
+			}
+			if (motivo_desalojo == IO_FS_WRITE){
+				enviar_solicitud_io_fs_rw(socket_cliente_dispatch, pedido_io_fs_write,motivo_desalojo);
 			}
 		}
 
@@ -396,6 +412,39 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
     }
 
     return pedido_io;
+}
+
+static t_solicitud_fs_rw* _io_fs_rw(t_instruccion* instruccion){
+	char* registro_direccion = list_get(instruccion->parametros, 2);
+	char* registro_tamano = list_get(instruccion->parametros, 3);
+	char* registro_puntero = list_get(instruccion->parametros, 3);
+	info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
+	info_registro_cpu registro_tamano_info = _get_direccion_registro(registro_tamano);
+	info_registro_cpu registro_puntero_info = _get_direccion_registro(registro_puntero);
+
+	int direccion_logica_actual = leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano);
+    int valor_tamano_a_escribir = leer_valor_registro_como_int(registro_tamano_info.direccion, registro_tamano_info.tamano);
+	int puntero = leer_valor_registro_como_int(registro_puntero_info.direccion, registro_puntero_info.tamano);
+
+	log_info(logger_cpu,"[_io_fs_rw]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d> - Puntero <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir, puntero);
+	t_solicitud_fs_rw* pedido_fs_rw = crear_pedido_fs_rw(contexto_cpu->pid, valor_tamano_a_escribir, puntero);
+    int total_escrito = 0;
+	while (total_escrito < valor_tamano_a_escribir) {
+        int desplazamiento_inicial = direccion_logica_actual % tamanio_pagina;
+        int espacio_disponible_en_pagina = tamanio_pagina - desplazamiento_inicial;
+        int bytes_a_escribir = min(espacio_disponible_en_pagina, valor_tamano_a_escribir - total_escrito);
+        int direccion_fisica_actual = mmu(direccion_logica_actual);
+
+        if (direccion_fisica_actual == -1) {
+            eliminar_pedido_fs_rw(pedido_fs_rw);
+            return NULL;
+        }
+
+		agregar_a_pedido_fs_rw(pedido_fs_rw, " ", bytes_a_escribir, direccion_fisica_actual);
+        direccion_logica_actual += bytes_a_escribir; // Mover la dirección lógica a la siguiente posición a escribir
+        total_escrito += bytes_a_escribir; // Incrementar el contador de bytes escritos
+	}
+	return pedido_fs_rw;
 }
 
 static int _resize(t_instruccion* instruccion){

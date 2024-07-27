@@ -99,6 +99,14 @@ typedef struct {
 
 typedef struct {
     int pid;
+    uint32_t size_solicitud;
+    uint32_t cantidad_accesos;    
+    t_dato_memoria* datos_memoria;
+    int puntero_archivo;
+} t_solicitud_fs_rw;
+
+typedef struct {
+    int pid;
     char* nombre_archivo;
     int bytes;
 } t_solicitud_fs;

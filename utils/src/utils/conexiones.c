@@ -361,6 +361,7 @@ void desempaquetar_contexto_cpu(t_paquete* paquete_contexto, t_instruccion* inst
 	}
 	
 }
+
 /*Conexion con CPU + Paquetes - FIN*/
 
 /*IO READ*/
@@ -381,8 +382,33 @@ t_paquete* empaquetar_solicitud_io(t_solicitud_io* solicitud, int motivo) {
     return paquete;
 }
 
+t_paquete* empaquetar_solicitud_fs_rw(t_solicitud_fs_rw* solicitud, int motivo) {
+    t_paquete* paquete = crear_paquete(motivo);
+    agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->pid), sizeof(int));
+    agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->size_solicitud), sizeof(uint32_t));
+    agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->cantidad_accesos), sizeof(uint32_t));
+
+    for (int i = 0; i < solicitud->cantidad_accesos; i++) {
+        agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->datos_memoria[i].direccion_fisica), sizeof(uint32_t));
+
+        agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->datos_memoria[i].tamano), sizeof(uint32_t));
+		
+        agregar_a_paquete(paquete, solicitud->datos_memoria[i].datos, solicitud->datos_memoria[i].tamano);
+		
+    }
+	agregar_datos_sin_tamaño_a_paquete(paquete, &(solicitud->puntero_archivo), sizeof(uint32_t));
+	return paquete;
+}
+
+
 void enviar_solicitud_io(int socket, t_solicitud_io* solicitud, int motivo) {
     t_paquete* paquete = empaquetar_solicitud_io(solicitud, motivo);
+    enviar_paquete(paquete, socket);
+    eliminar_paquete(paquete);
+}
+
+void enviar_solicitud_io_fs_rw(int socket, t_solicitud_fs_rw* solicitud, int motivo) {
+    t_paquete* paquete = empaquetar_solicitud_fs_rw(solicitud, motivo);
     enviar_paquete(paquete, socket);
     eliminar_paquete(paquete);
 }
@@ -422,6 +448,36 @@ t_solicitud_io* recibir_solicitud_io(int socket) {
     return solicitud;
 }
 
+t_solicitud_fs_rw* recibir_solicitud_io_fs_rw(int socket){
+    int size;
+    void* buffer = recibir_buffer(&size, socket);
+    int desplazamiento = 0;
+    t_solicitud_fs_rw* solicitud = malloc(sizeof(t_solicitud_fs_rw));
+
+    memcpy(&(solicitud->pid), buffer + desplazamiento, sizeof(int));
+    desplazamiento += sizeof(int);
+    memcpy(&(solicitud->size_solicitud), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+    memcpy(&(solicitud->cantidad_accesos), buffer + desplazamiento, sizeof(uint32_t));
+    desplazamiento += sizeof(uint32_t);
+
+    solicitud->datos_memoria = malloc(solicitud->cantidad_accesos * sizeof(t_dato_memoria));
+    for (int i = 0; i < solicitud->cantidad_accesos; i++) {
+        memcpy(&(solicitud->datos_memoria[i].direccion_fisica), buffer + desplazamiento, sizeof(uint32_t));
+        desplazamiento += sizeof(uint32_t);
+
+        memcpy(&(solicitud->datos_memoria[i].tamano), buffer + desplazamiento, sizeof(uint32_t));
+        desplazamiento += sizeof(uint32_t) + sizeof(int);
+
+        solicitud->datos_memoria[i].datos = malloc(solicitud->datos_memoria[i].tamano);
+        memcpy(solicitud->datos_memoria[i].datos, buffer + desplazamiento, solicitud->datos_memoria[i].tamano);
+        desplazamiento += solicitud->datos_memoria[i].tamano;	
+    }
+	//puntero_archivo
+	memcpy(&(solicitud->puntero_archivo), buffer + desplazamiento, sizeof(int));
+    free(buffer);
+    return solicitud;
+}
 
 
 t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud) {
@@ -433,6 +489,18 @@ t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud) {
         solicitud->datos_memoria = NULL;  // Inicialmente no hay datos
     }
     return solicitud;
+}
+
+t_solicitud_fs_rw* crear_pedido_fs_rw(int pid, uint32_t size_solicitud, int puntero_archivo) {
+	t_solicitud_fs_rw* solicitud = malloc(sizeof(t_solicitud_fs_rw));
+	if (solicitud != NULL) {
+		solicitud->pid = pid;
+		solicitud->size_solicitud = size_solicitud;
+		solicitud->cantidad_accesos = 0;
+		solicitud->datos_memoria = NULL;  // Inicialmente no hay datos
+		solicitud->puntero_archivo = puntero_archivo;
+	}
+	return solicitud;
 }
 
 
@@ -464,6 +532,32 @@ void agregar_a_pedido_memoria(t_solicitud_io* solicitud, char* dato, int size_da
     }
 }
 
+void agregar_a_pedido_fs_rw(t_solicitud_fs_rw* solicitud, char* dato, int size_dato, uint32_t direccion_fisica) {
+	if (solicitud == NULL) {
+		return;  // Seguridad para evitar la desreferencia de NULL
+	}
+	// Redimensionar el arreglo de datos de memoria
+	size_t nuevo_tamano = solicitud->cantidad_accesos + 1;
+	solicitud->datos_memoria = realloc(solicitud->datos_memoria, nuevo_tamano * sizeof(t_dato_memoria));
+	if (solicitud->datos_memoria != NULL) {
+		// Inicializar el nuevo t_dato_memoria
+		// uint32_t size_dato = strlen(dato) + 1; // +1 para el carácter nulo
+		solicitud->datos_memoria[solicitud->cantidad_accesos].direccion_fisica = direccion_fisica;
+		solicitud->datos_memoria[solicitud->cantidad_accesos].tamano = size_dato;
+		solicitud->datos_memoria[solicitud->cantidad_accesos].datos = malloc(size_dato);
+		if (solicitud->datos_memoria[solicitud->cantidad_accesos].datos != NULL) {
+			memcpy(solicitud->datos_memoria[solicitud->cantidad_accesos].datos, dato, size_dato);
+		}
+		else{
+			printf("Error al asignar memoria para datos_memorisa\n");
+		}
+		solicitud->cantidad_accesos = nuevo_tamano;  // Actualizar la cantidad de accesos
+	} else {
+		// Manejar error de memoria aquí si es necesario
+		printf("Error al expandir la memoria para datos de memoria.\n");
+	}
+}
+
 
 // Función para liberar un pedido de memoria completo
 void eliminar_pedido_memoria(t_solicitud_io* solicitud) {
@@ -477,6 +571,19 @@ void eliminar_pedido_memoria(t_solicitud_io* solicitud) {
         // Finalmente, liberar la estructura t_solicitud_io
         free(solicitud);
     }
+}
+
+void eliminar_pedido_fs_rw(t_solicitud_fs_rw* solicitud){
+	if (solicitud != NULL) {
+		// Primero liberar cada uno de los datos almacenados
+		for (size_t i = 0; i < solicitud->cantidad_accesos; i++) {
+			free(solicitud->datos_memoria[i].datos);  // Liberar los datos de cada acceso
+		}
+		// Luego liberar el arreglo de t_dato_memoria
+		free(solicitud->datos_memoria);
+		// Finalmente, liberar la estructura t_solicitud_io
+		free(solicitud);
+	}
 }
 
 // void llenar_datos_memoria(t_solicitud_io* solicitud, char* input_text) {
