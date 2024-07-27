@@ -9,6 +9,12 @@ static void _sum(t_instruccion* instruccion);
 static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
 
+//fs
+static void _fs_delete(t_instruccion* instruccion);
+static void _fs_truncate(t_instruccion* instruccion);
+static void _fs_write(t_instruccion* instruccion);
+static void _fs_read(t_instruccion* instruccion);
+
 static int _resize(t_instruccion* instruccion);
 static void _copy_string(t_instruccion* instruccion);
 static int _mov_in(t_instruccion* instruccion);
@@ -51,6 +57,8 @@ void ejecutar_proceso(){
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 		t_solicitud_io* pedido_io_stdin_read;
 		t_solicitud_io* pedido_io_stdout_write;
+		t_solicitud_fs* pedido_io_fs;
+		t_solicitud_rw_fs* pedido_io_fs_rw;
 
         // Enviar solicitud de instrucción.
         t_paquete* paquete = crear_paquete(FETCH_INSTRUCCION);
@@ -282,6 +290,18 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 // 		agregar_a_pedido_memoria(pedido_io, "prueba1",dir_prueba2);
 // 		agregar_a_pedido_memoria(pedido_io, "prueba2",dir_prueba2);
 // 		return pedido_io;
+// }
+
+// static t_solicitud_fs _fs_create(t_instruccion* instruccion){
+// 	//IO_FS_CREATE Int4 notas.txt
+// 	//(Interfaz, Nombre Archivo): 
+// 	//Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, se cree un archivo en el FS montado en dicha interfaz.
+// 	t_solicitud_fs pedido_io = malloc(sizeof(t_solicitud_fs));
+// 	pedido_io->nombre_archivo = list_get(instruccion->parametros, 1);
+
+	
+
+
 // }
 static void _copy_string(t_instruccion* instruccion){
 	// COPY_STRING 8

@@ -244,6 +244,45 @@ static void* manejar_respuesta_io(void* arg) {
 //     }
 //     return 0;
 // }
+int atender_io_fs_create(t_pcb* pcb, t_instruccion* instruccion) {
+    char* nombre_interfaz = list_get(instruccion->parametros, 0);
+    char* nombre_archivo = list_get(instruccion->parametros, 1);
+    t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
+    if (interfaz == NULL) {
+        log_error(logger_kernel, "No se encontró la interfaz: %s", nombre_interfaz);
+        return -1;
+    }
+    t_pedido_stdin2* pedido_en_espera = malloc(sizeof(t_pedido_stdin2));
+    if (!pedido_en_espera) {
+        log_error(logger_kernel, "No se pudo asignar memoria para el pedido en espera");
+        return -1;
+    }
+    int pid_pedido = pcb->pid;
+    pedido_en_espera->pcb = pcb;
+    pedido_en_espera->interfaz = interfaz;
+    sem_init(&pedido_en_espera->semaforo_pedido_ok, 0, 0);
+
+    //libero exec y bloqueo
+    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+    pthread_mutex_lock(&mutex_plan_exec);
+    proceso_exec = NULL;
+    pthread_mutex_unlock(&mutex_plan_exec);
+    sem_post(&sem_plan_exec_libre);
+    pthread_mutex_lock(&interfaz->mutex_cola_block);
+    list_add(interfaz->cola_procesos, pedido_en_espera);
+    pthread_mutex_unlock(&interfaz->mutex_cola_block);
+
+    t_paquete* paquete_pedido_io_fs = crear_paquete(IO_FS_CREATE);
+    agregar_datos_sin_tamaño_a_paquete(paquete_pedido_io_fs, &pid_pedido, sizeof(int));
+    agregar_a_paquete(paquete_pedido_io_fs, nombre_archivo,strlen(nombre_archivo)+1);    
+    enviar_paquete(paquete_pedido_io_fs, interfaz->socket);
+
+    pthread_t hilo_respuesta_io;
+    pthread_create(&hilo_respuesta_io, NULL, manejar_respuesta_io, (void*) pedido_en_espera);
+    pthread_detach(hilo_respuesta_io);
+    
+    return 0;
+}    
 
 int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion) {
     // Espera recibir una operación específica para IO

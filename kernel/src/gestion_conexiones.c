@@ -125,7 +125,10 @@ static void _gestionar_nueva_interfaz(void *void_args) {
         log_error(logger_kernel, "falta implementar DIALFS");
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "GENERICA") == 0) {
         _atender_peticiones_io(interfaz_nueva);
-    } else {
+    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {
+        _atender_peticiones_io(interfaz_nueva);
+	}	
+	 else {
         log_error(logger_kernel, "ERROR EN HANDSHAKE: Operacion de interfaz '%s' desconocida\n", _io_handshake_to_char(interfaz_nueva->tipo_io));
         exit(EXIT_FAILURE);
     }
@@ -189,6 +192,12 @@ void atender_peticiones_dispatch(){
 				pthread_mutex_unlock(&mutex_finalizar_proceso);		
 				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");		
 				switch(motivo){
+					case IO_FS_CREATE:
+						sem_post(&sem_pcb_desalojado);
+						if(atender_io_fs_create(proceso_exec, instrucciones) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
+						break;
 					case INT_FINALIZAR_PROCESO:	
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_FINALIZAR_PROCESO");	
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_FINALIZAR_PROCESO", proceso_exec->pid);
@@ -236,8 +245,6 @@ void atender_peticiones_dispatch(){
 							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
 						}
 						break;
-
-						break;
 					case IO_STDOUT_WRITE:
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_STDOUT_WRITE");
 						sem_post(&sem_pcb_desalojado);
@@ -245,10 +252,10 @@ void atender_peticiones_dispatch(){
 							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
 						}
 						break;
-					case IO_FS_CREATE:
-						sem_post(&sem_pcb_desalojado);
-						atender_cpu_io_fs_create(proceso_exec, instrucciones);
-						break;
+					// case IO_FS_CREATE:
+					// 	sem_post(&sem_pcb_desalojado);
+					// 	atender_cpu_io_fs_create(proceso_exec, instrucciones);
+					// 	break;
 					case IO_FS_DELETE:
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_fs_delete(proceso_exec, instrucciones);
@@ -344,6 +351,13 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					free(buffer_temp);
 					t_pedido_stdin* pedido_stdiout= list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido_stdiout->semaforo_pedido_ok);
+					break;
+				case IO_FS_CREATE:
+					size_temp =0;
+					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
+					free(buffer_temp);
+					t_pedido_stdin* pedido_fs_create= list_get(interfaz->cola_procesos, 0);
+					sem_post(&pedido_fs_create->semaforo_pedido_ok);
 					break;
 				case -1:
 					// log_info(logger_kernel,"[_atender_peticiones_io] - -1");
