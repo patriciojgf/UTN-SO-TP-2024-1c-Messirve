@@ -130,6 +130,7 @@ static void atender_peticiones_stdout(void *void_args){
                 free(dato_leido);                
             }
 
+            usleep(RETARDO_RESPUESTA * 1000);
             t_paquete* paquete = crear_paquete(IO_STDOUT_WRITE);
             agregar_a_paquete(paquete, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
             enviar_paquete(paquete, *socket);
@@ -173,6 +174,7 @@ static void atender_peticiones_stdin(void *void_args){
 
             //confirmo a entradasalida
             int mensajeOK =1;
+            usleep(RETARDO_RESPUESTA * 1000);
             t_paquete* paquete = crear_paquete(IO_STDIN_READ);
             agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
             enviar_paquete(paquete, *socket);
@@ -204,7 +206,7 @@ static void atender_peticiones_cpu(void *void_args){
         //log_protegido_mem(string_from_format("[ATENDER CPU]: Operación recibida."));
         switch (code_op) {
             case PEDIDO_MARCO:
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - PEDIDO_MARCO");
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - PEDIDO_MARCO");
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&pagina, buffer + sizeof(int), sizeof(int));
@@ -216,12 +218,12 @@ static void atender_peticiones_cpu(void *void_args){
                 eliminar_paquete(paquete_respuesta_marco);
                 break;                
             case MENSAJE:
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - MENSAJE");
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - MENSAJE");
                 //log_protegido_mem(string_from_format("[ATENDER CPU]: MENSAJE"));
                 recibir_mensaje(*socket,logger_memoria);
                 break;
             case FETCH_INSTRUCCION:
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - FETCH_INSTRUCCION");
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - FETCH_INSTRUCCION");
                 //log_protegido_mem(string_from_format("[ATENDER CPU]: FETCH_INSTRUCCION - PID: %d, PC: %d",pid,PC));                
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
@@ -238,16 +240,16 @@ static void atender_peticiones_cpu(void *void_args){
                 eliminar_paquete(paquete);
                 break;
             case RESIZE:
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE");
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE");
                 int new_size;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&new_size, buffer + sizeof(int), sizeof(int));
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE - PID: %d, NEW_SIZE: %d", pid, new_size);
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE - PID: %d, NEW_SIZE: %d", pid, new_size);
                 usleep(RETARDO_RESPUESTA * 1000);
 
                 int respuesta_a_resize = resize_proceso(pid, new_size);
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE - PID: <%d> - NEW_SIZE: <%d> - RESP <%d>", pid, new_size, respuesta_a_resize);
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - RESIZE - PID: <%d> - NEW_SIZE: <%d> - RESP <%d>", pid, new_size, respuesta_a_resize);
 
                 t_paquete* paquete_respuesta_resize = crear_paquete(RESIZE);
                 agregar_datos_sin_tamaño_a_paquete(paquete_respuesta_resize, &respuesta_a_resize, sizeof(int));
@@ -255,7 +257,7 @@ static void atender_peticiones_cpu(void *void_args){
                 eliminar_paquete(paquete_respuesta_resize);
                 break;
             case LEER_MEMORIA:
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - LEER_MEMORIA");
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - LEER_MEMORIA");
                 int cantidad_bytes = 0;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
@@ -271,7 +273,7 @@ static void atender_peticiones_cpu(void *void_args){
                 eliminar_paquete(paquete_respuesta_leer_memoria);
                 break;
             case ESCRIBIR_MEMORIA:
-                log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - ESCRIBIR_MEMORIA");
+                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - ESCRIBIR_MEMORIA");
                 buffer = recibir_buffer(&size, *socket);
                 // Leer PID
                 memcpy(&pid, buffer, sizeof(int));   
@@ -333,6 +335,7 @@ static void atender_peticiones_kernel(void *void_args){
                 memcpy(path, buffer +desplazamiento, size_path);
                 t_proceso* proceso = crear_proceso(pid,path);
                 list_add(lista_procesos_en_memoria, proceso);
+                usleep(RETARDO_RESPUESTA * 1000);
                 confirmar_proceso_creado(); 
                 free(path);
                 break;
@@ -341,6 +344,7 @@ static void atender_peticiones_kernel(void *void_args){
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
                 finalizar_proceso(pid);
+                usleep(RETARDO_RESPUESTA * 1000);
                 confirmar_memoria_liberada();
                 break; 
             case -1:

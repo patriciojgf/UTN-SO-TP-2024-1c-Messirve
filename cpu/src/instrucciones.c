@@ -313,7 +313,7 @@ static int _mov_in(t_instruccion* instruccion){
 	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
 	// en el Registro Dirección y lo almacena en el Registro Datos.
 	log_info(logger_cpu, "--------------------------------------------MOV IN---------------------------------------------");
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	//Busco los registros de la instruccion en formato char
 	char* registro_datos = list_get(instruccion->parametros, 0);
 	char* registro_direccion = list_get(instruccion->parametros, 1);
@@ -344,13 +344,13 @@ static int _mov_in(t_instruccion* instruccion){
 	//log obligario
 	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
 	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	return 0;
 }
 
 static int _mov_out(t_instruccion* instruccion){
 	log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 // MOV_OUT (Registro Dirección, Registro Datos): 
 // Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
 // obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.	
@@ -366,7 +366,7 @@ static int _mov_out(t_instruccion* instruccion){
 	int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 
 	int se_pudo_escribir = escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	log_info(logger_cpu,"---------------------------------");
 	return se_pudo_escribir;
 }
@@ -396,7 +396,6 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
             return NULL;
         }
 
-        log_info(logger_cpu, "[_io_std]: -- PID <%d> - PC<%d> - DIRECCION FISICA <%d> - Bytes a escribir <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_fisica_actual, bytes_a_escribir);
         agregar_a_pedido_memoria(pedido_io, " ", bytes_a_escribir, direccion_fisica_actual);
 
         direccion_logica_actual += bytes_a_escribir; // Mover la dirección lógica a la siguiente posición a escribir
@@ -421,19 +420,16 @@ static int _resize(t_instruccion* instruccion){
 	eliminar_paquete(paquete);
 	
 	sem_wait(&s_resize);
-	log_info(logger_cpu,"[RESIZE]: -- PID <%d> - PC<%d> - RESPUESTA_MEMORIA <%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC,respuesta_memoria);
 	if(respuesta_memoria == -1){
 		// En caso de que la respuesta de la memoria sea Out of Memory, 
 		// se deberá devolver el contexto de ejecución al Kernel informando de esta situación.
-		log_info(logger_cpu,"[_RESIZE]: -- PID <%d> - PC<%d> - RESIZE NO OK",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
 		return -1;
 	}
 	return 0;
 }
 
 static void _set(t_instruccion* instruccion){
-	log_info(logger_cpu, "--------------------------------------------SET--------------------------------------------");
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
     char* nombre_registro = list_get(instruccion->parametros, 0);
     char* valor_string = list_get(instruccion->parametros, 1);
     uint32_t nuevo_valor = (uint32_t)atoi(valor_string); // Convierte el valor string a uint32_t una sola vez
@@ -451,7 +447,7 @@ static void _set(t_instruccion* instruccion){
     }
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - Program Counter: <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC);
 	// Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
-	mostrar_valores_registros_cpu();
+	// mostrar_valores_registros_cpu();
 	log_info(logger_cpu, "-------------------");
 }
 
