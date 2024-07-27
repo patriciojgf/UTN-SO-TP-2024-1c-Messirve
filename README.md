@@ -1,6 +1,11 @@
-# Enunciado
+# Enunciados
 
-[c-comenta](https://docs.google.com/document/d/1-AqFTroovEMcA1BfC2rriB5jsLE6SUa4mbcAox1rPec/edit)
+- [c-comenta](https://docs.google.com/document/d/1-AqFTroovEMcA1BfC2rriB5jsLE6SUa4mbcAox1rPec/edit)
+- [pruebas](https://docs.google.com/document/d/1XsBsJynoN5A9PTsTEaZsj0q3zsEtcnLgdAHOQ4f_4-g/edit)
+
+Los scripts para realizar las pruebas que se enumeran en el enunciado se encuentran subidos en el siguiente repositorio: [repo-pruebas]
+
+El módulo de Kernel ya posee los scripts que se mencionaron anteriormente. 
 
 # tp-scaffold
 
@@ -67,7 +72,7 @@ script [so-deploy] de la cátedra:
 ```bash
 git clone https://github.com/sisoputnfrba/so-deploy.git
 cd so-deploy
-./deploy.sh -r=release -p=utils -p=kernel -p=cpu -p=memoria -p=entradasalida "tp-{año}-{cuatri}-{grupo}"
+./deploy.sh -r=release -p=utils -p=kernel -p=cpu -p=memoria -p=entradasalida "tp-2024-1c-Messirve"
 ```
 
 El mismo se encargará de instalar las Commons, clonar el repositorio del grupo
@@ -78,3 +83,4 @@ Ante cualquier duda, podés consultar la documentación en el repositorio de
 
 [so-commons-library]: https://github.com/sisoputnfrba/so-commons-library
 [so-deploy]: https://github.com/sisoputnfrba/so-deploy
+[repo-pruebas]: https://github.com/sisoputnfrba/tp-2024-1c-Messirve/tree/io
