@@ -192,7 +192,9 @@ void ejecutar_proceso(){
 		// contexto_cpu->registros_cpu.PC = contexto_cpu->program_counter;
 		pthread_mutex_unlock(&mutex_ejecucion_proceso);
 
-		check_recibiendo_interrupcion();
+
+        pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
+		pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
 
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 
@@ -511,40 +513,6 @@ static void _jnz(t_instruccion* instruccion){
     }
 }
 
-
-// static void _mov_out(t_instruccion* instruccion){
-// 	// (Registro Dirección, Registro Datos): 
-// 	// Lee el valor del Registro Datos y lo escribe 
-// 	// en la dirección física de memoria obtenida a partir de la Dirección Lógica almacenada en el Registro Dirección.
-// 	char* registro_datos = list_get(instruccion->parametros, 1);
-// 	info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
-// 	uint8_t valor_del_registro_datos = *(uint8_t*)registro_datos_info.direccion;
-
-// 	char* registro_direccion = list_get(instruccion->parametros, 0);
-// 	info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
-// 	uint8_t valor_direccion_logica = *(uint8_t*)registro_direccion_info.direccion;
-	
-// 	//guardar valor_del_registro_datos en la direccion fisica correspondiente a valor_direccion_logica
-// }
-
-// static void _copy_string(t_instruccion* instruccion){
-// 	// (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad 
-// 	// de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
-// 	log_warning(logger_cpu,"falta implementar la parte de memoria");
-
-// 	uint32_t direccion_logica_destino = contexto_cpu->registros_cpu.DI;
-// 	log_warning(logger_cpu,"traducir la direccion a fisica");
-
-//     int tamano_a_copiar = atoi(list_get(instruccion->parametros, 0));
-
-// 	char* string_a_guardar = malloc(tamano_a_copiar + 1);
-// 	memcpy(string_a_guardar, (char*)contexto_cpu->registros_cpu.SI, tamano_a_copiar);
-// 	string_a_guardar[tamano_a_copiar] = '\0';
-
-// 	log_warning(logger_cpu,"pasarle a memoria el pedido");
-// 	free(string_a_guardar);
-// }
-
 static void _f_exit(t_instruccion *inst){ 
 	//log obligatorio “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <EXIT>",contexto_cpu->pid);
@@ -554,6 +522,19 @@ static void _f_exit(t_instruccion *inst){
 
 
 // AUXILIARES
+void ejecutando_interrupcion(){
+	log_info(logger_cpu,"ejecutando_interrupcion");
+    if(llego_interrupcion == 1){
+		log_info(logger_cpu,"ejecutando_interrupcion1");
+    }
+    else{
+		log_info(logger_cpu,"ejecutando_interrupcion2");
+        llego_interrupcion = 1;
+        check_recibiendo_interrupcion();
+		log_info(logger_cpu,"ejecutando_interrupcion3");
+    }
+}
+
 void check_recibiendo_interrupcion(){
 	log_info(logger_cpu,"check_recibiendo_interrupcion");
     pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
@@ -579,61 +560,6 @@ void ejecutando_interrupcion_fin(){
 		log_info(logger_cpu,"ejecutando_interrupcion_fin4");
     }    
 }
-
-void ejecutando_interrupcion(){
-	log_info(logger_cpu,"ejecutando_interrupcion");
-    if(llego_interrupcion == 1){
-		log_info(logger_cpu,"ejecutando_interrupcion1");
-    }
-    else{
-		log_info(logger_cpu,"ejecutando_interrupcion2");
-        llego_interrupcion = 1;
-        check_recibiendo_interrupcion();
-		log_info(logger_cpu,"ejecutando_interrupcion3");
-    }
-}
-
-
-pthread_mutex_t mutex_interrupt = PTHREAD_MUTEX_INITIALIZER;
-// sem_t sem_interrupt;
-volatile bool processing_interrupt = false;
-
-// void init_interrupt_handling() {
-//     sem_init(&sem_interrupt, 0, 0); // Inicializa el semáforo en 0
-// }
-
-void handle_interrupt(int pid) {
-    pthread_mutex_lock(&mutex_interrupt);
-    if (!processing_interrupt) {
-        processing_interrupt = true;
-        pthread_mutex_unlock(&mutex_interrupt);
-
-        log_info(logger_cpu, "[INTERRUPT]: Handling interrupt for PID <%d>", pid);
-
-        // Lógica de manejo de la interrupción aquí.
-        // Simulación de alguna operación que podría tardar.
-        
-        // Concluir la interrupción
-        sem_post(&sem_interrupt);
-    } else {
-        pthread_mutex_unlock(&mutex_interrupt);
-        log_info(logger_cpu, "[INTERRUPT]: Interrupt already being processed, waiting...");
-
-        // Espera a que la interrupción actual termine de procesarse
-        sem_wait(&sem_interrupt);
-        
-        // Luego intenta manejar la interrupción nuevamente
-        handle_interrupt(pid);
-    }
-}
-
-void cleanup_interrupt_handling() {
-    pthread_mutex_destroy(&mutex_interrupt);
-    sem_destroy(&sem_interrupt);
-}
-
-
-
 
 
 //

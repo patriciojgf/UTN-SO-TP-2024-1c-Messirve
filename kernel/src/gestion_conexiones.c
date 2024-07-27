@@ -183,6 +183,10 @@ void atender_peticiones_dispatch(){
 				if(proceso_finalizando && (motivo != INT_FINALIZAR_PROCESO)){
 					// log_info(logger_kernel,"[ATENDER DISPATCH]:Recibi operacion pero estoy esperando FINALIZAR_PROCESO");
 					// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");
+					
+					//estoy esta bien?
+					proceso_finalizando = false;
+					
 					pthread_mutex_unlock(&mutex_finalizar_proceso);	
 					continue;	
 				}
