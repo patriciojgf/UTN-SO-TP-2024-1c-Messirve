@@ -192,18 +192,6 @@ void atender_peticiones_dispatch(){
 				pthread_mutex_unlock(&mutex_finalizar_proceso);		
 				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");		
 				switch(motivo){
-					case IO_FS_CREATE:
-						sem_post(&sem_pcb_desalojado);
-						if(atender_io_fs_create_delete(proceso_exec, instrucciones,IO_FS_CREATE) == -1){
-							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
-						}
-						break;
-					case IO_FS_DELETE:
-						sem_post(&sem_pcb_desalojado);
-						if(atender_io_fs_create_delete(proceso_exec, instrucciones,IO_FS_DELETE) == -1){
-							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
-						}
-						break;
 					case INT_FINALIZAR_PROCESO:	
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_FINALIZAR_PROCESO");	
 						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - INT_FINALIZAR_PROCESO", proceso_exec->pid);
@@ -258,8 +246,23 @@ void atender_peticiones_dispatch(){
 							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
 						}
 						break;
+					case IO_FS_CREATE:
+						sem_post(&sem_pcb_desalojado);
+						if(atender_io_fs_create_delete(proceso_exec, instrucciones,IO_FS_CREATE) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
+						break;
+					case IO_FS_DELETE:
+						sem_post(&sem_pcb_desalojado);
+						if(atender_io_fs_create_delete(proceso_exec, instrucciones,IO_FS_DELETE) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
+						break;
 					case IO_FS_TRUNCATE:
 						sem_post(&sem_pcb_desalojado);
+						if(atender_io_fs_truncate(proceso_exec, instrucciones) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
 						break;
 					case IO_FS_WRITE:
 						sem_post(&sem_pcb_desalojado);
@@ -363,6 +366,13 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					free(buffer_temp);
 					t_pedido_stdin* pedido_fs_delete= list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido_fs_delete->semaforo_pedido_ok);
+					break;
+				case IO_FS_TRUNCATE:
+					size_temp =0;
+					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
+					free(buffer_temp);
+					t_pedido_stdin* pedido_fs_truncate= list_get(interfaz->cola_procesos, 0);
+					sem_post(&pedido_fs_truncate->semaforo_pedido_ok);
 					break;
 				case -1:
 					// log_info(logger_kernel,"[_atender_peticiones_io] - -1");

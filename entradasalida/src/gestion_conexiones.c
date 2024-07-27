@@ -236,18 +236,30 @@ static void _atender_peticiones_kernel(){
             case IO_FS_TRUNCATE:
                 log_info(logger_io, "Iniciando [IO_FS_TRUNCATE]");
                 usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
-                if (solicitud_recibida_kernel == NULL) 
-                {
-                    error_show("Error al recibir la solicitud IO\n");
-                    continue;
-                }
                 size=0;
-                void *buffer_truncate = recibir_buffer(&size, socket_cliente_kernel);           
-                char* nombre_archivo_truncate;
-                memcpy(&nombre_archivo_truncate, buffer_truncate, sizeof(int));
-                log_info(logger_io, "[IO_FS_TRUNCATE] PID: %i, NOMBRE_ARCHIVO: %s", solicitud_recibida_kernel->pid, nombre_archivo_create);
-                truncar_archivo(solicitud_recibida_kernel, nombre_archivo_truncate);
+                pid=0;
+                int largo_nombre_archivo_fs_truncate = 0;
+                int tamano_byte=0;
+                
+                void *buffer_fs_truncate = recibir_buffer(&size, socket_cliente_kernel);
+                memcpy(&pid, buffer_fs_truncate, sizeof(int));
+                memcpy(&largo_nombre_archivo_fs_truncate, buffer_fs_truncate + sizeof(int), sizeof(int));
+                char* nombre_archivo_truncate = malloc(largo_nombre_archivo_fs_truncate);
+                memcpy(nombre_archivo_truncate, buffer_fs_truncate + sizeof(int) + sizeof(int), largo_nombre_archivo_fs_truncate);  
+                memcpy(&tamano_byte, buffer_fs_truncate + sizeof(int) + sizeof(int) + largo_nombre_archivo_fs_truncate, sizeof(int));
+                //log obligatorio
+                //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
+                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_TRUNCATE>",pid);
+                log_info(logger_io, "Archivo <%s>",nombre_archivo_truncate);
+                truncar_archivo(tamano_byte, nombre_archivo_truncate);
+                free(nombre_archivo_truncate);    
+
+                paquete_para_kernel = crear_paquete(IO_FS_TRUNCATE);
+                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
+                eliminar_paquete(paquete_para_kernel); 
+
+                log_info(logger_io,"IO_FS_TRUNCATE: ok enviado a kernel");          
                 break;
             case IO_FS_WRITE:
                 log_info(logger_io, "Iniciando [IO_FS_WRITE]");

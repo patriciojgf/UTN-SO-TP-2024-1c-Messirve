@@ -10,8 +10,7 @@ static void _sub(t_instruccion* instruccion);
 static void _jnz(t_instruccion* instruccion);
 
 //fs
-static void _fs_delete(t_instruccion* instruccion);
-static void _fs_truncate(t_instruccion* instruccion);
+static void envio_pedido_fs_truncate(int socket,t_instruccion* instruccion);
 static void _fs_write(t_instruccion* instruccion);
 static void _fs_read(t_instruccion* instruccion);
 
@@ -57,7 +56,6 @@ void ejecutar_proceso(){
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 		t_solicitud_io* pedido_io_stdin_read;
 		t_solicitud_io* pedido_io_stdout_write;
-		t_solicitud_fs* pedido_io_fs;
 		t_solicitud_rw_fs* pedido_io_fs_rw;
 
         // Enviar solicitud de instrucción.
@@ -218,6 +216,9 @@ void ejecutar_proceso(){
 			if (motivo_desalojo == IO_STDOUT_WRITE){
 				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdout_write,motivo_desalojo);
 			}
+			if (motivo_desalojo == IO_FS_TRUNCATE){
+				envio_pedido_fs_truncate(socket_cliente_dispatch, inst_decodificada);
+			}
 		}
 
         // Verificar interrupciones.
@@ -264,45 +265,22 @@ void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
 
 /*------------_INSTRUCCIONES---------------------------------------*/
 
-//esto se hace directamente en el case del exe
-// static void _io_gen_sleep(t_instruccion* instruccion)
-// {
-// 	devolver_contexto_a_dispatch(IO_GEN_SLEEP, instruccion);
-//     flag_ejecucion = false;
-// }
+static void envio_pedido_fs_truncate(int socket_kernel, t_instruccion* instruccion){
+	// IO_FS_TRUNCATE Int4 notas.txt ECX
+	// IO_FS_TRUNCATE 
+	// (Interfaz, Nombre Archivo, Registro Tamaño): 
+	// Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, 
+	// se modifique el tamaño del archivo en el FS montado en dicha interfaz, 
+	// actualizando al valor que se encuentra en el registro indicado por Registro Tamaño.
+	char* registro_tamano = list_get(instruccion->parametros, 2);
+	info_registro_cpu registro_tamano_info = _get_direccion_registro(registro_tamano);
+	int tamano_bytes = leer_valor_registro_como_int(registro_tamano_info.direccion,registro_tamano_info.tamano	);
+	t_paquete* paquete_a_enviar = crear_paquete(IO_FS_TRUNCATE);
+	agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &tamano_bytes, sizeof(int));
+	enviar_paquete(paquete_a_enviar, socket_kernel);
+	eliminar_paquete(paquete_a_enviar);	
+}
 
-// static t_solicitud_io* _io_std(t_instruccion* instruccion){
-// 		char *registro_direccion2 = list_get(instruccion->parametros, 1);
-// 		char *registro_tamano2 = list_get(instruccion->parametros, 2);
-// 		info_registro_cpu registro_dir_info2 = _get_direccion_registro(registro_direccion2);
-// 		info_registro_cpu registro_tam_info2 = _get_direccion_registro(registro_tamano2);
-// 		uint8_t valor_direccion_logica2 = *(uint8_t*)registro_dir_info2.direccion;
-// 		uint8_t valor_tamano_a_escribir2 = *(uint8_t*)registro_tam_info2.direccion;
-// 		//tomar la direccion logica y calcular la o las fisicas necesarias para escribir el tamano especificado.
-// 		//por cada direccion fisica hacer un "agregar_a_pedido_memoria" con esa direccion, el parametro "prueba1" puede tener
-// 		//cualquier valor aca porque se va a completar con datos de la interfaz despues.
-
-// 		uint32_t dir_prueba2 = 99; //cuadno este la traduccion cambiar
-// 		uint32_t tam_prueba2 = 20; //esto seria el tamaño de pagina (max)
-
-// 		t_solicitud_io* pedido_io;
-// 		pedido_io = crear_pedido_memoria(contexto_cpu->pid,tam_prueba2);
-// 		agregar_a_pedido_memoria(pedido_io, "prueba1",dir_prueba2);
-// 		agregar_a_pedido_memoria(pedido_io, "prueba2",dir_prueba2);
-// 		return pedido_io;
-// }
-
-// static t_solicitud_fs _fs_create(t_instruccion* instruccion){
-// 	//IO_FS_CREATE Int4 notas.txt
-// 	//(Interfaz, Nombre Archivo): 
-// 	//Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, se cree un archivo en el FS montado en dicha interfaz.
-// 	t_solicitud_fs pedido_io = malloc(sizeof(t_solicitud_fs));
-// 	pedido_io->nombre_archivo = list_get(instruccion->parametros, 1);
-
-	
-
-
-// }
 static void _copy_string(t_instruccion* instruccion){
 	// COPY_STRING 8
 	// COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la 

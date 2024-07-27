@@ -48,7 +48,7 @@ int liberar_bloques_de_archivo(char* nombre_archivo)
     return bloques_a_liberar;
 }
 
-void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
+void truncar_archivo(int tamano_bytes, char* nombre_archivo)
 {
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path); 
@@ -66,7 +66,7 @@ void truncar_archivo(t_solicitud_io* solicitud_io, char* nombre_archivo)
         bloques_actuales = 1;
     }
     
-    int nuevo_bloques = ceil(((double)solicitud_io->datos_memoria->tamano) / BLOCK_SIZE);
+    int nuevo_bloques = ceil(tamano_bytes / BLOCK_SIZE);
     if(!nuevo_bloques)
     {
         nuevo_bloques = 1;
