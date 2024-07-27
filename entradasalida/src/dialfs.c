@@ -1,6 +1,6 @@
 #include <dialfs.h>
 
-static void compactar(char* nombre_archivo);
+static void compactar(int pid, char* nombre_archivo);
 static void ocupar_bloque(int index);
 static int obtener_bloques_libres(int inicio);
 static int obtener_bloques_ocupados(int inicio);
@@ -9,16 +9,18 @@ static bool se_puede_agrandar(int inicio, int bloques_a_actualizar);
 
 void crear_archivo(char* nombre_archivo)
 {
+    log_info(logger_io, "Iniciando creación de archivo [%s]...", nombre_archivo);
     int bloque = obtener_bloques_libres(0);
     ocupar_bloque(bloque);
     if(!crear_archivo_metadata(nombre_archivo, bloque))
     {
-        error_show("Error al crear el archivo metadata");
+        log_error(logger_io, "Error al crear el archivo metadata");
     }
 }
 
 int liberar_bloques_de_archivo(char* nombre_archivo)
 {
+    log_info(logger_io, "Eliminando archivo [%s]...", nombre_archivo);
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
     
@@ -42,14 +44,17 @@ int liberar_bloques_de_archivo(char* nombre_archivo)
     {
         liberar_bloque(i);
     }
+    log_info(logger_io, "Bloques liberados...");
 
     free(path);
     config_destroy(metadata_aux);
     return bloques_a_liberar;
 }
 
-void truncar_archivo(int tamano_bytes, char* nombre_archivo)
+void truncar_archivo(int pid, int tamano_bytes, char* nombre_archivo)
 {
+    log_info(logger_io, "PID: <%d> - Truncar Archivo: <%s> - Tamaño: <%d>", pid, nombre_archivo, tamano_bytes);
+
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path); 
     if(metadata_aux == NULL)
@@ -73,6 +78,7 @@ void truncar_archivo(int tamano_bytes, char* nombre_archivo)
     }
 
     int bloques_a_actualizar = nuevo_bloques - bloques_actuales;
+    log_info(logger_io, "Actualizando bloques...");
     if(bloques_a_actualizar > 0)
     {
         //agrandar
@@ -82,15 +88,13 @@ void truncar_archivo(int tamano_bytes, char* nombre_archivo)
         {
             log_info(logger_io, "Compatación hace su magia...");  
             usleep(RETRASO_COMPACTACION * 1000);
-            compactar(nombre_archivo);
+            compactar(pid, nombre_archivo);
         }
 
         for(int i = inicio; i < inicio + bloques_a_actualizar; i++)
         {
             ocupar_bloque(i);
         }
-
-        //TODO: ver el tema de compatación
     }
     else if(bloques_a_actualizar < 0)
     {
@@ -105,9 +109,11 @@ void truncar_archivo(int tamano_bytes, char* nombre_archivo)
     else
     {
         //TODO: que pasa si es cero
+        log_error(logger_io, "Error al actualizar: tamanio del bloques a actualizar es {%d}, caso no soportado.", bloques_a_actualizar);
     }
 
     //actualizar metadata
+    log_info(logger_io, "Actualizando metadata...");
     config_set_value(metadata_aux, "TAMANIO_ARCHIVO", string_itoa(nuevo_bloques));
     config_save(metadata_aux);
     free(path);
@@ -116,6 +122,7 @@ void truncar_archivo(int tamano_bytes, char* nombre_archivo)
 
 void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
 {
+    log_info(logger_io, "Leyendo archivo %s...", nombre_archivo); 
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
     int bloque_inicial = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
@@ -132,6 +139,7 @@ void* leer_archivo(char* nombre_archivo, int puntero, int tamanio)
 
 void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamanio)
 {
+    log_info(logger_io, "Escribiendo archivo...");
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
     int bloque_inicial = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
@@ -147,8 +155,9 @@ void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamani
 
 /*************** FUNCIONES AUXILIARES *****************/
 
-static void compactar(char* nombre_archivo)
+static void compactar(int pid, char* nombre_archivo)
 {
+    log_info(logger_io, "PID: <%d> - Inicio Compactación.", pid);
     int bloques = liberar_bloques_de_archivo(nombre_archivo);
     void* archivo_void = leer_archivo(nombre_archivo, 0, bloques * BLOCK_SIZE);
     int bloques_libre = obtener_bloques_libres(0);
@@ -159,6 +168,7 @@ static void compactar(char* nombre_archivo)
         bloques_ocupado = obtener_bloques_ocupados(bloques_libre);
     }
 
+    log_info(logger_io, "Actualizando metadata...");
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
     config_set_value(metadata_aux, "BLOQUE_INICIAL", string_itoa(bloques_libre));
@@ -172,6 +182,8 @@ static void compactar(char* nombre_archivo)
         ocupar_bloque(i);
     }
     free(archivo_void);
+
+    log_info(logger_io, "PID: <%d> - Fin Compactación.", pid);
 }
 
 static int obtener_bloques_libres(int inicio)

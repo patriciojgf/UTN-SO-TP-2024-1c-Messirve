@@ -193,7 +193,7 @@ static void _atender_peticiones_kernel(){
                 //aca hacer lo que tiene que hacer
                 //en solicitud_recibida_fs_rw esta cada direccion de memoria fisica, y la cantidad de bytes que va a leer/escribir ahi.
                 //hay un campo libre para guardar datos (en caso de tener que escribir a memoria le metes el dato ahi)
-
+                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_WRITE>", pid);
                 void* datos = malloc(size); //TODO: cambiar al que corresponda
                 escribir_archivo(datos, nombre_archivo_fs_write, 0, 0); //reemplazar puntero y tamaño
                 free(datos);
@@ -225,6 +225,7 @@ static void _atender_peticiones_kernel(){
                 //aca hacer lo que tiene que hacer
                 //en solicitud_recibida_fs_rw esta cada direccion de memoria fisica, y la cantidad de bytes que va a leer/escribir ahi.
                 //hay un campo libre para guardar datos (en caso de tener que escribir a memoria le metes el dato ahi)
+                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_READ>", pid);
                 
                 void* datos_lectura = leer_archivo(nombre_archivo_fs_read, 0, 0); //reemplazar puntero y tamaño
                 //escribir_memoria(params);
@@ -262,7 +263,9 @@ static void _atender_peticiones_kernel(){
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_CREATE>",pid);
                 log_info(logger_io, "Archivo <%s>",nombre_archivo_create);
-                crear_archivo(nombre_archivo_create);                
+                crear_archivo(nombre_archivo_create);
+                log_info(logger_io, "PID: <%d> - Crear Archivo: <%s>", pid, nombre_archivo_create);
+                
                 free(nombre_archivo_create);
 
                 paquete_para_kernel = crear_paquete(IO_FS_CREATE);
@@ -289,6 +292,7 @@ static void _atender_peticiones_kernel(){
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_DELETE>",pid);
                 log_info(logger_io, "Archivo <%s>",nombre_archivo_create);
                 liberar_bloques_de_archivo(nombre_archivo_delete);
+                log_info(logger_io, "PID: <%d> - Eliminar Archivo: <%s>", pid, nombre_archivo_delete);
                 free(nombre_archivo_delete);
 
                 paquete_para_kernel = crear_paquete(IO_FS_DELETE);
@@ -316,7 +320,7 @@ static void _atender_peticiones_kernel(){
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_TRUNCATE>",pid);
                 log_info(logger_io, "Archivo <%s>",nombre_archivo_truncate);
-                truncar_archivo(tamano_byte, nombre_archivo_truncate);
+                truncar_archivo(pid, tamano_byte, nombre_archivo_truncate);
                 free(nombre_archivo_truncate);    
 
                 paquete_para_kernel = crear_paquete(IO_FS_TRUNCATE);
