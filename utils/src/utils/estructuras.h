@@ -75,19 +75,11 @@ typedef struct {
     pthread_mutex_t mutex_bloqueados;
 } t_recurso;
 
-typedef struct {
-    int marco; 
-    bool presencia;
-    bool modificado;
-}t_tabla_pagina;
-
-
 /*IO READ*/
 typedef struct {
     uint32_t direccion_fisica;
     uint32_t tamano;
     char* datos;  // Suponiendo que los datos se gestionarán externamente.
-    // char* nombre_archivo; //TODO: pasar por aca?
 } t_dato_memoria;
 
 typedef struct {

@@ -48,11 +48,4 @@ pthread_mutex_t mutex_lista_interfaz;
 void *memoria_espacio_usuario;
 t_list* listado_marcos;
 
-int conectarKernel(int* socket_kernel);
-int conectarCpu(int* socket_cpu);
-int conectarIO(int* socket_io);
-
-t_tabla_pagina tabla_pagina;
-t_bitarray* bitmap;
-
 #endif // MAIN_H

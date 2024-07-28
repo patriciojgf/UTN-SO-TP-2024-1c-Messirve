@@ -72,10 +72,5 @@ pthread_t hilo_cpu;
 pthread_t hilo_kernelDispatch;
 pthread_t hilo_kernelInterrupt;
 
-/**************** MMU - TLB ****************/
-t_list* TLB; // la tlb es una lista :D que adentro tiene structs de row_tlb
-
-int TAM_PAG;
-sem_t sem_control_peticion_marco_a_memoria;
     
 #endif

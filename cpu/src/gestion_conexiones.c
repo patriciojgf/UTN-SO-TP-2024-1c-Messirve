@@ -25,7 +25,7 @@ void gestionar_conexion_memoria(){
     ////log_info(logger_cpu,"[GESTION CON MEMORIA]: ---- MEMORIA CONECTADO ----");
 
     pthread_create(&hilo_gestionar_memoria, NULL, (void*) atender_peticiones_memoria, NULL);
-	pthread_detach(hilo_gestionar_memoria);
+    pthread_detach(hilo_gestionar_memoria);
 }
 /*CPU_INTERRUPT*/
 void gestionar_conexion_interrupt(){
@@ -35,7 +35,7 @@ void gestionar_conexion_interrupt(){
     ////log_info(logger_cpu,"[GESTION CON INT]: ---- INTERRUPT CONECTADO ----");
 
     pthread_create(&hilo_gestionar_interrupt, NULL, (void*) atender_peticiones_interrupt, NULL);
-	pthread_detach(hilo_gestionar_interrupt);//JOIN
+    pthread_detach(hilo_gestionar_interrupt);//JOIN
 }
 /*CPU_DISPATCH*/
 void gestionar_conexion_dispatch(){
@@ -45,7 +45,7 @@ void gestionar_conexion_dispatch(){
     ////log_info(logger_cpu,"[GESTION CON DIS]: ---- DISPATCH CONECTADO ----");
 
     pthread_create(&hilo_gestionar_dispatch, NULL, (void*) atender_peticiones_dispatch, NULL);
-	pthread_join(hilo_gestionar_dispatch,NULL);//JOIN
+    pthread_join(hilo_gestionar_dispatch,NULL);//JOIN
 }
 
 
@@ -125,7 +125,7 @@ void atender_peticiones_interrupt(){
                 // pthread_detach(hilo_llego_interrupcion_f_q);    
 
                 pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
-		        pthread_mutex_lock(&mutex_ejecucion_proceso);
+                pthread_mutex_lock(&mutex_ejecucion_proceso);
                 
                 llego_interrupcion = 1;
 
@@ -150,7 +150,7 @@ void atender_peticiones_interrupt(){
                 }
                 free(buffer);
                 // ejecutando_interrupcion_fin();
-		        pthread_mutex_unlock(&mutex_ejecucion_proceso);
+                pthread_mutex_unlock(&mutex_ejecucion_proceso);
                 pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
                 break;
             case INT_SIGNAL:
@@ -173,9 +173,6 @@ void atender_peticiones_interrupt(){
                 }
                 free(buffer);
                 break;
-            case -1:
-                log_error(logger_cpu,"Se desconecto MEMORIA");
-                exit(EXIT_FAILURE);
             default:
                 log_error(logger_cpu, "ERROR EN cod_op: Operacion N* %d desconocida\n", cod_op);
                 exit(EXIT_FAILURE);
@@ -202,7 +199,7 @@ void atender_peticiones_dispatch(){
                 log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 void*  buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
                 sem_post(&s_signal_kernel);
-				free(buffer_recibido);
+                free(buffer_recibido);
                 break;
             default:
                 log_error(logger_cpu,"atender_peticiones_dispatch cod_op no reconocidos");
@@ -239,15 +236,8 @@ void atender_peticiones_memoria(){
                 instruccion_actual = malloc(tam_inst+1); 
                 memcpy(instruccion_actual, buffer + desplazamiento, tam_inst);
                 sem_post(&s_instruccion_actual);
-            break;
-            case TAMANIO_PAGINA:
-                int _size, tam_pag, _desplazamiento = 0;
-                void *_buffer = recibir_buffer(&_size, socket_memoria);
-                memcpy(&tam_pag,_buffer +_desplazamiento, sizeof(int));;
-                log_info(logger_cpu, "[ATENDER MEMORIA]tam_pag: %d\n", tam_pag);
-                TAM_PAG = tam_pag;
-                log_protegido_cpu(string_from_format("TAM_PAG: %d", TAM_PAG));
-            break;
+                free(buffer);
+                break;
             case PEDIDO_MARCO:
                 respuesta_memoria=-1;
                 int marco_recibido=-1;                
@@ -287,11 +277,6 @@ void atender_peticiones_memoria(){
                 memcpy(&respuesta_memoria, buffer, sizeof(int));
                 log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d> - RESPUESTA <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC, respuesta_memoria);
                 sem_post(&s_resize);
-                free(buffer);
-                break;
-            case -1:
-                log_error(logger_cpu,"Se desconecto MEMORIA");
-                exit(EXIT_FAILURE);
                 free(buffer);
                 break;
             default:

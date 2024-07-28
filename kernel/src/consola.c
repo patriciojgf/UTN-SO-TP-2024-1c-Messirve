@@ -137,7 +137,6 @@ static void _ejecutar_comando_validado(char* leido) {
         case EJECUTAR_SCRIPT:{
             ejecutar_script(comando_consola[1]);
             break;
-    // break;
         }
         case INICIAR_PROCESO: {
             t_pcb* pcb_inicializado = crear_pcb(comando_consola[1]);

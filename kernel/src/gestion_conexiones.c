@@ -121,8 +121,6 @@ static void _gestionar_nueva_interfaz(void *void_args) {
         _atender_peticiones_io(interfaz_nueva);
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "STDOUT") == 0) {
         _atender_peticiones_io(interfaz_nueva);
-    } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {
-        log_error(logger_kernel, "falta implementar DIALFS");
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "GENERICA") == 0) {
         _atender_peticiones_io(interfaz_nueva);
     } else if (strcmp(_io_handshake_to_char(interfaz_nueva->tipo_io), "DIALFS") == 0) {

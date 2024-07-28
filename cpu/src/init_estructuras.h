@@ -2,7 +2,6 @@
 #define INIT_ESTRUCTURAS_H_
 
 #include <configuracion_cpu.h>
-// #include <mmu.h>
 
 extern t_contexto* contexto_cpu;
 
