@@ -32,19 +32,15 @@ static int min(int a, int b) {
 /*----*/
 
 int escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* valor) {
-
     int total_escrito = 0;
-
     while (total_escrito < cantidad_bytes) {
         int direccion_fisica = mmu(direccion_logica + total_escrito);
         if (direccion_fisica == -1) {
             return -1;
         }
-
         // Calcular cuánto escribir en este segmento
         int bytes_restantes = cantidad_bytes - total_escrito;
         int bytes_a_escribir = min(tamanio_pagina - (direccion_logica % tamanio_pagina), bytes_restantes);
-
         // Preparar y enviar el paquete de escritura
         t_paquete* paquete_a_enviar = crear_paquete(ESCRIBIR_MEMORIA);
         agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
@@ -53,32 +49,15 @@ int escribir_valor_en_memoria(int direccion_logica, int cantidad_bytes, char* va
         agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, valor + total_escrito, bytes_a_escribir);
         enviar_paquete(paquete_a_enviar, socket_memoria);
         eliminar_paquete(paquete_a_enviar);
-
+	    //log obligario
+	    //Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
+	    log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d>", contexto_cpu->pid, direccion_fisica, *(valor+total_escrito));
         // Esperar la confirmación de escritura
         sem_wait(&s_pedido_escritura_m);
         total_escrito += bytes_a_escribir;
-	//log obligario
-	//Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
-	log_info(logger_cpu,"PID: <%d> - Acción: <ESCRIBIR> - Dirección Física: <%d> - Valor: <%d>", contexto_cpu->pid, direccion_fisica, *(valor+total_escrito));
     }
     return 0;
 }
-
-// char* leer_memoria(int direccion_logica, int cantidad_bytes){
-//     int direccion_fisica = mmu(direccion_logica);
-//     if(direccion_fisica == -1){
-//         log_warning(logger_cpu, "falta implementar PAGE FAULT");
-//         exit(EXIT_FAILURE);
-//     }
-//     t_paquete* paquete_a_enviar = crear_paquete(LEER_MEMORIA);
-//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
-//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &direccion_fisica, sizeof(int));
-//     agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &cantidad_bytes, sizeof(int));
-//     enviar_paquete(paquete_a_enviar, socket_memoria);
-//     eliminar_paquete(paquete_a_enviar);
-//     sem_wait(&s_pedido_lectura_m);
-//     return respuesta_memoria_char;
-// }
 
 char* leer_memoria(int direccion_logica, int cantidad_bytes) {
     int total_leido = 0;
@@ -95,11 +74,9 @@ char* leer_memoria(int direccion_logica, int cantidad_bytes) {
             free(resultado_final);
             return "-1";
         }
-
         // Calcular cuánto leer en este segmento
         int bytes_restantes = cantidad_bytes - total_leido;
         int bytes_a_leer = min(tamanio_pagina - (direccion_logica % tamanio_pagina), bytes_restantes);
-
         // Preparar y enviar el paquete de lectura
         t_paquete* paquete_a_enviar = crear_paquete(LEER_MEMORIA);
         agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &contexto_cpu->pid, sizeof(int));
@@ -107,13 +84,11 @@ char* leer_memoria(int direccion_logica, int cantidad_bytes) {
         agregar_datos_sin_tamaño_a_paquete(paquete_a_enviar, &bytes_a_leer, sizeof(int));
         enviar_paquete(paquete_a_enviar, socket_memoria);
         eliminar_paquete(paquete_a_enviar);
-
         // Esperar la respuesta
         sem_wait(&s_pedido_lectura_m);
         //log obligatorio
         //Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
 	    log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_fisica, *respuesta_memoria_char);
-        
         // Asumiendo que respuesta_memoria_char contiene los bytes leídos
         memcpy(resultado_final + total_leido, respuesta_memoria_char, bytes_a_leer);
         total_leido += bytes_a_leer;
