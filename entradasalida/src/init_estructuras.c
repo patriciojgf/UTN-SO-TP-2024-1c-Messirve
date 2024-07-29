@@ -112,6 +112,7 @@ static void iniciar_estructuras()
         if(valor < 0)
         {
             log_warning(logger_io, "Ya existe el directorio: (%s)", PATH_BASE_DIALFS);
+            return;
         }
         crear_archivo_de_bloques();
         crear_archivo_bitmap();

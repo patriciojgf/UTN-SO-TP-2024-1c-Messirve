@@ -1,7 +1,9 @@
 #ifndef STATIC_DIALFS_H_
 #define STATIC_DIALFS_H_
 
+#include <commons/collections/dictionary.h>
 #include <configuracion_io.h>
+#include <dirent.h>
 #include <init_estructuras.h>
 #include <math.h>
 #include <sys/mman.h>

@@ -154,17 +154,95 @@ void escribir_archivo(void* datos, char* nombre_archivo, int puntero, int tamani
 }
 
 /*************** FUNCIONES AUXILIARES *****************/
+static bool validarString(char* string1, char* string2)
+{
+    return !string_equals_ignore_case(string1, string2) 
+        && !string_equals_ignore_case(string1, "bitmap.dat") 
+        && !string_equals_ignore_case(string1, "bloques.dat")
+        && !string_equals_ignore_case(string1, ".")
+        && !string_equals_ignore_case(string1, "..");
+}
+
+static t_dictionary* obtener_archivos(char* excluidos)
+{
+    t_dictionary* dictionary_aux = dictionary_create();
+    DIR* directorio = opendir(PATH_BASE_DIALFS);
+    struct dirent *entry;
+    while((entry = readdir(directorio)) != NULL)
+    {
+        char* nombre = string_duplicate(entry->d_name);
+        if(validarString(nombre, excluidos))
+        {
+            char* path = concatenar_path(PATH_BASE_DIALFS, nombre);
+            t_config* metadata_aux = config_create(path);
+            int bloque_inicial = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
+            dictionary_put(dictionary_aux, string_itoa(bloque_inicial), nombre);
+            free(path);
+            config_destroy(metadata_aux);
+        }
+        free(nombre);
+    }
+    closedir(directorio);
+    return dictionary_aux;
+}
+
+static void desplazar_archivo(int inicio, char* nombre_archivo)
+{
+    //se liberan los bloques 
+    char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
+    t_config* metadata_aux = config_create(path);
+    
+    if(metadata_aux == NULL)
+    {
+        log_error(logger_io, "Error al eliminar el archivo metadata. ");
+        return;
+    }
+
+    int bloque_inicial_aux = config_get_int_value(metadata_aux, "BLOQUE_INICIAL");
+    int tamanio_archivo_aux = config_get_int_value(metadata_aux, "TAMANIO_ARCHIVO");
+    int bloques_a_liberar = ceil(((double)tamanio_archivo_aux) / BLOCK_SIZE);
+
+    //TODO: revisar
+    if(!bloques_a_liberar)
+    {
+        bloques_a_liberar = 1;
+    }
+    
+    for(int i = bloque_inicial_aux; i < bloque_inicial_aux + bloques_a_liberar; i++)
+    {
+        liberar_bloque(i);
+    }
+
+    void* aux = leer_archivo(nombre_archivo, 0, bloques_a_liberar * BLOCK_SIZE);
+
+    //actualizamos metadata
+    config_set_value(metadata_aux, "BLOQUE_INICIAL", string_itoa(inicio));
+    config_save(metadata_aux);
+
+    escribir_archivo(aux, nombre_archivo, 0, bloques_a_liberar * BLOCK_SIZE);
+    
+    //ocupar bloques
+    for(int i = inicio; i < inicio + bloques_a_liberar; i++)
+    {
+        ocupar_bloque(i);
+    }
+
+    free(aux);
+}
+
 
 static void compactar(int pid, char* nombre_archivo)
 {
     log_info(logger_io, "PID: <%d> - Inicio Compactación.", pid);
     int bloques = liberar_bloques_de_archivo(nombre_archivo);
+    t_dictionary* archivos_aux = obtener_archivos("");
     void* archivo_void = leer_archivo(nombre_archivo, 0, bloques * BLOCK_SIZE);
     int bloques_libre = obtener_bloques_libres(0);
     int bloques_ocupado = obtener_bloques_ocupados(bloques_libre);
     
     while(bloques_ocupado != -1)
     {
+        desplazar_archivo(bloques_libre, dictionary_get(archivos_aux, string_itoa(bloques_ocupado)));
         bloques_libre = obtener_bloques_libres(bloques_libre);
         bloques_ocupado = obtener_bloques_ocupados(bloques_libre);
     }
