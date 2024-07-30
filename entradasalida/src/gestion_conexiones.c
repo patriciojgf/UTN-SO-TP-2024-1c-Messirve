@@ -5,6 +5,9 @@ static void _handshake_cliente(int socket, char* nombre_destino);
 static void _atender_peticiones_kernel();
 static void _identifico_nombre(int socket);
 static void _lectura_consola(int size_lectura, char* buffer);
+
+static char* fs_write_envio_pedido_memoria(t_solicitud_fs_rw* solicitud_recibida);
+static void recibir_solicitud_y_nombre_archivo(t_solicitud_fs_rw** solicitud_recibida, char** nombre_archivo);
 // --------------------------------------------------------------------------//
 
 
@@ -138,7 +141,6 @@ static void _atender_peticiones_kernel(){
                 break;
 
             case IO_STDIN_READ:
-                log_info(logger_io,"IO_STDIN_READ: Recibiendo solicitud de lectura de kernel");
                 // Recibir la solicitud que contiene las direcciones de memoria y el tamaño a leer
                 solicitud_recibida_kernel = recibir_solicitud_io(socket_cliente_kernel);
                 if (solicitud_recibida_kernel == NULL) {
@@ -157,52 +159,74 @@ static void _atender_peticiones_kernel(){
                 enviar_solicitud_io(socket_cliente_memoria, solicitud_recibida_kernel,IO_STDIN_READ);
                 // Limpiar
                 free(input_text);
-                log_info(logger_io,"IO_STDIN_READ: solicitud enviada a memoria");
+                liberar_solicitud_io(solicitud_recibida_kernel);
                 //espero handshake ok
                 int cod_hand = recibir_operacion(socket_cliente_memoria);
                 int size_temp =0;
                 void* buffer_temp = recibir_buffer(&size_temp, socket_cliente_memoria);
                 free(buffer_temp);
-                log_info(logger_io,"IO_STDIN_READ: handshake recibido de memoria");
                 //envio el ok a kernel
                 if (cod_hand == IO_STDIN_READ){                    
                     paquete_para_kernel = crear_paquete(IO_STDIN_READ);
                     agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                     enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
                     eliminar_paquete(paquete_para_kernel);     
-                    log_info(logger_io,"IO_STDIN_READ: handshake enviado a kernel");              
+                    log_info(logger_io,"IO_STDIN_READ: OK enviado a kernel");              
                 }
                 else{
-                    //liberar memoria de t_solicitud_io
-                    liberar_solicitud_io(solicitud_recibida_kernel);
                     log_error(logger_io,"falla en conexion con memoria");
                 }
                 break;
             case IO_FS_WRITE:
                 log_info(logger_io, "Iniciando [IO_FS_WRITE]");
                 usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                size=0;
-                pid=0;
-                int largo_nombre_archivo_fs_write = 0;                
-                solicitud_recibida_fs_rw = recibir_solicitud_io_fs_rw(socket_cliente_kernel);
-                if (solicitud_recibida_fs_rw == NULL) {
-                    fprintf(stderr, "Error al recibir la solicitud IO\n");
-                    continue;
-                }
-                void *buffer_fs_write = recibir_buffer(&size, socket_cliente_kernel);                     
-                memcpy(&largo_nombre_archivo_fs_write, buffer_fs_write, sizeof(int));
-                char* nombre_archivo_fs_write = malloc(largo_nombre_archivo_fs_write);
-                memcpy(nombre_archivo_fs_write, buffer_fs_write + sizeof(int), largo_nombre_archivo_fs_write);
-                free(buffer_fs_write);
+                // size=0;
+                // pid=0;
+                // int largo_nombre_archivo_fs_write = 0;                
+                // solicitud_recibida_fs_rw = recibir_solicitud_io_fs_rw(socket_cliente_kernel);
+                // if (solicitud_recibida_fs_rw == NULL) {
+                //     fprintf(stderr, "Error al recibir la solicitud IO\n");
+                //     continue;
+                // }
+                // void *buffer_fs_write = recibir_buffer(&size, socket_cliente_kernel);                     
+                // memcpy(&largo_nombre_archivo_fs_write, buffer_fs_write, sizeof(int));
+                // char* nombre_archivo_fs_write = malloc(largo_nombre_archivo_fs_write);
+                // memcpy(nombre_archivo_fs_write, buffer_fs_write + sizeof(int), largo_nombre_archivo_fs_write);
+                // free(buffer_fs_write);
+                char* nombre_archivo_fs_write = NULL;
+                recibir_solicitud_y_nombre_archivo(&solicitud_recibida_fs_rw, &nombre_archivo_fs_write);
 
-                //aca hacer lo que tiene que hacer
-                //en solicitud_recibida_fs_rw esta cada direccion de memoria fisica, y la cantidad de bytes que va a leer/escribir ahi.
-                //hay un campo libre para guardar datos (en caso de tener que escribir a memoria le metes el dato ahi)
+                // solicitud_para_memoria = convertir_fs_a_io(solicitud_recibida_fs_rw);
+                // enviar_solicitud_io(socket_cliente_memoria, solicitud_para_memoria,IO_FS_WRITE);
+
+                // int cod_mensaje = recibir_operacion(socket_cliente_memoria);
+                // if(cod_mensaje == -1){
+                //     log_error(logger_io,"falla en conexion con memoria");
+                //     liberar_solicitud_io(solicitud_recibida_kernel);
+                //     continue;
+                // }
+                // int size_mensaj_fs_w =0;
+                // void* buffer_mensaje_fs_w = recibir_buffer(&size_mensaj_fs_w, socket_cliente_memoria);                
+                // char* mensaje_recibido_de_memoria_fs_w;
+                // int size_mensaje_recibido_de_memoria_fs_w;
+                // int desplazamiento_fs_w = 0;
+                // memcpy(&(size_mensaje_recibido_de_memoria_fs_w), buffer_mensaje_fs_w + desplazamiento_fs_w, sizeof(int));
+                // desplazamiento_fs_w += sizeof(int);
+                // mensaje_recibido_de_memoria_fs_w=malloc(size_mensaje_recibido_de_memoria_fs_w);
+                // memcpy(mensaje_recibido_de_memoria_fs_w, buffer_mensaje_fs_w + desplazamiento_fs_w, size_mensaje_recibido_de_memoria_fs_w);
+
+                char* resultado_memoria = fs_write_envio_pedido_memoria(solicitud_recibida_fs_rw);
+                //el tamaño del mensaje esta en solicitud_recibida_fs_rw->size_solicitud
+                
+
+
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_WRITE>", pid);
-                void* datos = malloc(size); //TODO: cambiar al que corresponda
-                escribir_archivo(datos, nombre_archivo_fs_write, 0, 0); //reemplazar puntero y tamaño
-                free(datos);
+                // void* datos = malloc(size); //TODO: cambiar al que corresponda
+                // escribir_archivo(datos, nombre_archivo_fs_write, 0, 0); //reemplazar puntero y tamaño
+                // free(datos);
 
+                escribir_archivo(resultado_memoria, nombre_archivo_fs_write, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->size_solicitud);
+                liberar_solicitud_fs_rw(solicitud_recibida_fs_rw);
                 free(nombre_archivo_fs_write);
 
                 paquete_para_kernel = crear_paquete(IO_FS_WRITE);
@@ -212,36 +236,50 @@ static void _atender_peticiones_kernel(){
                 break;  
             case IO_FS_READ:
                 log_info(logger_io, "Iniciando [IO_FS_READ]");
-                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                size=0;
-                pid=0;
-                int largo_nombre_archivo_fs_read = 0;                
-                solicitud_recibida_fs_rw = recibir_solicitud_io_fs_rw(socket_cliente_kernel);
-                if (solicitud_recibida_fs_rw == NULL) {
-                    fprintf(stderr, "Error al recibir la solicitud IO\n");
-                    continue;
-                }
-                void *buffer_fs_read = recibir_buffer(&size, socket_cliente_kernel);                     
-                memcpy(&largo_nombre_archivo_fs_read, buffer_fs_read, sizeof(int));
-                char* nombre_archivo_fs_read = malloc(largo_nombre_archivo_fs_read);
-                memcpy(nombre_archivo_fs_read, buffer_fs_read + sizeof(int), largo_nombre_archivo_fs_read);
-                free(buffer_fs_read);
-
-                //aca hacer lo que tiene que hacer
-                //en solicitud_recibida_fs_rw esta cada direccion de memoria fisica, y la cantidad de bytes que va a leer/escribir ahi.
-                //hay un campo libre para guardar datos (en caso de tener que escribir a memoria le metes el dato ahi)
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_READ>", pid);
+                usleep(TIEMPO_UNIDAD_TRABAJO*1000);
+
+                char* nombre_archivo_fs_read = NULL;
+                recibir_solicitud_y_nombre_archivo(&solicitud_recibida_fs_rw, &nombre_archivo_fs_read);
+
+
                 
-                void* datos_lectura = leer_archivo(nombre_archivo_fs_read, 0, 0); //reemplazar puntero y tamaño
-                //escribir_memoria(params);
-                free(datos_lectura);
+                log_warning(logger_io,"terminar la parte de lectura de disco");
+                // void* datos_lectura = leer_archivo(nombre_archivo_fs_read, 0, 0); //reemplazar puntero y tamaño
+                //tomo lo leido del disco y se lo mando a memoria en una solicitud
+                char* lo_que_leimos_de_disco = malloc(solicitud_recibida_fs_rw->size_solicitud+1);
+                lo_que_leimos_de_disco[solicitud_recibida_fs_rw->size_solicitud] = '\0';
 
                 free(nombre_archivo_fs_read);
 
-                paquete_para_kernel = crear_paquete(IO_FS_WRITE);
-                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
-                enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
-                eliminar_paquete(paquete_para_kernel); 
+
+
+                t_solicitud_io* solicitud_para_memoria_fs_read = convertir_fs_a_io(solicitud_recibida_fs_rw);
+                llenar_datos_memoria(solicitud_para_memoria_fs_read, lo_que_leimos_de_disco);
+                enviar_solicitud_io(socket_cliente_memoria, solicitud_para_memoria_fs_read,IO_FS_READ);
+                free(lo_que_leimos_de_disco);
+                liberar_solicitud_fs_rw(solicitud_recibida_fs_rw);
+                liberar_solicitud_io(solicitud_para_memoria_fs_read);
+
+                //espero handshake ok
+                int cod_fs_read = recibir_operacion(socket_cliente_memoria);
+                int size_temp_fs_read =0;
+                void* buffer_temp_fs_read = recibir_buffer(&size_temp_fs_read, socket_cliente_memoria);
+                free(buffer_temp_fs_read);
+                
+                //envio el ok a kernel
+                if (cod_fs_read == IO_FS_READ){                    
+                    paquete_para_kernel = crear_paquete(IO_STDIN_READ);
+                    agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                    enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
+                    eliminar_paquete(paquete_para_kernel);
+                    log_info(logger_io,"IO_FS_READ: ok enviado a kernel");              
+                }
+                else{
+                    //liberar memoria de t_solicitud_io
+                    log_error(logger_io,"IO_FS_READ: falla en conexion con memoria");
+                }
+
                 break;                 
             case IO_GEN_SLEEP:
                 size=0;
@@ -418,4 +456,41 @@ static void _handshake_cliente(int socket, char* nombre_destino){
             exit(EXIT_FAILURE);
             break;
     }    
+}
+
+static void recibir_solicitud_y_nombre_archivo(t_solicitud_fs_rw** solicitud_recibida, char** nombre_archivo) {
+    int size = 0;
+    int largo_nombre_archivo = 0;
+    *solicitud_recibida = recibir_solicitud_io_fs_rw(socket_cliente_kernel);
+    if (*solicitud_recibida == NULL) {
+        log_error(logger_io, "Error al recibir la solicitud IO");
+        exit(EXIT_FAILURE);
+    }
+    void *buffer = recibir_buffer(&size, socket_cliente_kernel);                     
+    memcpy(&largo_nombre_archivo, buffer, sizeof(int));
+    *nombre_archivo = malloc(largo_nombre_archivo);
+    memcpy(*nombre_archivo, buffer + sizeof(int), largo_nombre_archivo);
+    free(buffer);
+}
+
+static char* fs_write_envio_pedido_memoria(t_solicitud_fs_rw* solicitud_recibida) {
+    t_solicitud_io* solicitud_para_memoria = convertir_fs_a_io(solicitud_recibida);
+    enviar_solicitud_io(socket_cliente_memoria, solicitud_para_memoria, IO_FS_WRITE);
+    liberar_solicitud_io(solicitud_para_memoria);
+
+    int cod_mensaje = recibir_operacion(socket_cliente_memoria);
+    if (cod_mensaje == -1) {
+        log_error(logger_io, "falla en conexion con memoria");
+        return NULL;
+    }
+    int size = 0;
+    void* buffer = recibir_buffer(&size, socket_cliente_memoria);
+    int desplazamiento = 0;
+    int size_mensaje_recibido=0;
+    memcpy(&size_mensaje_recibido, buffer + desplazamiento, sizeof(int));
+    desplazamiento += sizeof(int);
+    char* mensaje_recibido_de_memoria = malloc(size_mensaje_recibido);
+    memcpy(mensaje_recibido_de_memoria, buffer + desplazamiento, size_mensaje_recibido);
+    free(buffer);
+    return mensaje_recibido_de_memoria;
 }

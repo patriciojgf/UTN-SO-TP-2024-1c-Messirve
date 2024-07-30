@@ -206,47 +206,68 @@ static void atender_peticiones_stdin(void *void_args){
 
 static void atender_peticiones_dialfs(void *void_args){
     int* socket = (int*) void_args;
+    t_solicitud_io* solicitud;
+    t_paquete* paquete_respuesta;
+    int mensajeOK;
     while(1){
         int code_op = recibir_operacion(*socket);
         usleep(RETARDO_RESPUESTA*1000);
-        if (code_op == IO_FS_CREATE){
-            t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
+        mensajeOK=0;
+        if (code_op == IO_FS_WRITE){
+            solicitud = recibir_solicitud_io(*socket);
 
-            //TODO: comento por el momento
-            // for(int i=0; i<solicitud->cantidad_accesos; i++){
-            //     // log_info(logger_memoria,"escribir en direccion fisica <%d>",solicitud->datos_memoria[i].direccion_fisica);
-            //     // log_info(logger_memoria,"los datos <%s>",solicitud->datos_memoria[i].datos);
-            //     mem_escribir_dato_direccion_fisica(
-            //         solicitud->datos_memoria[i].direccion_fisica,   //direccion
-            //         solicitud->datos_memoria[i].datos,              //dato
-            //         // strlen(solicitud->datos_memoria[i].datos)+1,    //tamaño
-            //         solicitud->datos_memoria[i].tamano,
-            //         solicitud->pid);                                //pid
-
-            //     // mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, strlen(solicitud->datos_memoria[i].datos)+1);
-            // }
-            //liberar memoria de t_solicitud_io
+            //leo cada pagina y cantidad de bytes
+            char* mensaje_respuesta_temp = NULL;
+            int total_size = 0;
+            for(int i=0; i<solicitud->cantidad_accesos; i++){
+                void* dato_leido = mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, solicitud->datos_memoria[i].tamano, solicitud->pid);
+                if(dato_leido == NULL){
+                    free(mensaje_respuesta_temp);
+                    exit(EXIT_FAILURE);
+                }
+                char* nuevo_resultado = realloc(mensaje_respuesta_temp, total_size + solicitud->datos_memoria[i].tamano +1); //+1 para el '\0'
+                if (nuevo_resultado == NULL) {
+                    // Manejo de error si realloc falla
+                    free(dato_leido);
+                    free(mensaje_respuesta_temp);
+                    exit(EXIT_FAILURE);
+                }
+                mensaje_respuesta_temp = nuevo_resultado;
+                memcpy(mensaje_respuesta_temp + total_size, dato_leido, solicitud->datos_memoria[i].tamano);
+                total_size += solicitud->datos_memoria[i].tamano;
+                mensaje_respuesta_temp[total_size] = '\0'; 
+                free(dato_leido);                
+            }
             liberar_solicitud_io(solicitud);
 
-            //confirmo a entradasalida
-            int mensajeOK =1;
-            t_paquete* paquete = crear_paquete(IO_FS_CREATE);
-            agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
-            enviar_paquete(paquete, *socket);
-            eliminar_paquete(paquete);      
-            //desconecto      
+            //envio lo que lei
+            paquete_respuesta = crear_paquete(IO_FS_WRITE);
+            agregar_a_paquete(paquete_respuesta, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
+            enviar_paquete(paquete_respuesta, *socket);
+            eliminar_paquete(paquete_respuesta);
+            free(mensaje_respuesta_temp);
+            liberar_solicitud_io(solicitud);
         }
-        else if(code_op == IO_FS_DELETE){
-            t_solicitud_io* solicitud = recibir_solicitud_io(*socket);
+        else if(code_op == IO_FS_READ){
+            solicitud = recibir_solicitud_io(*socket);
+
+            //escribo todas las paginas de la solicitud
+            for(int i=0; i<solicitud->cantidad_accesos; i++){
+                mem_escribir_dato_direccion_fisica(
+                    solicitud->datos_memoria[i].direccion_fisica,   //direccion
+                    solicitud->datos_memoria[i].datos,              //dato
+                    solicitud->datos_memoria[i].tamano,
+                    solicitud->pid);                                //pid
+            }
             //liberar memoria de t_solicitud_io
             liberar_solicitud_io(solicitud);
 
             //confirmo a entradasalida
-            int mensajeOK =1;
-            t_paquete* paquete = crear_paquete(IO_FS_CREATE);
-            agregar_datos_sin_tamaño_a_paquete(paquete,&mensajeOK,sizeof(int));
-            enviar_paquete(paquete, *socket);
-            eliminar_paquete(paquete);   
+            mensajeOK =1;
+            paquete_respuesta = crear_paquete(IO_FS_READ);
+            agregar_datos_sin_tamaño_a_paquete(paquete_respuesta,&mensajeOK,sizeof(int));
+            enviar_paquete(paquete_respuesta, *socket);
+            eliminar_paquete(paquete_respuesta);  
         }
         else if (code_op == -1){
             close(*socket);
