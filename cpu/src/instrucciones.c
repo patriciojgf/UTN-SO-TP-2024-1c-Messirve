@@ -400,7 +400,7 @@ static int _mov_out(t_instruccion* instruccion){
 
 //Patricio- modifico agregando mmu
 static t_solicitud_io* _io_std(t_instruccion* instruccion) {
-	char* instruccion = list_get(instruccion->parametros, 0);
+	char* nombre_instruccion = list_get(instruccion->parametros, 0);
     char *registro_direccion = list_get(instruccion->parametros, 1);
     char *registro_tamano = list_get(instruccion->parametros, 2);
     info_registro_cpu registro_dir_info = _get_direccion_registro(registro_direccion);
@@ -410,8 +410,8 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
 
 	//log obligatorio
 	//Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
-	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%s> - <%s>",contexto_cpu->pid, instruccion, registro_direccion, registro_tamano);
-	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%s> - <%s>",contexto_cpu->pid, instruccion, direccion_logica_actual, valor_tamano_a_escribir);
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%s> - <%s>",contexto_cpu->pid, nombre_instruccion, registro_direccion, registro_tamano);
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%d> - <%d>",contexto_cpu->pid, nombre_instruccion, direccion_logica_actual, valor_tamano_a_escribir);
     // log_info(logger_cpu,"[_io_std]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir);
 
     t_solicitud_io* pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
