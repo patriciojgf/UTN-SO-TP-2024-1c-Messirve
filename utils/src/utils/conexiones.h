@@ -198,5 +198,7 @@ void agregar_a_pedido_fs_rw(t_solicitud_fs_rw* solicitud, char* dato, int size_d
 void eliminar_pedido_fs_rw(t_solicitud_fs_rw* solicitud);
 t_paquete* empaquetar_solicitud_fs_rw(t_solicitud_fs_rw* solicitud, int motivo);
 void enviar_solicitud_io_fs_rw(int socket, t_solicitud_fs_rw* solicitud, int motivo);
+t_solicitud_io* convertir_fs_a_io(t_solicitud_fs_rw* solicitud_fs);
+void liberar_solicitud_fs_rw(t_solicitud_fs_rw* solicitud);
 
 #endif /* CONEXIONES_H_ */

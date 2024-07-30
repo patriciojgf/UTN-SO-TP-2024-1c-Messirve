@@ -204,14 +204,14 @@ void ejecutar_proceso(){
 				// sem_wait(&s_signal_kernel);
 				//recibo respuesta del dispatch
 				int codigo_op = recibir_operacion(socket_cliente_dispatch);
-				log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL codigo_op <%d>",codigo_op);
+				// log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL codigo_op <%d>",codigo_op);
 				void* buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
 				memcpy((&mensajeOk),buffer_recibido,sizeof(int));
-				log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL mensajeOk <%d>",mensajeOk);
+				// log_info(logger_cpu,"[EJECUTAR PROCESO]:SIGNAL mensajeOk <%d>",mensajeOk);
 				free(buffer_recibido);
 				if(!mensajeOk){
 					motivo_desalojo=INT_SIGNAL;
-					log_info(logger_cpu,"[EJECUTAR PROCESO]: -- PID <%d> - PC<%d> - SIGNAL NO OK",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
+					// log_info(logger_cpu,"[EJECUTAR PROCESO]: -- PID <%d> - PC<%d> - SIGNAL NO OK",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
 				}
 				break;
             default: 
@@ -230,10 +230,8 @@ void ejecutar_proceso(){
 		pthread_mutex_lock(&mutex_ejecucion_proceso);
 
 		//Desalojos por instrucciones ejecutadas
-		log_info(logger_cpu,"Desalojos por instrucciones ejecutadas");
 		if(motivo_desalojo > -1){
 			flag_ejecucion = false;
-			log_info(logger_cpu,"motivo_desalojo > -1");
 			devolver_contexto_a_dispatch(motivo_desalojo, inst_decodificada);
 			if (motivo_desalojo == IO_STDIN_READ){
 				enviar_solicitud_io(socket_cliente_dispatch, pedido_io_stdin_read,motivo_desalojo);
@@ -253,7 +251,6 @@ void ejecutar_proceso(){
 		}
 
         // Verificar interrupciones.
-		log_info(logger_cpu,"Verificar interrupciones <%d> <%d>",flag_interrupt,flag_ejecucion);
         if (flag_interrupt && flag_ejecucion) {
             //log_info(logger_cpu,"Hay interrupción, modificar el devolver contexto");
             devolver_contexto_a_dispatch(motivo_interrupt, inst_decodificada);
@@ -369,16 +366,16 @@ static int _mov_in(t_instruccion* instruccion){
 	free(dato_leido);
 	
 	//genero un log para ver el valor leido y escrito en el registro
-	int dato_leido_int = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
+	// int dato_leido_int = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
 	//log obligario
 	// Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
-	log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
+	// log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_logica, dato_leido_int);
 	// mostrar_valores_registros_cpu();
 	return 0;
 }
 
 static int _mov_out(t_instruccion* instruccion){
-	log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
+	// log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
 	// mostrar_valores_registros_cpu();
 // MOV_OUT (Registro Dirección, Registro Datos): 
 // Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
@@ -397,12 +394,13 @@ static int _mov_out(t_instruccion* instruccion){
 	int se_pudo_escribir = escribir_valor_en_memoria(direccion_logica,registro_datos_info.tamano, registro_datos_info.direccion);
 	
 	// mostrar_valores_registros_cpu();
-	log_info(logger_cpu,"---------------------------------");
+	// log_info(logger_cpu,"---------------------------------");
 	return se_pudo_escribir;
 }
 
 //Patricio- modifico agregando mmu
 static t_solicitud_io* _io_std(t_instruccion* instruccion) {
+	char* instruccion = list_get(instruccion->parametros, 0);
     char *registro_direccion = list_get(instruccion->parametros, 1);
     char *registro_tamano = list_get(instruccion->parametros, 2);
     info_registro_cpu registro_dir_info = _get_direccion_registro(registro_direccion);
@@ -410,7 +408,11 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
     int direccion_logica_actual = *(uint8_t*)registro_dir_info.direccion;
     int valor_tamano_a_escribir = *(uint8_t*)registro_tam_info.direccion;
 
-    log_info(logger_cpu,"[_io_std]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir);
+	//log obligatorio
+	//Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%s> - <%s>",contexto_cpu->pid, instruccion, registro_direccion, registro_tamano);
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%s> - <%s>",contexto_cpu->pid, instruccion, direccion_logica_actual, valor_tamano_a_escribir);
+    // log_info(logger_cpu,"[_io_std]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir);
 
     t_solicitud_io* pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
     int total_escrito = 0;

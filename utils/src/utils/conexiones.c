@@ -475,6 +475,14 @@ t_solicitud_fs_rw* recibir_solicitud_io_fs_rw(int socket){
     return solicitud;
 }
 
+//convierto t_solicitud_fs_rw a t_solicitud_io
+t_solicitud_io* convertir_fs_a_io(t_solicitud_fs_rw* solicitud_fs){
+	t_solicitud_io* solicitud_io = crear_pedido_memoria(solicitud_fs->pid, solicitud_fs->size_solicitud);
+	solicitud_io->cantidad_accesos = solicitud_fs->cantidad_accesos;
+	solicitud_io->datos_memoria = solicitud_fs->datos_memoria;
+	return solicitud_io;
+}
+
 
 t_solicitud_io* crear_pedido_memoria(int pid, uint32_t size_solicitud) {
     t_solicitud_io* solicitud = malloc(sizeof(t_solicitud_io));
@@ -649,6 +657,23 @@ void liberar_solicitud_io(t_solicitud_io* solicitud) {
         // Si la estructura t_solicitud_io misma fue asignada dinámicamente, liberarla aquí
         free(solicitud);
     }
+}
+
+void liberar_solicitud_fs_rw(t_solicitud_fs_rw* solicitud) {
+	if (solicitud != NULL) {
+		// Liberar cada conjunto de datos dentro del arreglo
+		for (int i = 0; i < solicitud->cantidad_accesos; i++) {
+			free(solicitud->datos_memoria[i].datos); // Liberar la memoria del dato individual
+			solicitud->datos_memoria[i].datos = NULL; // Buenas prácticas: poner el puntero en NULL
+		}
+
+		// Liberar el arreglo de datos de memoria
+		free(solicitud->datos_memoria);
+		solicitud->datos_memoria = NULL;
+
+		// Si la estructura t_solicitud_io misma fue asignada dinámicamente, liberarla aquí
+		free(solicitud);
+	}
 }
 
 
