@@ -105,7 +105,7 @@ void truncar_archivo(int pid, int tamano_bytes, char* nombre_archivo)
             ocupar_bloque(i);
         }
     }
-    else if(bloques_a_actualizar < 0)
+    if(bloques_a_actualizar < 0)
     {
         //achicar
         bloques_a_actualizar = bloques_actuales - nuevo_bloques;
@@ -115,11 +115,11 @@ void truncar_archivo(int pid, int tamano_bytes, char* nombre_archivo)
             liberar_bloque(i);
         }
     }
-    else
-    {
-        //TODO: que pasa si es cero
-        log_error(logger_io, "Error al actualizar: tamanio del bloques a actualizar es {%d}, caso no soportado.", bloques_a_actualizar);
-    }
+    // else
+    // {
+    //     //TODO: que pasa si es cero
+    //     log_error(logger_io, "Error al actualizar: tamanio del bloques a actualizar es {%d}, caso no soportado.", bloques_a_actualizar);
+    // }
 
     //actualizar metadata
     log_info(logger_io, "Actualizando metadata...");
@@ -276,13 +276,10 @@ static void compactar(int pid, char* nombre_archivo)
 
 static int obtener_bloques_libres(int inicio)
 {
-    printf("obtener_bloques_libres\n");
     for(int i = inicio; i < BLOCK_COUNT; i++)
     {
-        printf("obtener_bloques_libres_for\n");
         if(!bitarray_test_bit(bitmap_fs, i))
         {
-            printf("obtener_bloques_libres_if\n");
             return i;
         }
     }
@@ -315,7 +312,7 @@ static void liberar_bloque(int index)
 
 static bool se_puede_agrandar(int inicio, int bloques_a_actualizar)
 {
-    for(int i = inicio; i < inicio * bloques_a_actualizar; i++)
+    for(int i = inicio; i < inicio + bloques_a_actualizar; i++)
     {
         if(i >= BLOCK_SIZE)
         {

@@ -1,2 +1,2 @@
-IO_FS_DELETE DIALFS salida.txt
-IO_FS_DELETE DIALFS cronologico.txt
+IO_FS_DELETE FS salida.txt
+IO_FS_DELETE FS cronologico.txt
