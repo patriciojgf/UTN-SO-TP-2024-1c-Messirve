@@ -9,6 +9,11 @@ static bool se_puede_agrandar(int inicio, int bloques_a_actualizar);
 
 void crear_archivo(char* nombre_archivo)
 {
+    if (access(concatenar_path(PATH_BASE_DIALFS, nombre_archivo), F_OK) != -1) 
+    {
+        log_info(logger_io, "El archivo [%s] ya existe en el directorio.", nombre_archivo);
+        return;
+    }
     log_info(logger_io, "Iniciando creación de archivo [%s]...", nombre_archivo);
     int bloque = obtener_bloques_libres(0);
     ocupar_bloque(bloque);
@@ -20,6 +25,11 @@ void crear_archivo(char* nombre_archivo)
 
 int liberar_bloques_de_archivo(char* nombre_archivo)
 {
+    // if (access(concatenar_path(PATH_BASE_DIALFS, nombre_archivo), F_OK) != -1) 
+    // {
+    //     log_info(logger_io, "El archivo [%s] ya existe en el directorio.", nombre_archivo);
+    //     return EXIT_FAILURE;
+    // }
     log_info(logger_io, "Eliminando archivo [%s]...", nombre_archivo);
     char* path = concatenar_path(PATH_BASE_DIALFS, nombre_archivo);
     t_config* metadata_aux = config_create(path);
@@ -44,7 +54,6 @@ int liberar_bloques_de_archivo(char* nombre_archivo)
     {
         liberar_bloque(i);
     }
-    log_info(logger_io, "Bloques liberados...");
 
     free(path);
     config_destroy(metadata_aux);
@@ -267,10 +276,13 @@ static void compactar(int pid, char* nombre_archivo)
 
 static int obtener_bloques_libres(int inicio)
 {
+    printf("obtener_bloques_libres\n");
     for(int i = inicio; i < BLOCK_COUNT; i++)
     {
+        printf("obtener_bloques_libres_for\n");
         if(!bitarray_test_bit(bitmap_fs, i))
         {
+            printf("obtener_bloques_libres_if\n");
             return i;
         }
     }
@@ -292,13 +304,13 @@ static int obtener_bloques_ocupados(int inicio)
 static void ocupar_bloque(int index)
 {
     bitarray_set_bit(bitmap_fs, index);
-    msync(bitmap_void, tamanio_archivo_bitmap, index);
+    msync(bitmap_void, tamanio_archivo_bitmap, MS_ASYNC);
 }
 
 static void liberar_bloque(int index)
 {
     bitarray_clean_bit(bitmap_fs, index);
-    msync(bitmap_void, tamanio_archivo_bitmap, index);
+    msync(bitmap_void, tamanio_archivo_bitmap, MS_ASYNC);
 }
 
 static bool se_puede_agrandar(int inicio, int bloques_a_actualizar)

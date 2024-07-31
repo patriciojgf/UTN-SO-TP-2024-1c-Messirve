@@ -1,0 +1,4 @@
+IO_FS_CREATE DIALFS salida.txt
+IO_FS_DELETE DIALFS salida.txt
+IO_FS_CREATE DIALFS cronologico.txt
+IO_FS_CREATE DIALFS test.txt

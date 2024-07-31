@@ -88,7 +88,7 @@ static void crear_archivo_bitmap()
     tamanio_archivo_bitmap = BLOCK_COUNT / 8;
 
     bitmap_void = mmap(NULL, tamanio_archivo_bitmap, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor, 0);
-    bitmap_fs = bitarray_create_with_mode(bitmap_void, tamanio_archivo_bitmap, LSB_FIRST);
+    bitmap_fs = bitarray_create_with_mode(bitmap_void, tamanio_archivo_bitmap, MSB_FIRST);
 
     if(ftruncate(file_descriptor, tamanio_archivo_bitmap) == -1)
     {
@@ -111,11 +111,12 @@ static void iniciar_estructuras()
         
         if(valor < 0)
         {
-            log_warning(logger_io, "Ya existe el directorio: (%s)", PATH_BASE_DIALFS);
-            return;
+            log_info(logger_io, "Ya existe el directorio: (%s)", PATH_BASE_DIALFS);
+            // return;
         }
         crear_archivo_de_bloques();
         crear_archivo_bitmap();
+        log_info(logger_io, "tamanio_archivo_bloque: %i - tamanio_archivo_bitmap: %i", tamanio_archivo_bloque, tamanio_archivo_bitmap);
         // if(!crear_archivo_metadata("test"))
         // {
         //     log_error(logger_io, "No se pudo crear el archivo de metadata.");

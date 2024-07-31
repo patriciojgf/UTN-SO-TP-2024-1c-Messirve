@@ -1,0 +1,2 @@
+IO_FS_DELETE DIALFS salida.txt
+IO_FS_DELETE DIALFS cronologico.txt
