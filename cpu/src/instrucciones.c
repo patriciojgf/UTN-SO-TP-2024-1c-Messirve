@@ -440,7 +440,7 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
 static t_solicitud_fs_rw* _io_fs_rw(t_instruccion* instruccion){
 	char* registro_direccion = list_get(instruccion->parametros, 2);
 	char* registro_tamano = list_get(instruccion->parametros, 3);
-	char* registro_puntero = list_get(instruccion->parametros, 3);
+	char* registro_puntero = list_get(instruccion->parametros, 4);
 	info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
 	info_registro_cpu registro_tamano_info = _get_direccion_registro(registro_tamano);
 	info_registro_cpu registro_puntero_info = _get_direccion_registro(registro_puntero);

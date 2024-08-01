@@ -129,20 +129,28 @@ void liberar_bloques(t_fs_archivo* archivo, void* buffer) {
     memcpy(buffer, info_FS.archivo_bloques_en_memoria + obtener_offset_de_bloque(archivo->puntero_inicio), archivo->tamano);
 }
 
-void liberar_bloques_de_archivo(char* nombre_archivo)
-{
+int liberar_bloques_de_archivo(char* nombre_archivo) {
     t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_remove(info_FS.fs_archivos, nombre_archivo);
-
-    for (int i = archivo_datos->puntero_inicio; i < archivo_datos->puntero_inicio + archivo_datos->cantidad_bloques; i++)
-    {
+    if (!archivo_datos) {
+        log_error(logger_io, "El archivo %s no existe.", nombre_archivo);
+        return -1; // El archivo no existe
+    }
+    // Liberar los bloques ocupados por el archivo
+    for (int i = archivo_datos->puntero_inicio; i < archivo_datos->puntero_inicio + archivo_datos->cantidad_bloques; i++) {
+        // Pone en 0 el bit en la posición i del bitmap, indicando que el bloque i está ahora libre.
         bitarray_clean_bit(info_FS.bitmap, i);
     }
-
+    // Escribo los cambios que se realizaron en memoria, en el archivo fisico (que fue mapeado a memoria en inicio_fs_mapear_archivo_en_memoria)
     msync(info_FS.archivo_bitmap_en_memoria, info_FS.tamano_bitmap, MS_SYNC);
-
-    config_destroy(archivo_datos->metadata);
+    // Eliminar el archivo físico y su metadata
     remove(archivo_datos->path_nombre);
-    fs_archivo_destroy(archivo_datos);
+    config_destroy(archivo_datos->metadata);
+    free(archivo_datos->nombre);
+    free(archivo_datos->path_nombre);
+    free(archivo_datos);
+
+    log_info(logger_io, "Archivo %s eliminado correctamente.", nombre_archivo);
+    return 0; // Archivo eliminado exitosamente
 }
 
 static void compactar_archivos(t_list* lista_archivos, int* offset_bloques) {
@@ -271,7 +279,7 @@ int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
     return agrandar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques, nombre_archivo);
 }
 
-void leer_archivo(char* nombre_archivo, int puntero, int tamanio)
+int leer_archivo(char* nombre_archivo, int puntero, int tamanio)
 {
     t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_get(info_FS.fs_archivos, nombre_archivo);
     int offset_bloques = obtener_offset_de_bloque(archivo_datos->puntero_inicio);
@@ -279,11 +287,34 @@ void leer_archivo(char* nombre_archivo, int puntero, int tamanio)
     fs_archivo_destroy(archivo_datos);
 }
 
-void escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resultado_escritura)
-{
+int escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resultado_escritura) {
+    log_info(logger_io, "Iniciando escritura en el archivo <%s> - puntero <%d> - tamaño <%d>", nombre_archivo, puntero, tamanio);
+
     t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_get(info_FS.fs_archivos, nombre_archivo);
+    if (archivo_datos == NULL) {
+        log_error(logger_io, "El archivo %s no existe.", nombre_archivo);
+        return -1; // El archivo no existe
+    }
+
+    log_info(logger_io, "Archivo encontrado <%s>", archivo_datos->nombre);
     int offset_bloques = obtener_offset_de_bloque(archivo_datos->puntero_inicio);
-    memcpy(info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, resultado_escritura, tamanio); //TODO: revisar
-    msync(info_FS.archivo_bloques_en_memoria, info_FS.tamano_bloque, MS_SYNC);
-    fs_archivo_destroy(archivo_datos);
+    log_info(logger_io, "Offset de bloques calculado <%d>", offset_bloques);
+
+    // Verifica si hay suficiente espacio para escribir
+    int espacio_disponible = archivo_datos->cantidad_bloques * info_FS.tamano_bloque;
+    log_info(logger_io, "Espacio disponible <%d>", espacio_disponible);
+    if (tamanio > espacio_disponible) {
+        log_error(logger_io, "No hay suficiente espacio en el archivo %s para escribir %d bytes.", nombre_archivo, tamanio);
+        return -1;
+    }
+
+    // Escribe los datos en la memoria mapeada
+    log_info(logger_io, "Copiando datos a la memoria mapeada");
+    memcpy(info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, resultado_escritura, tamanio);
+
+    log_info(logger_io, "Sincronizando cambios con msync");
+    msync(info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, tamanio, MS_SYNC);
+
+    log_info(logger_io, "Datos escritos en el archivo <%s> con éxito.", nombre_archivo);
+    return 0;
 }

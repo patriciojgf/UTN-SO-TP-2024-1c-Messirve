@@ -167,7 +167,7 @@ void atender_peticiones_dispatch(){
 	while(1){
 		// log_info(logger_kernel,"[atender_peticiones_dispatch]");
 		int cod_op = recibir_operacion(socket_dispatch);
-		// log_info(logger_kernel,"[atender_peticiones_dispatch] - recibir_operacion");
+		log_info(logger_kernel,"[atender_peticiones_dispatch] - recibir_operacion <%d>",cod_op);
 		// //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: Recibi operacion"));
 		switch (cod_op) {
 			case CONTEXTO_EJECUCION:
@@ -192,7 +192,9 @@ void atender_peticiones_dispatch(){
 					continue;	
 				}
 				pthread_mutex_unlock(&mutex_finalizar_proceso);		
-				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");		
+				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");
+				
+				log_info(logger_kernel,"[CONTEXTO_EJECUCION] - motivo <%d>",motivo);		
 				switch(motivo){
 					case INT_FINALIZAR_PROCESO:	
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_FINALIZAR_PROCESO");	
@@ -268,6 +270,9 @@ void atender_peticiones_dispatch(){
 						break;
 					case IO_FS_WRITE:
 						sem_post(&sem_pcb_desalojado);
+						if(preparar_enviar_solicitud_fw_rw(proceso_exec, instrucciones) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
 						break;
 					case IO_FS_READ:
 						sem_post(&sem_pcb_desalojado);

@@ -32,5 +32,7 @@ void atender_cpu_io_fs_read(t_pcb* pcb, t_instruccion* instruccion);
 void atender_cpu_io_fs_write(t_pcb* pcb, t_instruccion* instruccion);
 int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion);
 int atender_io_fs_truncate(t_pcb* pcb, t_instruccion* instruccion);
+int atender_cpu_io_fs_wr(t_pcb* pcb, t_instruccion* instruccion);
+int preparar_enviar_solicitud_fw_rw(t_pcb* pcb, t_instruccion* instruccion);
 
 #endif /*ATENDER_CPU_H*/

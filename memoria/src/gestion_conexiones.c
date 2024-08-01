@@ -7,6 +7,23 @@ static void atender_peticiones_stdout(void *void_args);
 static void atender_peticiones_dialfs(void *void_args);
 static void identificar_conexion_y_derivar(int socket_cliente, int cod_op);
 
+static void log_hexdump2(t_log* logger, const char* tag, const void* data, size_t size) {
+    char* hexdump = malloc(size * 2 + 1); // Cada byte se representa con 2 caracteres hexadecimales y un carácter nulo al final.
+    if (hexdump == NULL) {
+        log_error(logger, "Error allocating memory for hexdump");
+        return;
+    }
+
+    const unsigned char* bytes = (const unsigned char*)data;
+    for (size_t i = 0; i < size; i++) {
+        sprintf(hexdump + i * 2, "%02x", bytes[i]);
+    }
+
+    hexdump[size * 2] = '\0'; // Null-terminate the string.
+    log_info(logger, "%s <%s>", tag, hexdump);
+    free(hexdump);
+}
+
 // --------------------------------------------------------------------------//
 // ------------- CONEXIONES E HILOS -----------------------------------------//
 // --------------------------------------------------------------------------//
@@ -141,7 +158,7 @@ static void atender_peticiones_stdout(void *void_args){
                 mensaje_respuesta_temp[total_size] = '\0'; 
                 free(dato_leido);                
             }
-
+            log_hexdump2(logger_memoria,"resultado memoria",mensaje_respuesta_temp,strlen(mensaje_respuesta_temp)+1);
             t_paquete* paquete = crear_paquete(IO_STDOUT_WRITE);
             agregar_a_paquete(paquete, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
             enviar_paquete(paquete, *socket);
@@ -182,7 +199,7 @@ static void atender_peticiones_stdin(void *void_args){
                 // mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, strlen(solicitud->datos_memoria[i].datos)+1);
             }
             //liberar memoria de t_solicitud_io
-            liberar_solicitud_io(solicitud);
+            // liberar_solicitud_io(solicitud);
 
             //confirmo a entradasalida
             int mensajeOK =1;
@@ -238,9 +255,10 @@ static void atender_peticiones_dialfs(void *void_args){
                 mensaje_respuesta_temp[total_size] = '\0'; 
                 free(dato_leido);                
             }
-            liberar_solicitud_io(solicitud);
+            // liberar_solicitud_io(solicitud);
 
             //envio lo que lei
+            log_hexdump2(logger_memoria,"resultado memoria",mensaje_respuesta_temp,strlen(mensaje_respuesta_temp)+1);
             paquete_respuesta = crear_paquete(IO_FS_WRITE);
             agregar_a_paquete(paquete_respuesta, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
             enviar_paquete(paquete_respuesta, *socket);
@@ -260,7 +278,7 @@ static void atender_peticiones_dialfs(void *void_args){
                     solicitud->pid);                                //pid
             }
             //liberar memoria de t_solicitud_io
-            liberar_solicitud_io(solicitud);
+            // liberar_solicitud_io(solicitud);
 
             //confirmo a entradasalida
             mensajeOK =1;

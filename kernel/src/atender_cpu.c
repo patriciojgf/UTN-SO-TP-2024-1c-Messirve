@@ -427,9 +427,11 @@ int preparar_enviar_solicitud_fw_rw(t_pcb* pcb, t_instruccion* instruccion) {
     pthread_mutex_unlock(&interfaz->mutex_cola_block);
 
     enviar_solicitud_io_fs_rw(interfaz->socket, solicitud_recibida_cpu, cod);
+    
     t_paquete* paquete_info_extra = crear_paquete(cod);
     agregar_a_paquete(paquete_info_extra, nombre_archivo, strlen(nombre_archivo) + 1);
-
+    enviar_paquete(paquete_info_extra, interfaz->socket);
+    eliminar_paquete(paquete_info_extra);
 
     // Crear y lanzar el hilo para manejar la respuesta
     pthread_t hilo_respuesta_io;
@@ -677,43 +679,49 @@ void atender_cpu_io_fs_read(t_pcb* pcb, t_instruccion* instruccion)
     }
 }
 
-//TODO: continuar
-void atender_cpu_io_fs_write(t_pcb* pcb, t_instruccion* instruccion)
-{
-    log_info(logger_kernel,"[ATENDER CPU IO_FS_WRITE]");
+int atender_cpu_io_fs_wr(t_pcb* pcb, t_instruccion* instruccion){
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
+
+    int cod_op = recibir_operacion(socket_dispatch);
+    if(cod_op != IO_FS_WRITE && cod_op != IO_FS_READ){
+        log_error(logger_kernel, "Operación recibida incorrecta: %d", cod_op);
+        return -1;
+    }
+    
+    // recibo solicitud
+    t_solicitud_fs_rw* solicitud_recibida_cpu = recibir_solicitud_io_fs_rw(socket_dispatch);
+
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
-
-    if(recibir_operacion(socket_dispatch) == IO_FS_WRITE)
-    {
-        t_solicitud_io* solicitud_recibida_cpu = recibir_solicitud_io(socket_dispatch);
-        //TODO: crear estructura necesaria
-        t_pedido_sleep* pedido = malloc(sizeof(t_pedido_sleep)); 
-        pedido->pcb = pcb;
-        pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
-        sem_init(&pedido->semaforo_pedido_ok,0,0);
-
-        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
-
-        pthread_mutex_lock(&mutex_plan_exec);
-        proceso_exec = NULL;
-        pthread_mutex_unlock(&mutex_plan_exec);
-
-        //planificador_cp();
-        sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
-
-		pthread_mutex_lock(&interfaz->mutex_cola_block);
-        list_add(interfaz->cola_procesos, pedido);    
-		pthread_mutex_unlock(&interfaz->mutex_cola_block);
-
-        //sem_post(&interfaz->semaforo);  // Ntificar al hilo que maneja esta interfaz
-        // _enviar_peticiones_io_gen(interfaz);
-        enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu, IO_FS_WRITE);
+    if (interfaz == NULL) {
+        log_error(logger_kernel, "No se encontró la interfaz: %s", nombre_interfaz);
+        return -1;
     }
-    else
-    {
-        log_error(logger_kernel,"atender_cpu_io_stdin_read: error en la operacion recibida.");
-    }
+
+    log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
+
+    t_pedido_stdin2* pedido_en_espera = malloc(sizeof(t_pedido_stdin2));
+    pedido_en_espera->pcb = pcb;
+    sem_init(&pedido_en_espera->semaforo_pedido_ok,0,0);
+    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+    
+    //habilito el puerto dispatch para recibir nuevos desalojos.
+    sem_post(&s_pedido_io_enviado);
+    pthread_mutex_lock(&mutex_plan_exec);
+    proceso_exec = NULL;
+    pthread_mutex_unlock(&mutex_plan_exec);
+    sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
+
+    pthread_mutex_lock(&interfaz->mutex_cola_block);
+    list_add(interfaz->cola_procesos, pedido_en_espera);    
+    pthread_mutex_unlock(&interfaz->mutex_cola_block);
+
+    enviar_solicitud_io_fs_rw(interfaz->socket, solicitud_recibida_cpu, cod_op);
+
+    // Crear y lanzar el hilo para manejar la respuesta
+    pthread_t hilo_respuesta_io;
+    pthread_create(&hilo_respuesta_io, NULL, manejar_respuesta_io, (void*) pedido_en_espera);
+    pthread_detach(hilo_respuesta_io);  
+    return 0;  
 }
 
 /*--------------------------------------------------------------------------------------------------*/
