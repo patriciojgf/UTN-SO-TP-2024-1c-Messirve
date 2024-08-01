@@ -123,6 +123,24 @@ void liberar_bloques(t_fs_archivo* archivo, void* buffer) {
     memcpy(buffer, info_FS.archivo_bloques_en_memoria + obtener_offset_de_bloque(archivo->puntero_inicio), archivo->tamano);
 }
 
+void liberar_bloques_de_archivo(char* nombre_archivo)
+{
+    t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_remove(info_FS.fs_archivos, nombre_archivo);
+
+    for (int i = archivo_datos->puntero_inicio; i < archivo_datos->puntero_inicio + archivo_datos->cantidad_bloques; i++)
+    {
+        bitarray_clean_bit(info_FS.bitmap, i);
+    }
+
+    msync(info_FS.archivo_bitmap_en_memoria, info_FS.tamano_bitmap, MS_SYNC);
+
+    config_destroy(archivo_datos->metadata);
+    remove(archivo_datos->path_nombre);
+    free(archivo_datos->nombre);
+    free(archivo_datos->path_nombre);
+    free(archivo_datos);
+}
+
 static void compactar_archivos(t_list* lista_archivos, int* offset_bloques) {
     // Ordena la lista según el bloque inicial sin usar comparator
     for (int i = 0; i < list_size(lista_archivos) - 1; i++) {

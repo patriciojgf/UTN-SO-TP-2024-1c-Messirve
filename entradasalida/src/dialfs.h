@@ -9,6 +9,7 @@
 extern t_filesystem info_FS;
 int crear_archivo(char* nombre_archivo);
 int truncar_archivo(char* nombre_archivo, int nuevo_tamano);
+void liberar_bloques_de_archivo(char* nombre_archivo);
 void listar_archivos();
 
 #endif

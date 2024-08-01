@@ -341,8 +341,8 @@ static void _atender_peticiones_kernel(){
                 //log obligatorio
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_DELETE>",pid);
-                log_info(logger_io, "Archivo <%s>",nombre_archivo_create);
-                // liberar_bloques_de_archivo(nombre_archivo_delete);
+                log_info(logger_io, "Archivo <%s>", nombre_archivo_create);
+                liberar_bloques_de_archivo(nombre_archivo_delete);
                 log_info(logger_io, "PID: <%d> - Eliminar Archivo: <%s>", pid, nombre_archivo_delete);
                 free(nombre_archivo_delete);
 
