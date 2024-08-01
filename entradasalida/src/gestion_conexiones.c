@@ -225,7 +225,7 @@ static void _atender_peticiones_kernel(){
                 // escribir_archivo(datos, nombre_archivo_fs_write, 0, 0); //reemplazar puntero y tamaño
                 // free(datos);
 
-                escribir_archivo(resultado_memoria, nombre_archivo_fs_write, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->size_solicitud);
+                // escribir_archivo(resultado_memoria, nombre_archivo_fs_write, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->size_solicitud);
                 liberar_solicitud_fs_rw(solicitud_recibida_fs_rw);
                 free(nombre_archivo_fs_write);
 
@@ -312,7 +312,9 @@ static void _atender_peticiones_kernel(){
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_CREATE>",pid);
                 log_info(logger_io, "Archivo <%s>",nombre_archivo_create);
-                crear_archivo(nombre_archivo_create);
+                if(crear_archivo(nombre_archivo_create)==-1){
+                    log_error(logger_io, "PID: <%d> - Crear Archivo: <%s> FALLO", pid, nombre_archivo_create);
+                }
                 log_info(logger_io, "PID: <%d> - Crear Archivo: <%s>", pid, nombre_archivo_create);
                 
                 free(nombre_archivo_create);
@@ -340,7 +342,7 @@ static void _atender_peticiones_kernel(){
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_DELETE>",pid);
                 log_info(logger_io, "Archivo <%s>",nombre_archivo_create);
-                liberar_bloques_de_archivo(nombre_archivo_delete);
+                // liberar_bloques_de_archivo(nombre_archivo_delete);
                 log_info(logger_io, "PID: <%d> - Eliminar Archivo: <%s>", pid, nombre_archivo_delete);
                 free(nombre_archivo_delete);
 
@@ -369,8 +371,9 @@ static void _atender_peticiones_kernel(){
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_TRUNCATE>",pid);
                 log_info(logger_io, "Archivo <%s>",nombre_archivo_truncate);
-                truncar_archivo(pid, tamano_byte, nombre_archivo_truncate);
-                free(nombre_archivo_truncate);    
+                truncar_archivo(nombre_archivo_truncate, tamano_byte);
+                free(nombre_archivo_truncate);
+                listar_archivos();
 
                 paquete_para_kernel = crear_paquete(IO_FS_TRUNCATE);
                 agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));

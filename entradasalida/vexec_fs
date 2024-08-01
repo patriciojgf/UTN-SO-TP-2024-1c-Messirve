@@ -7,5 +7,5 @@ make clean all
 make
 
 if test -f "./$FILE"; then
-    ./$FILE "$CONFIG_FILE" "$NOMBRE_INTERFAZ"
+    valgrind --leak-check=full ./$FILE "$CONFIG_FILE" "$NOMBRE_INTERFAZ"
 fi

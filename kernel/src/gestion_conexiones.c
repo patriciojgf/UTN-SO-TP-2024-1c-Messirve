@@ -370,8 +370,10 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					sem_post(&pedido_fs_delete->semaforo_pedido_ok);
 					break;
 				case IO_FS_TRUNCATE:
+					log_info(logger_kernel,"[_atender_peticiones_io] - IO_FS_TRUNCATE");
 					size_temp =0;
 					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
+					log_info(logger_kernel,"[_atender_peticiones_io] - IO_FS_TRUNCATE2");
 					free(buffer_temp);
 					t_pedido_stdin* pedido_fs_truncate= list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido_fs_truncate->semaforo_pedido_ok);
