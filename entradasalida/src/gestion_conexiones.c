@@ -222,7 +222,7 @@ static void _atender_peticiones_kernel(){
 
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_WRITE>", pid);
                 // void* datos = malloc(size); //TODO: cambiar al que corresponda
-                // escribir_archivo(datos, nombre_archivo_fs_write, 0, 0); //reemplazar puntero y tamaño
+                escribir_archivo(nombre_archivo_fs_write, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->datos_memoria->tamano, resultado_memoria); //TODO: revisar parametros que le paso
                 // free(datos);
 
                 // escribir_archivo(resultado_memoria, nombre_archivo_fs_write, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->size_solicitud);
@@ -233,6 +233,7 @@ static void _atender_peticiones_kernel(){
                 agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
                 enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
                 eliminar_paquete(paquete_para_kernel); 
+                free(resultado_memoria);
                 break;  
             case IO_FS_READ:
                 log_info(logger_io, "Iniciando [IO_FS_READ]");
@@ -242,9 +243,9 @@ static void _atender_peticiones_kernel(){
                 char* nombre_archivo_fs_read = NULL;
                 recibir_solicitud_y_nombre_archivo(&solicitud_recibida_fs_rw, &nombre_archivo_fs_read);
 
-
+                leer_archivo(nombre_archivo_fs_read, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->datos_memoria->tamano); //TODO: revisar parametros que le paso
                 
-                log_warning(logger_io,"terminar la parte de lectura de disco");
+                // log_warning(logger_io,"terminar la parte de lectura de disco");
                 // void* datos_lectura = leer_archivo(nombre_archivo_fs_read, 0, 0); //reemplazar puntero y tamaño
                 //tomo lo leido del disco y se lo mando a memoria en una solicitud
                 char* lo_que_leimos_de_disco = malloc(solicitud_recibida_fs_rw->size_solicitud+1);

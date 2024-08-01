@@ -4,6 +4,12 @@ static int obtener_offset_de_bloque(int bloque) {
     return bloque * info_FS.tamano_bloque;
 }
 
+static void fs_archivo_destroy(t_fs_archivo* archivo_datos)
+{
+    free(archivo_datos->nombre);
+    free(archivo_datos->path_nombre);
+    free(archivo_datos);
+}
 // static int cantidad_bloques(int tamano_archivo, int tamano_bloque) {
 //     if (tamano_archivo == 0) {
 //         return 1;
@@ -136,9 +142,7 @@ void liberar_bloques_de_archivo(char* nombre_archivo)
 
     config_destroy(archivo_datos->metadata);
     remove(archivo_datos->path_nombre);
-    free(archivo_datos->nombre);
-    free(archivo_datos->path_nombre);
-    free(archivo_datos);
+    fs_archivo_destroy(archivo_datos);
 }
 
 static void compactar_archivos(t_list* lista_archivos, int* offset_bloques) {
@@ -265,4 +269,21 @@ int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
         return achicar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques);
     }
     return agrandar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques, nombre_archivo);
+}
+
+void leer_archivo(char* nombre_archivo, int puntero, int tamanio)
+{
+    t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_get(info_FS.fs_archivos, nombre_archivo);
+    int offset_bloques = obtener_offset_de_bloque(archivo_datos->puntero_inicio);
+    memcpy(malloc(tamanio), info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, tamanio); //TODO: revisar
+    fs_archivo_destroy(archivo_datos);
+}
+
+void escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resultado_escritura)
+{
+    t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_get(info_FS.fs_archivos, nombre_archivo);
+    int offset_bloques = obtener_offset_de_bloque(archivo_datos->puntero_inicio);
+    memcpy(info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, resultado_escritura, tamanio); //TODO: revisar
+    msync(info_FS.archivo_bloques_en_memoria, info_FS.tamano_bloque, MS_SYNC);
+    fs_archivo_destroy(archivo_datos);
 }
