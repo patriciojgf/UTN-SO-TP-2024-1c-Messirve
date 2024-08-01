@@ -1,7 +1,6 @@
 #ifndef CONX_IO_H
 #define CONX_IO_H
 
-#include <configuracion_io.h>
 #include <dialfs.h>
 #include <init_estructuras.h>
 

@@ -9,11 +9,38 @@
 #include <readline/history.h>
 #include <utils/logconfig.h>
 #include <utils/conexiones.h>
+#include <dirent.h>
 
 #define LOG_NAME "io.log"
 #define PROCESS_NAME "IO"
 #define MSG_ERROR "No se pudo crear correctamente. "
 
+typedef struct{
+    char* nombre;
+    int tamano;
+    char* path_nombre;
+    t_config* metadata;
+    int puntero_inicio;
+    int cantidad_bloques;
+} t_fs_archivo;
+
+typedef struct {
+    int tamano_bloque;
+    int cantidad_bloques;
+    int tamano_total_bloques;
+    FILE* archivo_bloques;
+    void* archivo_bloques_en_memoria;
+
+    int tamano_bitmap;
+    t_bitarray* bitmap;
+    FILE* archivo_bitmap;
+    void* archivo_bitmap_en_memoria;
+
+    t_dictionary* fs_archivos;
+} t_filesystem;
+
+//FS
+extern t_filesystem info_FS;
 
 //---
 extern t_log* logger_io;
@@ -49,20 +76,5 @@ extern void* bitmap_void;
 extern int tamanio_archivo_bloque;
 extern int tamanio_archivo_bitmap;
 
-typedef struct config_io
-{
-    char* tipo_interfaz;
-    int tiempo_unidad_trabajo;
-    char* ip_kernel;
-    char* puerto_kernel;
-    char* ip_memoria;
-    char* puerto_memoria;
-    char* path_base;
-    int block_size;
-    int block_count;
-}t_config_io;
-
-t_config_io* iniciar_config_io(t_config* config_io);
-void finalizar_config_io(t_config_io* config_io);
 
 #endif

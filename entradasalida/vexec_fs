@@ -1,6 +1,5 @@
 #!/bin/bash
 FILE=bin/entradasalida
-# CONFIG_FILE=${1:-./cfg/fs.config}
 CONFIG_FILE=${1:-./cfg/FS.config}
 NOMBRE_INTERFAZ=${2:-FS}
 
@@ -8,5 +7,5 @@ make clean all
 make
 
 if test -f "./$FILE"; then
-    ./$FILE "$CONFIG_FILE" "$NOMBRE_INTERFAZ"
+    valgrind --leak-check=full ./$FILE "$CONFIG_FILE" "$NOMBRE_INTERFAZ"
 fi

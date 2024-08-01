@@ -19,6 +19,9 @@ t_list* lista_interfaz_socket;
 t_log* logger_io;
 t_config* config_io;
 
+//FS
+t_filesystem info_FS;
+
 //------CONFIGURACION, IP y PUERTOS----------
 char* TIPO_INTERFAZ;
 int TIEMPO_UNIDAD_TRABAJO;
@@ -44,8 +47,6 @@ sem_t sem_io_stdin_read_ok;
 
 ////----mutex
 pthread_mutex_t mutex_lista_interfaz;
-
-t_config_io* datos_io;
 
 pthread_t hilo_kernel;
 pthread_t hilo_memoria;
