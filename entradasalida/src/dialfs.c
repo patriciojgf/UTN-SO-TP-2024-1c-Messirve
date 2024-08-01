@@ -4,6 +4,13 @@ static int obtener_offset_de_bloque(int bloque) {
     return bloque * info_FS.tamano_bloque;
 }
 
+// static int cantidad_bloques(int tamano_archivo, int tamano_bloque) {
+//     if (tamano_archivo == 0) {
+//         return 1;
+//     }
+//     return (tamano_archivo + tamano_bloque - 1) / tamano_bloque;
+// }
+
 void listar_archivos() {
     // Función auxiliar para imprimir la información del archivo desde la metadata
     void imprimir_archivo_desde_metadata(t_fs_archivo* archivo) {
@@ -14,10 +21,10 @@ void listar_archivos() {
         if (metadata != NULL) {
             int primer_bloque = config_get_int_value(metadata, "BLOQUE_INICIAL");
             int tamano_archivo = config_get_int_value(metadata, "TAMANIO_ARCHIVO");
-            int cantidad_bloques = (tamano_archivo + BLOCK_SIZE - 1) / BLOCK_SIZE;
+            int cant_bloques = cantidad_bloques(tamano_archivo, BLOCK_SIZE);
 
             log_info(logger_io, "Archivo: %s, Primer bloque: %d, Cantidad de bloques: %d",
-                     archivo->nombre, primer_bloque, cantidad_bloques);
+                     archivo->nombre, primer_bloque, cant_bloques);
             
             config_destroy(metadata);
         } else {
@@ -231,7 +238,8 @@ int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
         log_error(logger_io, "El archivo %s no existe.", nombre_archivo);
         return -1; // El archivo no existe
     }
-    int nueva_cantidad_bloques = (nuevo_tamano + info_FS.tamano_bloque - 1) / info_FS.tamano_bloque;
+    // int nueva_cantidad_bloques = (nuevo_tamano + info_FS.tamano_bloque - 1) / info_FS.tamano_bloque;
+    int nueva_cantidad_bloques = cantidad_bloques(nuevo_tamano,info_FS.tamano_bloque);
     if (nueva_cantidad_bloques == archivo_datos->cantidad_bloques) {
         return actualizar_tamano_archivo(archivo_datos, nuevo_tamano);
     }

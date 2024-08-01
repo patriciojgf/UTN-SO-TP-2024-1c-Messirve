@@ -4,6 +4,13 @@ static void init_log();
 
 //--------
 
+int cantidad_bloques(int tamano_archivo, int tamano_bloque) {
+    if (tamano_archivo == 0) {
+        return 1;
+    }
+    return (tamano_archivo + tamano_bloque - 1) / tamano_bloque;
+}
+
 static void init_log(){
     logger_io = iniciar_logger("io.log", "IO");
 }
@@ -120,7 +127,7 @@ void crear_diccionario_nombres_archivos() {
             if (datos_archivo->metadata) {
                 datos_archivo->puntero_inicio = config_get_int_value(datos_archivo->metadata, "BLOQUE_INICIAL");
                 datos_archivo->tamano = config_get_int_value(datos_archivo->metadata, "TAMANIO_ARCHIVO");
-                datos_archivo->cantidad_bloques = (datos_archivo->tamano + info_FS.tamano_bloque - 1) / info_FS.tamano_bloque; // Equivalente a ceil(tamaño / tamaño_bloque)
+                datos_archivo->cantidad_bloques = cantidad_bloques(datos_archivo->tamano, info_FS.tamano_bloque); 
             } else {
                 log_error(logger_io, "Error al cargar la metadata del archivo: %s", path_nombre);
                 datos_archivo->puntero_inicio = -1;

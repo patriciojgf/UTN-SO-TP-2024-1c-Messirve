@@ -15,5 +15,6 @@ char* concatenar_path(char* path, char* nombre_archivo);
 bool crear_archivo_metadata(char *nombre_archivo, int bloque_inicial);
 void log_protegido_io(char *mensaje);
 void init_io(char *path_config, char *nombre_interfaz);
+int cantidad_bloques(int tamano_archivo, int tamano_bloque); //se usa tambien en dialfs
 
 #endif /*INIT_ESTRUC_IO_H*/

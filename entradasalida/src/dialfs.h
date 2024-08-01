@@ -3,7 +3,7 @@
 
 #include <commons/collections/dictionary.h>
 #include <dirent.h>
-#include <configuracion_io.h>
+#include <init_estructuras.h>
 #include <sys/mman.h>
 
 extern t_filesystem info_FS;
