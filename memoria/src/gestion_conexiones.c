@@ -277,8 +277,6 @@ static void atender_peticiones_dialfs(void *void_args){
                     solicitud->datos_memoria[i].tamano,
                     solicitud->pid);                                //pid
             }
-            //liberar memoria de t_solicitud_io
-            // liberar_solicitud_io(solicitud);
 
             //confirmo a entradasalida
             mensajeOK =1;
@@ -286,6 +284,8 @@ static void atender_peticiones_dialfs(void *void_args){
             agregar_datos_sin_tamaño_a_paquete(paquete_respuesta,&mensajeOK,sizeof(int));
             enviar_paquete(paquete_respuesta, *socket);
             eliminar_paquete(paquete_respuesta);  
+            //liberar memoria de t_solicitud_io
+            liberar_solicitud_io(solicitud);
         }
         else if (code_op == -1){
             close(*socket);

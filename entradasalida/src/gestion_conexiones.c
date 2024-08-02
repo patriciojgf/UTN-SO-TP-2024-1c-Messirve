@@ -207,7 +207,7 @@ static void _atender_peticiones_kernel(){
                 log_hexdump(logger_io, "resultado_memoria", resultado_memoria, solicitud_recibida_fs_rw->size_solicitud);
 
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_WRITE>", solicitud_recibida_fs_rw->pid);
-                // void* datos = malloc(size); //TODO: cambiar al que corresponda
+                // void* datos = malloc(size); 
                 if(escribir_archivo(nombre_archivo_fs_write, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->size_solicitud , resultado_memoria) == -1){
                     log_error(logger_io, "PID: <%d> - Escribir Archivo: <%s> FALLO", pid, nombre_archivo_fs_write);
                     free(nombre_archivo_fs_write);
@@ -230,30 +230,24 @@ static void _atender_peticiones_kernel(){
                 char* nombre_archivo_fs_read = NULL;
                 recibir_solicitud_y_nombre_archivo(&solicitud_recibida_fs_rw, &nombre_archivo_fs_read);
 
-                leer_archivo(nombre_archivo_fs_read, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->datos_memoria->tamano); //TODO: revisar parametros que le paso
-                
-                // log_warning(logger_io,"terminar la parte de lectura de disco");
-                // void* datos_lectura = leer_archivo(nombre_archivo_fs_read, 0, 0); //reemplazar puntero y tamaño
+                char* lo_que_leimos_de_disco = malloc(solicitud_recibida_fs_rw->size_solicitud);
+                if(leer_archivo(nombre_archivo_fs_read, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->size_solicitud, lo_que_leimos_de_disco) == -1){
+                    log_error(logger_io, "PID: <%d> - Leer Archivo: <%s> FALLO", pid, nombre_archivo_fs_read);
+                    free(nombre_archivo_fs_read);
+                    free(lo_que_leimos_de_disco);
+                    exit(EXIT_FAILURE);
+                }
                 //tomo lo leido del disco y se lo mando a memoria en una solicitud
-                char* lo_que_leimos_de_disco = malloc(solicitud_recibida_fs_rw->size_solicitud+1);
-                lo_que_leimos_de_disco[solicitud_recibida_fs_rw->size_solicitud] = '\0';
-
-                free(nombre_archivo_fs_read);
-
-
-
                 t_solicitud_io* solicitud_para_memoria_fs_read = convertir_fs_a_io(solicitud_recibida_fs_rw);
                 llenar_datos_memoria(solicitud_para_memoria_fs_read, lo_que_leimos_de_disco);
                 enviar_solicitud_io(socket_cliente_memoria, solicitud_para_memoria_fs_read,IO_FS_READ);
-                free(lo_que_leimos_de_disco);
-                liberar_solicitud_fs_rw(solicitud_recibida_fs_rw);
-                liberar_solicitud_io(solicitud_para_memoria_fs_read);
 
                 //espero handshake ok
                 int cod_fs_read = recibir_operacion(socket_cliente_memoria);
                 int size_temp_fs_read =0;
                 void* buffer_temp_fs_read = recibir_buffer(&size_temp_fs_read, socket_cliente_memoria);
                 free(buffer_temp_fs_read);
+                liberar_solicitud_io(solicitud_para_memoria_fs_read);
                 
                 //envio el ok a kernel
                 if (cod_fs_read == IO_FS_READ){                    
@@ -267,6 +261,9 @@ static void _atender_peticiones_kernel(){
                     //liberar memoria de t_solicitud_io
                     log_error(logger_io,"IO_FS_READ: falla en conexion con memoria");
                 }
+                liberar_solicitud_fs_rw(solicitud_recibida_fs_rw);
+                free(nombre_archivo_fs_read);
+                free(lo_que_leimos_de_disco);
 
                 break;                 
             case IO_GEN_SLEEP:
@@ -347,31 +344,58 @@ static void _atender_peticiones_kernel(){
             case IO_FS_TRUNCATE:
                 log_info(logger_io, "Iniciando [IO_FS_TRUNCATE]");
                 usleep(TIEMPO_UNIDAD_TRABAJO*1000);
-                size=0;
-                pid=0;
+
+                size = 0;
+                pid = 0;
                 int largo_nombre_archivo_fs_truncate = 0;
-                int tamano_byte=0;
+                int tamano_byte = 0;
                 
+                // log_info(logger_io, "Recibiendo buffer de truncado");
                 void *buffer_fs_truncate = recibir_buffer(&size, socket_cliente_kernel);
+                // log_info(logger_io, "Buffer recibido, tamaño: %d", size);
+
+                // log_info(logger_io, "Extrayendo PID del buffer");
                 memcpy(&pid, buffer_fs_truncate, sizeof(int));
+                // log_info(logger_io, "PID extraído: %d", pid);
+
+                // log_info(logger_io, "Extrayendo largo del nombre del archivo del buffer");
                 memcpy(&largo_nombre_archivo_fs_truncate, buffer_fs_truncate + sizeof(int), sizeof(int));
+                // log_info(logger_io, "Largo del nombre del archivo: %d", largo_nombre_archivo_fs_truncate);
+
                 char* nombre_archivo_truncate = malloc(largo_nombre_archivo_fs_truncate);
-                memcpy(nombre_archivo_truncate, buffer_fs_truncate + sizeof(int) + sizeof(int), largo_nombre_archivo_fs_truncate);  
+                if (nombre_archivo_truncate == NULL) {
+                    log_error(logger_io, "Error al asignar memoria para el nombre del archivo");
+                    free(buffer_fs_truncate);
+                    exit(EXIT_FAILURE);
+                }
+
+                // log_info(logger_io, "Extrayendo nombre del archivo del buffer");
+                memcpy(nombre_archivo_truncate, buffer_fs_truncate + sizeof(int) + sizeof(int), largo_nombre_archivo_fs_truncate);
+                // log_info(logger_io, "Nombre del archivo: %s", nombre_archivo_truncate);
+
+                // log_info(logger_io, "Extrayendo tamaño en bytes del buffer");
                 memcpy(&tamano_byte, buffer_fs_truncate + sizeof(int) + sizeof(int) + largo_nombre_archivo_fs_truncate, sizeof(int));
-                //log obligatorio
-                //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
-                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_TRUNCATE>",pid);
-                log_info(logger_io, "Archivo <%s>",nombre_archivo_truncate);
+                // log_info(logger_io, "Tamaño en bytes para truncar: %d", tamano_byte);
+
+                // Log obligatorio
+                log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_TRUNCATE>", pid);
+                // log_info(logger_io, "Archivo <%s>", nombre_archivo_truncate);
+
+                // log_info(logger_io, "Truncando archivo");
                 truncar_archivo(nombre_archivo_truncate, tamano_byte);
+                // log_info(logger_io, "Archivo truncado");
+
                 free(nombre_archivo_truncate);
-                listar_archivos();
+                free(buffer_fs_truncate);  // Liberar buffer_fs_truncate después de su uso
+                // listar_archivos();
 
+                log_info(logger_io, "Creando paquete para enviar respuesta al kernel");
                 paquete_para_kernel = crear_paquete(IO_FS_TRUNCATE);
-                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel,&mensajeOK,sizeof(int));
+                agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel, &mensajeOK, sizeof(int));
                 enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
-                eliminar_paquete(paquete_para_kernel); 
+                eliminar_paquete(paquete_para_kernel);
 
-                log_info(logger_io,"IO_FS_TRUNCATE: ok enviado a kernel");          
+                log_info(logger_io, "IO_FS_TRUNCATE: ok enviado a kernel");
                 break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");

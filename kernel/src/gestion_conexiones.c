@@ -223,22 +223,12 @@ void atender_peticiones_dispatch(){
 						break;
 					case IO_GEN_SLEEP:
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_GEN_SLEEP");	
-						// log_info(logger_kernel,"[ATENDER DISPATCH]:PID: <%d> - IO_GEN_SLEEP", proceso_exec->pid);
 						sem_post(&sem_pcb_desalojado);
 						atender_cpu_io_gen_sleep(proceso_exec,instrucciones);
 						break;
 					case IO_STDIN_READ:
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - IO_STDIN_READ");
 						sem_post(&sem_pcb_desalojado);
-						// // Preparar los argumentos para el hilo
-						// t_args_io* argumentos = malloc(sizeof(t_args_io));
-						// argumentos->pcb = proceso_exec;
-						// argumentos->instruccion = instrucciones;	
-						// // Crear y lanzar el hilo					
-						// pthread_t hilo_io_stdin_read;
-						// pthread_create(&hilo_io_stdin_read, NULL, thread_atender_cpu_io_stdin_read, (void*) argumentos);
-						// pthread_detach(hilo_io_stdin_read);	
-						// sem_wait(&s_pedido_io_enviado);		
 						if(preparar_enviar_solicitud_io(proceso_exec, instrucciones) == -1){
 							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
 						}
@@ -276,6 +266,9 @@ void atender_peticiones_dispatch(){
 						break;
 					case IO_FS_READ:
 						sem_post(&sem_pcb_desalojado);
+						if(preparar_enviar_solicitud_fw_rw(proceso_exec, instrucciones) == -1){
+							atender_cpu_exit(proceso_exec,"INVALID_INTERFACE");
+						}
 						break;
 					case FIN_QUANTUM:
 						//log obligatorio

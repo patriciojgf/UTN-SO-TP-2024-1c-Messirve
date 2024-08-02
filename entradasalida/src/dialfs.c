@@ -31,6 +31,8 @@ void listar_archivos() {
 
             log_info(logger_io, "Archivo: %s, Primer bloque: %d, Cantidad de bloques: %d",
                      archivo->nombre, primer_bloque, cant_bloques);
+            log_info(logger_io, "Archivo: %s, Primer bloque: %d, Cantidad de bloques: %d",
+                     archivo->nombre, archivo->puntero_inicio , archivo->cantidad_bloques);
             
             config_destroy(metadata);
         } else {
@@ -63,14 +65,14 @@ static int reservar_primer_bloque_libre() {
     // Busca el primer bloque disponible
     while (indice_bloque < info_FS.cantidad_bloques) {
         if (bitarray_test_bit(info_FS.bitmap, indice_bloque) == 0) {
-            log_info(logger_io, "Bloque libre encontrado en el índice <%d>", indice_bloque);
+            // log_info(logger_io, "Bloque libre encontrado en el índice <%d>", indice_bloque);
             // Marca el bloque como ocupado y sincroniza los cambios
-            log_info(logger_io, "Reservando el bloque <%d>", indice_bloque);
+            // log_info(logger_io, "Reservando el bloque <%d>", indice_bloque);
             bitarray_set_bit(info_FS.bitmap, indice_bloque);
             msync(info_FS.archivo_bitmap_en_memoria, info_FS.tamano_bitmap, MS_SYNC);
             return indice_bloque;
         }
-        log_info(logger_io, "El bloque <%d> está ocupado", indice_bloque);
+        // log_info(logger_io, "El bloque <%d> está ocupado", indice_bloque);
         indice_bloque++;
     }
     // Verifica si se encontró un bloque libre
@@ -85,7 +87,7 @@ static t_fs_archivo* inicializar_archivo_vacio(char* nombre_archivo, int indice_
     archivo_datos->nombre = strdup(nombre_archivo);
     archivo_datos->path_nombre = path_completo;
     archivo_datos->metadata = config_create(path_completo);
-    archivo_datos->puntero_inicio = 0;
+    archivo_datos->puntero_inicio = indice_primer_bloque_libre;
     archivo_datos->cantidad_bloques = 1;
     archivo_datos->tamano=0;
     char* puntero = string_itoa(indice_primer_bloque_libre);
@@ -192,7 +194,6 @@ void mover_archivo_al_final(t_fs_archivo* archivo_a_mover, void* buffer, int off
     config_set_value(archivo_a_mover->metadata, "BLOQUE_INICIAL", offset_bloques_str);
     config_save(archivo_a_mover->metadata);
     msync(info_FS.archivo_bloques_en_memoria, info_FS.tamano_total_bloques, MS_SYNC);
-    free(buffer);
     free(offset_bloques_str);
 }
 
@@ -201,25 +202,44 @@ void compactar(char* nombre_archivo_a_mover_al_final) {
     usleep(RETRASO_COMPACTACION*1000);
 
     t_fs_archivo* archivo_a_mover = dictionary_get(info_FS.fs_archivos, nombre_archivo_a_mover_al_final);
+    if (archivo_a_mover == NULL) {
+        log_error(logger_io, "El archivo %s no se encuentra en el sistema de archivos", nombre_archivo_a_mover_al_final);
+        return;
+    }
+
+    log_info(logger_io, "Archivo a mover encontrado: %s", archivo_a_mover->nombre);
     void* buffer = malloc(archivo_a_mover->tamano);
+    if (buffer == NULL) {
+        log_error(logger_io, "Error al asignar memoria para el buffer");
+        return;
+    }
+
+    log_info(logger_io, "Liberando bloques del archivo: %s", archivo_a_mover->nombre);
     liberar_bloques(archivo_a_mover, buffer);
 
+    log_info(logger_io, "Obteniendo lista de archivos en el sistema");
     t_list* lista_archivos = dictionary_elements(info_FS.fs_archivos);
     list_remove_element(lista_archivos, (void*)archivo_a_mover);
+    log_info(logger_io, "Lista de archivos obtenida, cantidad: %d", list_size(lista_archivos));
 
     // Compactar archivos en orden de bloque inicial
     int offset_bloques = 0;
+    log_info(logger_io, "Iniciando compactación de archivos");
     compactar_archivos(lista_archivos, &offset_bloques);
     list_destroy(lista_archivos);
 
+    log_info(logger_io, "Moviendo archivo al final: %s", archivo_a_mover->nombre);
     mover_archivo_al_final(archivo_a_mover, buffer, offset_bloques);
 
     // Actualiza el bitmap
+    log_info(logger_io, "Actualizando bitmap");
     for (int i = 0; i < archivo_a_mover->puntero_inicio + archivo_a_mover->cantidad_bloques; i++) {
         bitarray_set_bit(info_FS.bitmap, i);
     }
     msync(info_FS.archivo_bitmap_en_memoria, info_FS.tamano_bitmap, MS_SYNC);
+
     log_info(logger_io, "Fin de compactación para el archivo: %s", nombre_archivo_a_mover_al_final);
+    free(buffer);
 }
 
 static int actualizar_tamano_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano) {
@@ -244,6 +264,11 @@ static int achicar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int nu
 
 static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int nueva_cantidad_bloques, char* nombre_archivo) {
     bool necesita_compactacion = false;
+    log_info(logger_io,"nombre_archivo: <%s>",nombre_archivo);
+    log_info(logger_io,"archivo_datos->puntero_inicio: <%d>",archivo_datos->puntero_inicio);
+    log_info(logger_io,"archivo_datos->cantidad_bloques: <%d>",archivo_datos->cantidad_bloques);
+    log_info(logger_io,"nueva_cantidad_bloques: <%d>",nueva_cantidad_bloques);
+    listar_archivos();
     for (int i = archivo_datos->puntero_inicio + archivo_datos->cantidad_bloques; i < archivo_datos->puntero_inicio + nueva_cantidad_bloques && !necesita_compactacion; i++) {
         necesita_compactacion = bitarray_test_bit(info_FS.bitmap, i);
     }
@@ -264,6 +289,7 @@ static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int n
 
 int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
     t_fs_archivo* archivo_datos = dictionary_get(info_FS.fs_archivos, nombre_archivo);
+    log_info(logger_io,"archivo_datos nombre: <%s>",archivo_datos->nombre);
     if (archivo_datos == NULL) {
         log_error(logger_io, "El archivo %s no existe.", nombre_archivo);
         return -1; // El archivo no existe
@@ -276,15 +302,31 @@ int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
     if (nueva_cantidad_bloques < archivo_datos->cantidad_bloques) {
         return achicar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques);
     }
+    log_info(logger_io,"truncar_archivo - nombre_archivo: <%s>",nombre_archivo);
+    log_info(logger_io,"truncar_archivo - archivo_datos->puntero_inicio: <%d>",archivo_datos->puntero_inicio);
+    log_info(logger_io,"truncar_archivo - nuevo_tamano: <%d>",nuevo_tamano);
+    log_info(logger_io,"truncar_archivo - nueva_cantidad_bloques: <%d>",nueva_cantidad_bloques);
     return agrandar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques, nombre_archivo);
 }
 
-int leer_archivo(char* nombre_archivo, int puntero, int tamanio)
-{
+int leer_archivo(char* nombre_archivo, int puntero, int tamanio, char* buffer) {
+    // Obtiene los datos del archivo desde el diccionario
     t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_get(info_FS.fs_archivos, nombre_archivo);
+    if(archivo_datos==NULL){
+        log_error(logger_io, "El archivo %s no existe.", nombre_archivo);
+        return -1; // El archivo no existe
+    }    
+    // Calcula el offset del bloque en la memoria mapeada
     int offset_bloques = obtener_offset_de_bloque(archivo_datos->puntero_inicio);
-    memcpy(malloc(tamanio), info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, tamanio); //TODO: revisar
+    
+    // Copia los datos desde la memoria mapeada al buffer
+    memcpy(buffer, info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, tamanio);
+    
+    // Libera la estructura de datos del archivo (si es necesario)
     fs_archivo_destroy(archivo_datos);
+    
+    // Retorna un valor indicando el éxito de la operación
+    return 0; // Puedes cambiar esto para manejar errores si es necesario
 }
 
 int escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resultado_escritura) {
@@ -314,6 +356,7 @@ int escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resul
 
     log_info(logger_io, "Sincronizando cambios con msync");
     msync(info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, tamanio, MS_SYNC);
+
 
     log_info(logger_io, "Datos escritos en el archivo <%s> con éxito.", nombre_archivo);
     return 0;

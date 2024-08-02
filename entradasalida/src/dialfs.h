@@ -12,7 +12,7 @@ int truncar_archivo(char* nombre_archivo, int nuevo_tamano);
 int liberar_bloques_de_archivo(char* nombre_archivo);
 void listar_archivos();
 int escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resultado_escritura);
-int leer_archivo(char* nombre_archivo, int puntero, int tamanio);
+int leer_archivo(char* nombre_archivo, int puntero, int tamanio, char* buffer);
 
 #endif
 
