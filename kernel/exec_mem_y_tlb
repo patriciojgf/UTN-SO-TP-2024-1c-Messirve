@@ -1,0 +1,7 @@
+#!/bin/bash
+FILE=bin/kernel
+make clean all
+make
+if test -f "./$FILE"; then
+    ./$FILE ./cfg/kernel_mem_y_tlb.config
+fi
