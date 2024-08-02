@@ -273,6 +273,8 @@ static void _atender_peticiones_kernel(){
                 int pid_gen_sleep=-1;
                 memcpy(&pid_gen_sleep, buffer, sizeof(int));
                 memcpy(&tiempo_sleep, buffer + sizeof(int), sizeof(int));
+                //PATRICIO AGREGO FREE
+                free(buffer);
                 //log obligatorio
                 //Todos - Operación: “PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io,"PID: <%d> - Operacion <SLEEP>", pid_gen_sleep);
@@ -293,6 +295,8 @@ static void _atender_peticiones_kernel(){
                 memcpy(&largo_nombre_archivo_fs_create, buffer_fs_create + sizeof(int), sizeof(int));
                 char* nombre_archivo_create = malloc(largo_nombre_archivo_fs_create);
                 memcpy(nombre_archivo_create, buffer_fs_create + sizeof(int) + sizeof(int), largo_nombre_archivo_fs_create);
+                //PATRICIO AGREGO FREE
+                free(buffer_fs_create);
                 //log obligatorio
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_CREATE>",pid);
@@ -323,6 +327,8 @@ static void _atender_peticiones_kernel(){
                 memcpy(&largo_nombre_archivo_fs_delete, buffer_fs_delete + sizeof(int), sizeof(int));
                 char* nombre_archivo_delete = malloc(largo_nombre_archivo_fs_delete);
                 memcpy(nombre_archivo_delete, buffer_fs_delete + sizeof(int) + sizeof(int), largo_nombre_archivo_fs_delete);
+                //PATRICIO AGREGO FREE
+                free(buffer_fs_delete);
                 //log obligatorio
                 //“PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_DELETE>",pid);
@@ -382,20 +388,23 @@ static void _atender_peticiones_kernel(){
                 // log_info(logger_io, "Archivo <%s>", nombre_archivo_truncate);
 
                 // log_info(logger_io, "Truncando archivo");
+                log_info(logger_io, "------------------------------------------------");
+                log_info(logger_io, "truncar_archivo - nombre <%s> - tamano_byte <%d>",nombre_archivo_truncate,tamano_byte);
+                listar_archivos();
                 truncar_archivo(nombre_archivo_truncate, tamano_byte);
                 // log_info(logger_io, "Archivo truncado");
 
                 free(nombre_archivo_truncate);
                 free(buffer_fs_truncate);  // Liberar buffer_fs_truncate después de su uso
-                // listar_archivos();
 
-                log_info(logger_io, "Creando paquete para enviar respuesta al kernel");
                 paquete_para_kernel = crear_paquete(IO_FS_TRUNCATE);
                 agregar_datos_sin_tamaño_a_paquete(paquete_para_kernel, &mensajeOK, sizeof(int));
                 enviar_paquete(paquete_para_kernel, socket_cliente_kernel);
                 eliminar_paquete(paquete_para_kernel);
 
                 log_info(logger_io, "IO_FS_TRUNCATE: ok enviado a kernel");
+                log_info(logger_io, "fin - truncar_archivo - nombre <%s> - tamano_byte <%d>",nombre_archivo_truncate,tamano_byte);
+                listar_archivos();
                 break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");

@@ -31,8 +31,6 @@ void listar_archivos() {
 
             log_info(logger_io, "Archivo: %s, Primer bloque: %d, Cantidad de bloques: %d",
                      archivo->nombre, primer_bloque, cant_bloques);
-            log_info(logger_io, "Archivo: %s, Primer bloque: %d, Cantidad de bloques: %d",
-                     archivo->nombre, archivo->puntero_inicio , archivo->cantidad_bloques);
             
             config_destroy(metadata);
         } else {
@@ -52,12 +50,12 @@ void listar_archivos() {
     dictionary_iterator(info_FS.fs_archivos, listar_archivos_aux);
 
     // Imprime todos los bloques ocupados recorriendo el bitarray
-    log_info(logger_io, "Bloques ocupados:");
-    for (int i = 0; i < info_FS.cantidad_bloques; i++) {
-        if (bitarray_test_bit(info_FS.bitmap, i)) {
-            log_info(logger_io, "Bloque %d ocupado", i);
-        }
-    }
+    // log_info(logger_io, "Bloques ocupados:");
+    // for (int i = 0; i < info_FS.cantidad_bloques; i++) {
+    //     if (bitarray_test_bit(info_FS.bitmap, i)) {
+    //         log_info(logger_io, "Bloque %d ocupado", i);
+    //     }
+    // }
 }
 
 static int reservar_primer_bloque_libre() {
@@ -213,32 +211,20 @@ void compactar(char* nombre_archivo_a_mover_al_final) {
         log_error(logger_io, "Error al asignar memoria para el buffer");
         return;
     }
-
-    log_info(logger_io, "Liberando bloques del archivo: %s", archivo_a_mover->nombre);
     liberar_bloques(archivo_a_mover, buffer);
-
-    log_info(logger_io, "Obteniendo lista de archivos en el sistema");
     t_list* lista_archivos = dictionary_elements(info_FS.fs_archivos);
     list_remove_element(lista_archivos, (void*)archivo_a_mover);
-    log_info(logger_io, "Lista de archivos obtenida, cantidad: %d", list_size(lista_archivos));
-
     // Compactar archivos en orden de bloque inicial
     int offset_bloques = 0;
-    log_info(logger_io, "Iniciando compactación de archivos");
     compactar_archivos(lista_archivos, &offset_bloques);
     list_destroy(lista_archivos);
-
-    log_info(logger_io, "Moviendo archivo al final: %s", archivo_a_mover->nombre);
     mover_archivo_al_final(archivo_a_mover, buffer, offset_bloques);
 
     // Actualiza el bitmap
-    log_info(logger_io, "Actualizando bitmap");
     for (int i = 0; i < archivo_a_mover->puntero_inicio + archivo_a_mover->cantidad_bloques; i++) {
         bitarray_set_bit(info_FS.bitmap, i);
     }
     msync(info_FS.archivo_bitmap_en_memoria, info_FS.tamano_bitmap, MS_SYNC);
-
-    log_info(logger_io, "Fin de compactación para el archivo: %s", nombre_archivo_a_mover_al_final);
     free(buffer);
 }
 
@@ -264,11 +250,6 @@ static int achicar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int nu
 
 static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int nueva_cantidad_bloques, char* nombre_archivo) {
     bool necesita_compactacion = false;
-    log_info(logger_io,"nombre_archivo: <%s>",nombre_archivo);
-    log_info(logger_io,"archivo_datos->puntero_inicio: <%d>",archivo_datos->puntero_inicio);
-    log_info(logger_io,"archivo_datos->cantidad_bloques: <%d>",archivo_datos->cantidad_bloques);
-    log_info(logger_io,"nueva_cantidad_bloques: <%d>",nueva_cantidad_bloques);
-    listar_archivos();
     for (int i = archivo_datos->puntero_inicio + archivo_datos->cantidad_bloques; i < archivo_datos->puntero_inicio + nueva_cantidad_bloques && !necesita_compactacion; i++) {
         necesita_compactacion = bitarray_test_bit(info_FS.bitmap, i);
     }
@@ -289,7 +270,6 @@ static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int n
 
 int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
     t_fs_archivo* archivo_datos = dictionary_get(info_FS.fs_archivos, nombre_archivo);
-    log_info(logger_io,"archivo_datos nombre: <%s>",archivo_datos->nombre);
     if (archivo_datos == NULL) {
         log_error(logger_io, "El archivo %s no existe.", nombre_archivo);
         return -1; // El archivo no existe
@@ -302,10 +282,6 @@ int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
     if (nueva_cantidad_bloques < archivo_datos->cantidad_bloques) {
         return achicar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques);
     }
-    log_info(logger_io,"truncar_archivo - nombre_archivo: <%s>",nombre_archivo);
-    log_info(logger_io,"truncar_archivo - archivo_datos->puntero_inicio: <%d>",archivo_datos->puntero_inicio);
-    log_info(logger_io,"truncar_archivo - nuevo_tamano: <%d>",nuevo_tamano);
-    log_info(logger_io,"truncar_archivo - nueva_cantidad_bloques: <%d>",nueva_cantidad_bloques);
     return agrandar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques, nombre_archivo);
 }
 

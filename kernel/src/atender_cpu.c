@@ -294,6 +294,7 @@ int atender_io_fs_truncate(t_pcb* pcb, t_instruccion* instruccion){
     agregar_a_paquete(paquete_pedido_io_truncate, nombre_archivo,strlen(nombre_archivo)+1);   
     agregar_datos_sin_tamaño_a_paquete(paquete_pedido_io_truncate, &tamano_bytes, sizeof(int));
     enviar_paquete(paquete_pedido_io_truncate, interfaz->socket);
+    eliminar_paquete(paquete_pedido_io_truncate);
 
     pthread_t hilo_respuesta_io;
     pthread_create(&hilo_respuesta_io, NULL, manejar_respuesta_io, (void*) pedido_en_espera);
@@ -333,6 +334,7 @@ int atender_io_fs_create_delete(t_pcb* pcb, t_instruccion* instruccion, int oper
     agregar_datos_sin_tamaño_a_paquete(paquete_pedido_io_fs, &pid_pedido, sizeof(int));
     agregar_a_paquete(paquete_pedido_io_fs, nombre_archivo,strlen(nombre_archivo)+1);    
     enviar_paquete(paquete_pedido_io_fs, interfaz->socket);
+    eliminar_paquete(paquete_pedido_io_fs);
 
     pthread_t hilo_respuesta_io;
     pthread_create(&hilo_respuesta_io, NULL, manejar_respuesta_io, (void*) pedido_en_espera);
@@ -368,6 +370,7 @@ int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion) {
     pedido_en_espera->pcb = pcb;
     pedido_en_espera->interfaz = interfaz;
     sem_init(&pedido_en_espera->semaforo_pedido_ok, 0, 0);
+
 
     mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
 
@@ -427,6 +430,9 @@ int preparar_enviar_solicitud_fw_rw(t_pcb* pcb, t_instruccion* instruccion) {
     pthread_mutex_unlock(&interfaz->mutex_cola_block);
 
     enviar_solicitud_io_fs_rw(interfaz->socket, solicitud_recibida_cpu, cod);
+
+    //PATRICIO AGREEGO LIBERACION PEDIDO
+    liberar_solicitud_fs_rw(solicitud_recibida_cpu);
     
     t_paquete* paquete_info_extra = crear_paquete(cod);
     agregar_a_paquete(paquete_info_extra, nombre_archivo, strlen(nombre_archivo) + 1);
@@ -466,6 +472,8 @@ void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){
 		pthread_mutex_unlock(&interfaz->mutex_cola_block);
 
         enviar_solicitud_io(interfaz->socket, solicitud_recibida_cpu,IO_STDIN_READ);
+        //PATRICIO AGREEGO LIBERACION PEDIDO
+        liberar_solicitud_io(solicitud_recibida_cpu);
 
         sem_wait(&pedido_en_espera->semaforo_pedido_ok);
 

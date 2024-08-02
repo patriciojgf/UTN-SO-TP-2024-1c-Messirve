@@ -55,6 +55,9 @@ void gestionar_conexion_io(){
 		char* nombre_nueva_io = malloc(tam_nombre+1); 
 		memcpy(nombre_nueva_io, buffer + desplazamiento, tam_nombre);
 
+		//PATRICIO: AGREGO FREE
+		free(buffer);
+
 		// Crear estructura de interfaz para pasar por pthread_create
         t_interfaz *info_interfaz = malloc(sizeof(t_interfaz));
 		info_interfaz->socket = socket_io_nuevo;

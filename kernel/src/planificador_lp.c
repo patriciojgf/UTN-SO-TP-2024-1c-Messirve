@@ -72,7 +72,8 @@ void mover_proceso_a_blocked(t_pcb* pcb, char* motivo){
 
     //Log obligatorio
     log_info(logger_kernel, "Cambio de Estado: PID: %d - Estado Anterior: %s - Estado Actual: %s", pcb->pid, estado_string(pcb->estado_anterior), estado_string(pcb->estado_actual));
-    
+    // PATRICIO AGREGO FREE - Liberar la memoria del motivo
+    free(motivo);
     pthread_mutex_unlock(&mutex_plan_blocked);
 }
 
