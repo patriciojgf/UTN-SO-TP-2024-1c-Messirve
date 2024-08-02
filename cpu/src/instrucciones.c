@@ -76,14 +76,14 @@ void ejecutar_proceso(){
         agregar_datos_sin_tamaño_a_paquete(paquete, &pid_a_enviar, sizeof(int));
         // agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
 		int pc_a_enviar = contexto_cpu->registros_cpu.PC;
-		log_info(logger_cpu,"PID: <%d> - FETCH - Program Counter: <%d>",contexto_cpu->pid,pc_a_enviar);
 		agregar_datos_sin_tamaño_a_paquete(paquete, &pc_a_enviar, sizeof(int));
         enviar_paquete(paquete, socket_memoria);
         eliminar_paquete(paquete);
         sem_wait(&s_instruccion_actual);
-
-
 		//log obligatorio: “PID: <PID> - FETCH - Program Counter: <PROGRAM_COUNTER>”.
+		log_info(logger_cpu,"PID: <%d> - FETCH - Program Counter: <%d>",contexto_cpu->pid,pc_a_enviar);
+
+
         // Decodificar la instrucción actual.
         char** instruccion_separada = string_split(instruccion_actual, " ");
         u_int8_t identificador = _get_identificador(instruccion_separada[0]);
@@ -125,6 +125,7 @@ void ejecutar_proceso(){
 				}
 				break;
 			case IO_GEN_SLEEP:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				motivo_desalojo = IO_GEN_SLEEP;
 				break;
 			case IO_STDOUT_WRITE:
@@ -162,15 +163,19 @@ void ejecutar_proceso(){
 				// pedido_io_stdin_read=_io_std(inst_decodificada);
 				break;
 			case IO_FS_CREATE:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				motivo_desalojo = IO_FS_CREATE;
 				break;
 			case IO_FS_DELETE:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				motivo_desalojo = IO_FS_DELETE;
 				break;
 			case IO_FS_TRUNCATE:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				motivo_desalojo = IO_FS_TRUNCATE;
 				break;
 			case IO_FS_READ:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				pedido_io_fs_read=_io_fs_rw(inst_decodificada);
 				if(pedido_io_fs_read == NULL){
 					motivo_desalojo = PAGE_FAULT;
@@ -179,6 +184,7 @@ void ejecutar_proceso(){
 				}
 				break;
 			case IO_FS_WRITE:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				pedido_io_fs_write=_io_fs_rw(inst_decodificada);
 				if(pedido_io_fs_write == NULL){
 					motivo_desalojo = PAGE_FAULT;
@@ -187,9 +193,11 @@ void ejecutar_proceso(){
 				}
 				break;
 			case WAIT:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				motivo_desalojo = WAIT;
 				break;
 			case SIGNAL:
+				log_info(logger_cpu,"PID: <%d> - Ejecutando: %s ",contexto_cpu->pid, instruccion_actual);
 				int motivo = SIGNAL;
 				int mensajeOk = 0;
 				int size = 0;
@@ -276,7 +284,7 @@ void ejecutar_proceso(){
 
 ////
 void devolver_contexto_a_dispatch(int motivo, t_instruccion* instruccion){
-	log_info(logger_cpu,"[DEVUELVO CONTEXTO]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);                
+	// log_info(logger_cpu,"[DEVUELVO CONTEXTO]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);                
 	//log_protegido_cpu(string_from_format("[devolver_contexto_a_dispatch]: ---- 1 ----"));
 	t_paquete* paquete = crear_paquete(CONTEXTO_EJECUCION);
 	agregar_datos_sin_tamaño_a_paquete(paquete, &contexto_cpu->pid, sizeof(int));
@@ -314,8 +322,6 @@ static void _copy_string(t_instruccion* instruccion){
 	// COPY_STRING 8
 	// COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la 
 	// cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
-	log_info(logger_cpu, "------------------------------------------COPY STRING------------------------------------------");
-
 	int tamano_a_copiar = atoi(list_get(instruccion->parametros, 0));//Tamaño	
 	info_registro_cpu registro_SI_info = _get_direccion_registro("SI");//String apuntado por registro SI
 	info_registro_cpu registro_DI_info = _get_direccion_registro("DI");//String apuntado por registro SI
@@ -338,7 +344,6 @@ static int _mov_in(t_instruccion* instruccion){
 	// (Registro Datos, Registro Dirección): 
 	// Lee el valor de memoria correspondiente a la Dirección Lógica que se encuentra 
 	// en el Registro Dirección y lo almacena en el Registro Datos.
-	log_info(logger_cpu, "--------------------------------------------MOV IN---------------------------------------------");
 	// mostrar_valores_registros_cpu();
 	//Busco los registros de la instruccion en formato char
 	char* registro_datos = list_get(instruccion->parametros, 0);
@@ -375,7 +380,6 @@ static int _mov_in(t_instruccion* instruccion){
 }
 
 static int _mov_out(t_instruccion* instruccion){
-	// log_info(logger_cpu, "--------------------------------------------MOV OUT--------------------------------------------");
 	// mostrar_valores_registros_cpu();
 // MOV_OUT (Registro Dirección, Registro Datos): 
 // Lee el valor del Registro Datos y lo escribe en la dirección física de memoria 
@@ -386,7 +390,7 @@ static int _mov_out(t_instruccion* instruccion){
 	
     info_registro_cpu registro_direccion_info = _get_direccion_registro(registro_direccion);
     info_registro_cpu registro_datos_info = _get_direccion_registro(registro_datos);
-	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s>:<%u> - <%s>:<%u>",contexto_cpu->pid, registro_direccion, leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano), registro_datos, leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano));
+	log_info(logger_cpu,"PID: <%d> - Ejecutando: <MOV_OUT> - <%s> - <%s>",contexto_cpu->pid, registro_direccion, registro_datos);
 
 	int direccion_logica = leer_valor_registro_como_int(registro_direccion_info.direccion, registro_direccion_info.tamano);
 	// int dato_a_escribir = leer_valor_registro_como_int(registro_datos_info.direccion, registro_datos_info.tamano);
@@ -411,9 +415,7 @@ static t_solicitud_io* _io_std(t_instruccion* instruccion) {
 	//log obligatorio
 	//Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
 	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%s> - <%s>",contexto_cpu->pid, nombre_instruccion, registro_direccion, registro_tamano);
-	log_info(logger_cpu,"PID: <%d> - Ejecutando: <%s> - <%d> - <%d>",contexto_cpu->pid, nombre_instruccion, direccion_logica_actual, valor_tamano_a_escribir);
-    // log_info(logger_cpu,"[_io_std]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir);
-
+    
     t_solicitud_io* pedido_io = crear_pedido_memoria(contexto_cpu->pid, valor_tamano_a_escribir);
     int total_escrito = 0;
 
@@ -449,7 +451,7 @@ static t_solicitud_fs_rw* _io_fs_rw(t_instruccion* instruccion){
     int valor_tamano_a_escribir = leer_valor_registro_como_int(registro_tamano_info.direccion, registro_tamano_info.tamano);
 	int puntero = leer_valor_registro_como_int(registro_puntero_info.direccion, registro_puntero_info.tamano);
 
-	log_info(logger_cpu,"[_io_fs_rw]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d> - Puntero <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir, puntero);
+	// log_info(logger_cpu,"[_io_fs_rw]: -- PID <%d> - PC<%d> - DIRECCION LOGICA <%d> - Tamaño <%d> - Puntero <%d>", contexto_cpu->pid, contexto_cpu->registros_cpu.PC, direccion_logica_actual, valor_tamano_a_escribir, puntero);
 	t_solicitud_fs_rw* pedido_fs_rw = crear_pedido_fs_rw(contexto_cpu->pid, valor_tamano_a_escribir, puntero);
     int total_escrito = 0;
 	while (total_escrito < valor_tamano_a_escribir) {
@@ -510,10 +512,10 @@ static void _set(t_instruccion* instruccion){
     } else if (reg_info.tamano == sizeof(uint32_t)) {
         *(uint32_t*)reg_info.direccion = nuevo_valor; // Asigna el nuevo valor
     }
-	log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - Program Counter: <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC);
+	// log_info(logger_cpu,"PID: <%d> - Ejecutando: <SET> - Program Counter: <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC);
 	// Instrucción Ejecutada: “PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>”.
 	// mostrar_valores_registros_cpu();
-	log_info(logger_cpu, "-------------------");
+	// log_info(logger_cpu, "-------------------");
 }
 
 
@@ -583,44 +585,44 @@ static void _f_exit(t_instruccion *inst){
 
 
 // AUXILIARES
-void ejecutando_interrupcion(){
-	log_info(logger_cpu,"ejecutando_interrupcion");
-    if(llego_interrupcion == 1){
-		log_info(logger_cpu,"ejecutando_interrupcion1");
-    }
-    else{
-		log_info(logger_cpu,"ejecutando_interrupcion2");
-        llego_interrupcion = 1;
-        check_recibiendo_interrupcion();
-		log_info(logger_cpu,"ejecutando_interrupcion3");
-    }
-}
+// void ejecutando_interrupcion(){
+// 	log_info(logger_cpu,"ejecutando_interrupcion");
+//     if(llego_interrupcion == 1){
+// 		log_info(logger_cpu,"ejecutando_interrupcion1");
+//     }
+//     else{
+// 		log_info(logger_cpu,"ejecutando_interrupcion2");
+//         llego_interrupcion = 1;
+//         check_recibiendo_interrupcion();
+// 		log_info(logger_cpu,"ejecutando_interrupcion3");
+//     }
+// }
 
-void check_recibiendo_interrupcion(){
-	log_info(logger_cpu,"check_recibiendo_interrupcion");
-    pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
-    if(llego_interrupcion == 1){
-		log_info(logger_cpu,"check_recibiendo_interrupcion1");
-        sem_wait(&sem_check_recibiendo_interrupcion);
-		log_info(logger_cpu,"check_recibiendo_interrupcion2");
-    }
-	log_info(logger_cpu,"check_recibiendo_interrupcion3");
-    pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
-}
+// void check_recibiendo_interrupcion(){
+// 	log_info(logger_cpu,"check_recibiendo_interrupcion");
+//     pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
+//     if(llego_interrupcion == 1){
+// 		log_info(logger_cpu,"check_recibiendo_interrupcion1");
+//         sem_wait(&sem_check_recibiendo_interrupcion);
+// 		log_info(logger_cpu,"check_recibiendo_interrupcion2");
+//     }
+// 	log_info(logger_cpu,"check_recibiendo_interrupcion3");
+//     pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
+// }
 
-void ejecutando_interrupcion_fin(){
-	log_info(logger_cpu,"ejecutando_interrupcion_fin");
-    if(llego_interrupcion == 0){
-		log_info(logger_cpu,"ejecutando_interrupcion_fin1");
-    }
-    else{
-		log_info(logger_cpu,"ejecutando_interrupcion_fin2");
-        llego_interrupcion = 0;
-		log_info(logger_cpu,"ejecutando_interrupcion_fin3");
-        sem_post(&sem_check_recibiendo_interrupcion);
-		log_info(logger_cpu,"ejecutando_interrupcion_fin4");
-    }    
-}
+// void ejecutando_interrupcion_fin(){
+// 	log_info(logger_cpu,"ejecutando_interrupcion_fin");
+//     if(llego_interrupcion == 0){
+// 		log_info(logger_cpu,"ejecutando_interrupcion_fin1");
+//     }
+//     else{
+// 		log_info(logger_cpu,"ejecutando_interrupcion_fin2");
+//         llego_interrupcion = 0;
+// 		log_info(logger_cpu,"ejecutando_interrupcion_fin3");
+//         sem_post(&sem_check_recibiendo_interrupcion);
+// 		log_info(logger_cpu,"ejecutando_interrupcion_fin4");
+//     }    
+// }
 
 
 //

@@ -88,7 +88,7 @@ char* leer_memoria(int direccion_logica, int cantidad_bytes) {
         sem_wait(&s_pedido_lectura_m);
         //log obligatorio
         //Lectura/Escritura Memoria: “PID: <PID> - Acción: <LEER / ESCRIBIR> - Dirección Física: <DIRECCION_FISICA> - Valor: <VALOR LEIDO / ESCRITO>”.
-	    log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d> \n", contexto_cpu->pid, direccion_fisica, *respuesta_memoria_char);
+	    log_info(logger_cpu,"PID: <%d> - Acción: <LEER> - Dirección Física: <%d> - Valor: <%d>", contexto_cpu->pid, direccion_fisica, *respuesta_memoria_char);
         // Asumiendo que respuesta_memoria_char contiene los bytes leídos
         memcpy(resultado_final + total_leido, respuesta_memoria_char, bytes_a_leer);
         total_leido += bytes_a_leer;
@@ -111,7 +111,7 @@ int mmu(int direccion_logica){
         marco = tlb_buscar_pagina(numero_pagina);
         if(marco == -1){
             //log obligatorio: TLB Miss: “PID: <PID> - TLB MISS - Pagina: <NUMERO_PAGINA>”
-            log_info(logger_cpu, "PID: %d - TLB MISS - Pagina: %d", contexto_cpu->pid, numero_pagina);
+            log_info(logger_cpu, "PID: <%d> - TLB MISS - Pagina: <%d>", contexto_cpu->pid, numero_pagina);
             // log_info(logger_cpu, "-------------");
             // log_info(logger_cpu, "TLB a actualizar:");
             // mostar_entradas_tbl();
@@ -130,6 +130,10 @@ int mmu(int direccion_logica){
             }
         }
     }
+    // log obligatorio
+    // Obtener Marco: “PID: <PID> - OBTENER MARCO - Página: <NUMERO_PAGINA> - Marco: <NUMERO_MARCO>”.
+    log_info(logger_cpu, "PID: <%d> - OBTENER MARCO - Pagina: <%d> - Marco: <%d>", contexto_cpu->pid,numero_pagina, marco);
+
     direccion_fisica = marco * tamanio_pagina + desplazamiento;
     return direccion_fisica;
 }
@@ -147,7 +151,7 @@ static int tlb_buscar_pagina(int num_pagina) {
         if (entrada->pid == contexto_cpu->pid && entrada->pagina == num_pagina) {
             
             //log obligatorio TLB Hit: “PID: <PID> - TLB HIT - Pagina: <NUMERO_PAGINA>”
-            log_info(logger_cpu, "PID: %d - TLB HIT - Pagina: %d", contexto_cpu->pid, num_pagina);
+            log_info(logger_cpu, "PID: <%d> - TLB HIT - Pagina: <%d>", contexto_cpu->pid, num_pagina);
 
             marco = entrada->marco;
             // Actualiza el timestamp de último acceso si se usa LRU
@@ -219,15 +223,15 @@ static void tlb_agregar_pagina(int pid, int pagina, int marco){
     //piso los valores de la lista_tlb en el indice indice_entrada
     t_fila_tlb* entrada = list_get(lista_tlb, indice_entrada);
     if(entrada->pagina != -1){
-        log_info(logger_cpu,"Voy a reemplazar en TBL la pagina <%d> - marco <%d>", entrada->pagina, entrada->marco);
+        // log_info(logger_cpu,"Voy a reemplazar en TBL la pagina <%d> - marco <%d>", entrada->pagina, entrada->marco);
     }
-    log_info(logger_cpu,"PID <%d> - Voy a agregar la entrada de la TLB en el índice <%d> - pagina <%d> - marco <%d>", pid, indice_entrada, pagina, marco);
+    // log_info(logger_cpu,"PID <%d> - Voy a agregar la entrada de la TLB en el índice <%d> - pagina <%d> - marco <%d>", pid, indice_entrada, pagina, marco);
     entrada->pid = pid;
     entrada->pagina = pagina;
     entrada->marco = marco;
     if(strcmp(ALGORITMO_TLB, "LRU") == 0){
         entrada->timestamp = time(NULL); // Actualizamos el timestamp para LRU
-        log_info(logger_cpu,"TLB - Actualizo el timestamp al valor <%ld>", entrada->timestamp);
+        // log_info(logger_cpu,"TLB - Actualizo el timestamp al valor <%ld>", entrada->timestamp);
     }
 }
 

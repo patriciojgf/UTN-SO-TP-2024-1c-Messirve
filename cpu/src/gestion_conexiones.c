@@ -68,31 +68,31 @@ void atender_peticiones_interrupt(){
         void* buffer;
         switch(cod_op){
             case INT_FINALIZAR_PROCESO:
-                log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO mutex_ejecucion_proceso");
-                log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
+                // log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO mutex_ejecucion_proceso");
+                // log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
 
                 // pthread_t hilo_llego_interrupcion;
                 // pthread_create(&hilo_llego_interrupcion, NULL, (void*)ejecutando_interrupcion, NULL);
                 // pthread_detach(hilo_llego_interrupcion);                
 
-                log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
+                // log_info(logger_cpu,"[ATENDER INTERRUPT]:INT_FINALIZAR_PROCESO llego_interrupcion: %d",llego_interrupcion);
 
                 pthread_mutex_lock(&mutex_check_recibiendo_interrupcion);
                 pthread_mutex_lock(&mutex_ejecucion_proceso);
                 
                 llego_interrupcion = 1;
                 
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
+                // log_info(logger_cpu,"[ATENDER INTERRUPT]: -- INT_FINALIZAR_PROCESO -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
                 motivo_interrupt=INT_FINALIZAR_PROCESO;
                 memcpy(&(pid_interrupt), buffer , sizeof(int)); 
 
                 if(contexto_cpu->pid==pid_interrupt){
-                    log_warning(logger_cpu,"flag_interrupt=true");
+                    // log_warning(logger_cpu,"flag_interrupt=true");
                     flag_interrupt=true;
                     if(flag_ejecucion == false){
-                        log_warning(logger_cpu,"if(flag_ejecucion == false)");
+                        // log_warning(logger_cpu,"if(flag_ejecucion == false)");
                         // typedef struct
                         // {
                         //     int identificador; //identificador de la instruccion
@@ -109,9 +109,9 @@ void atender_peticiones_interrupt(){
                     }
                 }
                 else{
-                    log_warning(logger_cpu,"flag_interrupt=false");
-                    log_warning(logger_cpu,"pid: %d",pid_interrupt);
-                    log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
+                    // log_warning(logger_cpu,"flag_interrupt=false");
+                    // log_warning(logger_cpu,"pid: %d",pid_interrupt);
+                    // log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
                 }
                 free(buffer);
                 // ejecutando_interrupcion_fin();
@@ -119,7 +119,7 @@ void atender_peticiones_interrupt(){
                 pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
                 break;
             case FIN_QUANTUM:
-                log_info(logger_cpu,"[ATENDER INTERRUPT]:FIN_QUANTUM hilo_llego_interrupcion");
+                // log_info(logger_cpu,"[ATENDER INTERRUPT]:FIN_QUANTUM hilo_llego_interrupcion");
                 // pthread_t hilo_llego_interrupcion_f_q;
                 // pthread_create(&hilo_llego_interrupcion_f_q, NULL, (void*)ejecutando_interrupcion, NULL);
                 // pthread_detach(hilo_llego_interrupcion_f_q);    
@@ -129,8 +129,8 @@ void atender_peticiones_interrupt(){
                 
                 llego_interrupcion = 1;
 
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
-                log_warning(logger_cpu,"fin de quantum");
+                // log_info(logger_cpu,"[ATENDER INTERRUPT]: -- FIN_QUANTUM -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
+                // log_warning(logger_cpu,"fin de quantum");
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- QUANTUM ----");
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
@@ -139,13 +139,13 @@ void atender_peticiones_interrupt(){
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- pid_interrupt: %d", pid_interrupt));
                 ////log_info(logger_cpu,"[ATENDER INTERRUPT]: ---- contexto_cpu->pid: %d", contexto_cpu->pid));
                 if(contexto_cpu->pid==pid_interrupt){
-                    log_warning(logger_cpu,"flag_interrupt=true");
+                    // log_warning(logger_cpu,"flag_interrupt=true");
                     flag_interrupt=true;
                 }
                 else{
-                    log_warning(logger_cpu,"flag_interrupt=false");
-                    log_warning(logger_cpu,"pid: %d",pid_interrupt);
-                    log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
+                    // log_warning(logger_cpu,"flag_interrupt=false");
+                    // log_warning(logger_cpu,"pid: %d",pid_interrupt);
+                    // log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
 
                 }
                 free(buffer);
@@ -154,21 +154,21 @@ void atender_peticiones_interrupt(){
                 pthread_mutex_unlock(&mutex_check_recibiendo_interrupcion);
                 break;
             case INT_SIGNAL:
-                log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
-                log_warning(logger_cpu,"int SIGNAL");
+                // log_info(logger_cpu,"[ATENDER INTERRUPT]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
+                // log_warning(logger_cpu,"int SIGNAL");
                 size=0;
                 buffer = recibir_buffer(&size, socket_cliente_interrupt);
                 motivo_interrupt=INT_SIGNAL;
                 memcpy(&(pid_interrupt), buffer , sizeof(int));  
                 if(contexto_cpu->pid==pid_interrupt){
-                    log_warning(logger_cpu,"flag_interrupt=true");
+                    // log_warning(logger_cpu,"flag_interrupt=true");
                     flag_interrupt=true;
                     sem_post(&s_signal_kernel);
                 }
                 else{
-                    log_warning(logger_cpu,"flag_interrupt=false");
-                    log_warning(logger_cpu,"pid: %d",pid_interrupt);
-                    log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
+                    // log_warning(logger_cpu,"flag_interrupt=false");
+                    // log_warning(logger_cpu,"pid: %d",pid_interrupt);
+                    // log_warning(logger_cpu,"pid_interrupt: %d",contexto_cpu->pid);
 
                 }
                 free(buffer);
@@ -186,17 +186,17 @@ void atender_peticiones_dispatch(){
     while(1){
         int size=0;       
         int cod_op = recibir_operacion(socket_cliente_dispatch);
-        log_info(logger_cpu,"[ATENDER DISPATCH]: ---- COD OP ---- %d",cod_op);
+        // log_info(logger_cpu,"[ATENDER DISPATCH]: ---- COD OP ---- %d",cod_op);
         switch(cod_op){
             case PCB:
                 //log_info(logger_cpu,"[ATENDER DISPATCH]: ---- PCB A EJECUTAR ----");
                 _recibir_nuevo_contexto(socket_cliente_dispatch);
-                log_info(logger_cpu,"[ATENDER DISPATCH]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
+                // log_info(logger_cpu,"[ATENDER DISPATCH]: -- PCB -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 flag_ejecucion = true;             
                 ejecutar_proceso(); 
                 break;
             case SIGNAL:
-                log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
+                // log_info(logger_cpu,"[ATENDER DISPATCH]: -SIGNAL- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->registros_cpu.PC);
                 void*  buffer_recibido = recibir_buffer(&size, socket_cliente_dispatch);
                 sem_post(&s_signal_kernel);
                 free(buffer_recibido);
@@ -275,7 +275,7 @@ void atender_peticiones_memoria(){
                 // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d>",contexto_cpu->pid,contexto_cpu->program_counter);
                 buffer = recibir_buffer(&size, socket_memoria);
                 memcpy(&respuesta_memoria, buffer, sizeof(int));
-                log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d> - RESPUESTA <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC, respuesta_memoria);
+                // log_info(logger_cpu,"[ATENDER MEMORIA]: -- RESPUESTA RESIZE -- PID <%d> - PC<%d> - RESPUESTA <%d>",contexto_cpu->pid, contexto_cpu->registros_cpu.PC, respuesta_memoria);
                 sem_post(&s_resize);
                 free(buffer);
                 break;
