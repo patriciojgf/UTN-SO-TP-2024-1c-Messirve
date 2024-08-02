@@ -219,13 +219,13 @@ void compactar(char* nombre_archivo_a_mover_al_final) {
     compactar_archivos(lista_archivos, &offset_bloques);
     list_destroy(lista_archivos);
     mover_archivo_al_final(archivo_a_mover, buffer, offset_bloques);
+    free(buffer);
 
     // Actualiza el bitmap
     for (int i = 0; i < archivo_a_mover->puntero_inicio + archivo_a_mover->cantidad_bloques; i++) {
         bitarray_set_bit(info_FS.bitmap, i);
     }
     msync(info_FS.archivo_bitmap_en_memoria, info_FS.tamano_bitmap, MS_SYNC);
-    free(buffer);
 }
 
 static int actualizar_tamano_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano) {
@@ -299,7 +299,7 @@ int leer_archivo(char* nombre_archivo, int puntero, int tamanio, char* buffer) {
     memcpy(buffer, info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, tamanio);
     
     // Libera la estructura de datos del archivo (si es necesario)
-    fs_archivo_destroy(archivo_datos);
+    // fs_archivo_destroy(archivo_datos);
     
     // Retorna un valor indicando el éxito de la operación
     return 0; // Puedes cambiar esto para manejar errores si es necesario

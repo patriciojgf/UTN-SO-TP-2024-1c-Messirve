@@ -147,7 +147,7 @@ static void _atender_peticiones_kernel(){
                 //Todos - Operación: “PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io,"PID: <%d> - Operacion <STDOUT_WRITE>", solicitud_recibida_kernel->pid);
                 log_info(logger_io,"Texto leido de memoria: <%s>",mensaje_recibido_de_memoria);
-                log_hexdump(logger_io, "resultado_memoria", mensaje_recibido_de_memoria, size_mensaje_recibido_de_memoria);
+                // log_hexdump(logger_io, "resultado_memoria", mensaje_recibido_de_memoria, size_mensaje_recibido_de_memoria);
                 free(buffer_mensaje);
                 free(mensaje_recibido_de_memoria); 
 
@@ -204,7 +204,7 @@ static void _atender_peticiones_kernel(){
                 char* resultado_memoria = fs_write_envio_pedido_memoria(solicitud_recibida_fs_rw);
                 //el tamaño del mensaje esta en solicitud_recibida_fs_rw->size_solicitud
                 log_info(logger_io, "resultado_memoria <%s>", resultado_memoria);               
-                log_hexdump(logger_io, "resultado_memoria", resultado_memoria, solicitud_recibida_fs_rw->size_solicitud);
+                // log_hexdump(logger_io, "resultado_memoria", resultado_memoria, solicitud_recibida_fs_rw->size_solicitud);
 
                 log_info(logger_io, "PID: <%d> - Operacion: <IO_FS_WRITE>", solicitud_recibida_fs_rw->pid);
                 // void* datos = malloc(size); 
@@ -390,11 +390,10 @@ static void _atender_peticiones_kernel(){
                 // log_info(logger_io, "Truncando archivo");
                 log_info(logger_io, "------------------------------------------------");
                 log_info(logger_io, "truncar_archivo - nombre <%s> - tamano_byte <%d>",nombre_archivo_truncate,tamano_byte);
-                listar_archivos();
+                // listar_archivos();
                 truncar_archivo(nombre_archivo_truncate, tamano_byte);
                 // log_info(logger_io, "Archivo truncado");
 
-                free(nombre_archivo_truncate);
                 free(buffer_fs_truncate);  // Liberar buffer_fs_truncate después de su uso
 
                 paquete_para_kernel = crear_paquete(IO_FS_TRUNCATE);
@@ -404,7 +403,8 @@ static void _atender_peticiones_kernel(){
 
                 log_info(logger_io, "IO_FS_TRUNCATE: ok enviado a kernel");
                 log_info(logger_io, "fin - truncar_archivo - nombre <%s> - tamano_byte <%d>",nombre_archivo_truncate,tamano_byte);
-                listar_archivos();
+                free(nombre_archivo_truncate);
+                // listar_archivos();
                 break;
             case -1:
                 log_error(logger_io,"El KERNEL se desconecto");

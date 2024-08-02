@@ -158,7 +158,7 @@ static void atender_peticiones_stdout(void *void_args){
                 mensaje_respuesta_temp[total_size] = '\0'; 
                 free(dato_leido);                
             }
-            log_hexdump2(logger_memoria,"resultado memoria",mensaje_respuesta_temp,strlen(mensaje_respuesta_temp)+1);
+            // log_hexdump2(logger_memoria,"resultado memoria",mensaje_respuesta_temp,strlen(mensaje_respuesta_temp)+1);
             t_paquete* paquete = crear_paquete(IO_STDOUT_WRITE);
             agregar_a_paquete(paquete, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
             enviar_paquete(paquete, *socket);
@@ -230,7 +230,7 @@ static void atender_peticiones_dialfs(void *void_args){
         int code_op = recibir_operacion(*socket);
         usleep(RETARDO_RESPUESTA*1000);
         mensajeOK=0;
-        if (code_op == IO_FS_WRITE){
+        if (code_op == IO_FS_WRITE) {
             solicitud = recibir_solicitud_io(*socket);
 
             //leo cada pagina y cantidad de bytes
@@ -258,7 +258,7 @@ static void atender_peticiones_dialfs(void *void_args){
             // liberar_solicitud_io(solicitud);
 
             //envio lo que lei
-            log_hexdump2(logger_memoria,"resultado memoria",mensaje_respuesta_temp,strlen(mensaje_respuesta_temp)+1);
+            // log_hexdump2(logger_memoria,"resultado memoria",mensaje_respuesta_temp,strlen(mensaje_respuesta_temp)+1);
             paquete_respuesta = crear_paquete(IO_FS_WRITE);
             agregar_a_paquete(paquete_respuesta, mensaje_respuesta_temp, strlen(mensaje_respuesta_temp)+1);
             enviar_paquete(paquete_respuesta, *socket);
