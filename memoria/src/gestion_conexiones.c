@@ -138,7 +138,7 @@ static void atender_peticiones_stdout(void *void_args){
             char* mensaje_respuesta_temp = NULL;
             int total_size = 0;
             for(int i=0; i<solicitud->cantidad_accesos; i++){
-                log_info(logger_memoria,"cantidad de accesos: %d",solicitud->cantidad_accesos);
+                // log_info(logger_memoria,"cantidad de accesos: %d",solicitud->cantidad_accesos);
                 void* dato_leido = mem_leer_dato_direccion_fisica(solicitud->datos_memoria[i].direccion_fisica, solicitud->datos_memoria[i].tamano, solicitud->pid);
                 if(dato_leido == NULL){
                     free(mensaje_respuesta_temp);
@@ -169,6 +169,7 @@ static void atender_peticiones_stdout(void *void_args){
         }
         else if (code_op == -1){
             log_info(logger_memoria,"El IO_STDOUT_WRITE se desconecto");
+            close(*socket);
             break;
         }
         else {
@@ -210,6 +211,7 @@ static void atender_peticiones_stdin(void *void_args){
             //desconecto      
         }
         else if (code_op == -1){
+            log_info(logger_memoria,"El IO_STDIN_READ se desconecto");
             close(*socket);
             break;
         }
@@ -288,6 +290,7 @@ static void atender_peticiones_dialfs(void *void_args){
             liberar_solicitud_io(solicitud);
         }
         else if (code_op == -1){
+            log_info(logger_memoria,"DIALFS se desconecto");
             close(*socket);
             break;
         }
@@ -315,6 +318,10 @@ static void atender_peticiones_cpu(void *void_args){
                 memcpy(&pid, buffer, sizeof(int));
                 memcpy(&pagina, buffer + sizeof(int), sizeof(int));
                 int nro_marco = buscar_marco_por_pagina(pagina, pid);
+                // log obligatorio
+                // Acceso a Tabla de Páginas: “PID: <PID> - Pagina: <PAGINA> - Marco: <MARCO>” 
+                log_info(logger_memoria, "PID: <%d> - Pagina: <%d> - Marco: <%d>", pid, pagina, nro_marco);
+
                 t_paquete* paquete_respuesta_marco = crear_paquete(PEDIDO_MARCO);
                 agregar_datos_sin_tamaño_a_paquete(paquete_respuesta_marco,&nro_marco,sizeof(int));
                 enviar_paquete(paquete_respuesta_marco, *socket);
@@ -345,7 +352,6 @@ static void atender_peticiones_cpu(void *void_args){
                 eliminar_paquete(paquete_respuesta_resize);
                 break;
             case LEER_MEMORIA:
-                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - LEER_MEMORIA");
                 int cantidad_bytes = 0;
                 buffer = recibir_buffer(&size, *socket);
                 memcpy(&pid, buffer, sizeof(int));
@@ -354,13 +360,16 @@ static void atender_peticiones_cpu(void *void_args){
                 desplazamiento += sizeof(int);
                 memcpy(&cantidad_bytes, buffer + desplazamiento, sizeof(int));
                 void* dato_leido_mem = mem_leer_dato_direccion_fisica(direccion_fisica, cantidad_bytes, pid);
+                // log obligatorio
+                // Acceso a espacio de usuario: “PID: <PID> - Accion: <LEER / ESCRIBIR> - Direccion fisica: <DIRECCION_FISICA>” - Tamaño <TAMAÑO A LEER / ESCRIBIR>
+                // log_info(logger_memoria, "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", pid, direccion_fisica, cantidad_bytes);
+
                 t_paquete* paquete_respuesta_leer_memoria = crear_paquete(LEER_MEMORIA);
                 agregar_a_paquete(paquete_respuesta_leer_memoria, dato_leido_mem, cantidad_bytes);
                 enviar_paquete(paquete_respuesta_leer_memoria, *socket);
                 eliminar_paquete(paquete_respuesta_leer_memoria);
                 break;
             case ESCRIBIR_MEMORIA:
-                // log_info(logger_memoria, "[MEMORIA] - atender_peticiones_cpu - ESCRIBIR_MEMORIA");
                 buffer = recibir_buffer(&size, *socket);
                 // Leer PID
                 memcpy(&pid, buffer, sizeof(int));   
@@ -379,6 +388,9 @@ static void atender_peticiones_cpu(void *void_args){
                 // Realizar la escritura en memoria
                 mem_escribir_dato_direccion_fisica(direccion_fisica, dato_escrito, cantidad_bytes, pid);
                 free(dato_escrito);
+                // log obligatorio
+                // Acceso a espacio de usuario: “PID: <PID> - Accion: <LEER / ESCRIBIR> - Direccion fisica: <DIRECCION_FISICA>” - Tamaño <TAMAÑO A LEER / ESCRIBIR>
+                // log_info(logger_memoria, "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", pid, direccion_fisica, cantidad_bytes);
                 // Enviar respuesta de éxito
                 t_paquete* paquete_respuesta_escribir_memoria = crear_paquete(ESCRIBIR_MEMORIA);
                 int valor_ok = 1;
