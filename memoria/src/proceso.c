@@ -36,7 +36,7 @@ static int buscar_marco_libre() {
 }
 
 static int asignar_marco_libre(int pid, int nro_pagina){
-    log_info(logger_memoria,"asignar_marco_libre");
+    // log_info(logger_memoria,"asignar_marco_libre");
     int nro_marco = buscar_marco_libre();
     if(nro_marco == -1){
         log_info(logger_memoria, "No se encontro un marco libre");
@@ -54,36 +54,54 @@ static int asignar_marco_libre(int pid, int nro_pagina){
     get_proceso_memoria(pid)->cantidad_de_paginas++;
     log_info(logger_memoria, "asignar_marco_libre: la cantidad de paginas es %d", get_proceso_memoria(pid)->cantidad_de_paginas);
     
-    log_info(logger_memoria, "PID <%d> - Se asigno el marco %d al proceso %d para la pagina %d", pid,nro_marco, pid, nro_pagina);
+    // log_info(logger_memoria, "PID <%d> - Se asigno el marco %d al proceso %d para la pagina %d", pid,nro_marco, pid, nro_pagina);
     return nro_marco;
 }
 
 static void liberar_un_marco(int pid){
+    // Iniciando la liberación de un marco
+    log_info(logger_memoria, "Iniciando la liberación de un marco para el proceso PID <%d>", pid);
     t_proceso* proceso = get_proceso_memoria(pid);
-    //libero el ultimo marco ocupado de su tabla de paginas
+    if (proceso == NULL || proceso->cantidad_de_paginas == 0) {
+        log_error(logger_memoria, "No se puede liberar un marco: proceso no encontrado o sin páginas");
+        return;
+    }
+    // Libero el último marco ocupado de su tabla de páginas
     t_pagina* pagina = list_get(proceso->tabla_de_paginas, proceso->cantidad_de_paginas - 1);
-    //libero el marco de la lista de marcos
+    if (pagina == NULL) {
+        log_error(logger_memoria, "No se puede liberar un marco: página no encontrada");
+        return;
+    }
+    // Libero el marco de la lista de marcos
     t_marco* marco = list_get(listado_marcos, pagina->marco);
+    if (marco == NULL) {
+        log_error(logger_memoria, "No se puede liberar un marco: marco no encontrado");
+        return;
+    }
     marco->pid = -1;
     marco->pagina_asignada = -1;
     marco->bit_de_uso = 0;
-    //libero la pagina de la tabla de paginas
+
+    // Libero la página de la tabla de páginas
     list_remove(proceso->tabla_de_paginas, proceso->cantidad_de_paginas - 1);
     proceso->cantidad_de_paginas--;
-    //elimino la pagina
+    // Elimino la página
     free(pagina);
+    log_info(logger_memoria, "Marco liberado exitosamente para el proceso PID <%d>", pid);
 }
 
 int resize_proceso(int pid, int new_size) {
-    log_info(logger_memoria, "resize_proceso - PID <%d> - NEW_SIZE <%d>", pid, new_size);
-    int old_size = get_proceso_memoria(pid)->cantidad_de_paginas;
-    int marcos_a_asignar = (new_size + TAM_PAGINA - 1) / TAM_PAGINA - old_size;
+    // log_info(logger_memoria, "resize_proceso - PID <%d> - NEW_SIZE <%d>", pid, new_size);
+    int cantidad_de_paginas_anterior = get_proceso_memoria(pid)->cantidad_de_paginas;
+    int old_size = cantidad_de_paginas_anterior * TAM_PAGINA;
+    int marcos_a_asignar = (new_size + TAM_PAGINA - 1) / TAM_PAGINA - (cantidad_de_paginas_anterior);
+    log_info(logger_memoria, "marcos_a_asignar: <%d>", marcos_a_asignar);
 
     if(cantidad_marcos_libres()<marcos_a_asignar){
         log_error(logger_memoria, "No hay marcos suficientes <%d> para asignar al proceso PID <%d>, hay <%d>.", marcos_a_asignar, pid, cantidad_marcos_libres());
         return -1; // Error al asignar marco
     }
-    log_info(logger_memoria, "resize_proceso - PID <%d> - OLD_SIZE <%d> - MARCOS_A_ASIGNAR <%d>", pid, old_size, marcos_a_asignar);
+    // log_info(logger_memoria, "resize_proceso - PID <%d> - OLD_SIZE <%d> - MARCOS_A_ASIGNAR <%d>", pid, old_size, marcos_a_asignar);
 
     if (marcos_a_asignar > 0) {
         //log obligatorio

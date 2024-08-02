@@ -112,9 +112,9 @@ int mmu(int direccion_logica){
         if(marco == -1){
             //log obligatorio: TLB Miss: “PID: <PID> - TLB MISS - Pagina: <NUMERO_PAGINA>”
             log_info(logger_cpu, "PID: %d - TLB MISS - Pagina: %d", contexto_cpu->pid, numero_pagina);
-            log_info(logger_cpu, "-------------");
-            log_info(logger_cpu, "TLB a actualizar:");
-            mostar_entradas_tbl();
+            // log_info(logger_cpu, "-------------");
+            // log_info(logger_cpu, "TLB a actualizar:");
+            // mostar_entradas_tbl();
             //No esta presente en TLB
             //Busco en tabla de paginas
             marco = memoria_pido_marco(numero_pagina);
@@ -124,9 +124,9 @@ int mmu(int direccion_logica){
             else{
                 //Actualizo TLB
                 tlb_agregar_pagina(contexto_cpu->pid, numero_pagina, marco);
-                log_info(logger_cpu, "Actualice TLB:");
-                mostar_entradas_tbl();
-                log_info(logger_cpu, "-------------");
+                // log_info(logger_cpu, "Actualice TLB:");
+                // mostar_entradas_tbl();
+                // log_info(logger_cpu, "-------------");
             }
         }
     }
