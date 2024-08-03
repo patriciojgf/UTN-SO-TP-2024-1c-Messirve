@@ -148,7 +148,7 @@ static void _atender_peticiones_kernel(){
                 //Todos - Operación: “PID: <PID> - Operacion: <OPERACION_A_REALIZAR>”
                 log_info(logger_io,"PID: <%d> - Operacion: <IO_STDOUT_WRITE>", solicitud_recibida_kernel->pid);
                 
-                // log_info(logger_io,"Texto leido de memoria: <%s>",mensaje_recibido_de_memoria);
+                log_info(logger_io,"Texto leido de memoria: <%s>",mensaje_recibido_de_memoria);
                 // log_hexdump(logger_io, "resultado_memoria", mensaje_recibido_de_memoria, size_mensaje_recibido_de_memoria);
                 free(buffer_mensaje);
                 free(mensaje_recibido_de_memoria); 

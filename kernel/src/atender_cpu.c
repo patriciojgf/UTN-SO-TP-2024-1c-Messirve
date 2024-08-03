@@ -281,7 +281,10 @@ int atender_io_fs_truncate(t_pcb* pcb, t_instruccion* instruccion){
     sem_init(&pedido_en_espera->semaforo_pedido_ok, 0, 0);
 
     //libero exec y bloqueo
-    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+    char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+    mover_proceso_a_blocked(pcb, motivo_bloqueo);
+    free(motivo_bloqueo); // Asegúrate de liberar la memoria después de usarla
+    
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
@@ -322,7 +325,9 @@ int atender_io_fs_create_delete(t_pcb* pcb, t_instruccion* instruccion, int oper
     sem_init(&pedido_en_espera->semaforo_pedido_ok, 0, 0);
 
     //libero exec y bloqueo
-    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+    char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+    mover_proceso_a_blocked(pcb, motivo_bloqueo);
+    free(motivo_bloqueo);
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
@@ -372,8 +377,9 @@ int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion) {
     pedido_en_espera->interfaz = interfaz;
     sem_init(&pedido_en_espera->semaforo_pedido_ok, 0, 0);
 
-
-    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+    char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+    mover_proceso_a_blocked(pcb, motivo_bloqueo);
+    free(motivo_bloqueo);
 
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
@@ -419,7 +425,9 @@ int preparar_enviar_solicitud_fw_rw(t_pcb* pcb, t_instruccion* instruccion) {
     pedido_en_espera->interfaz = interfaz;
     sem_init(&pedido_en_espera->semaforo_pedido_ok, 0, 0);
 
-    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));    
+    char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+    mover_proceso_a_blocked(pcb, motivo_bloqueo);
+    free(motivo_bloqueo);
 
     pthread_mutex_lock(&mutex_plan_exec);
     proceso_exec = NULL;
@@ -458,7 +466,9 @@ void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){
         pedido_en_espera->pcb = pcb;
         sem_init(&pedido_en_espera->semaforo_pedido_ok,0,0);
 
-        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+        char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+        mover_proceso_a_blocked(pcb, motivo_bloqueo);
+        free(motivo_bloqueo);
         
         //habilito el puerto dispatch para recibir nuevos desalojos.
         sem_post(&s_pedido_io_enviado);
@@ -502,7 +512,9 @@ void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
         // pthread_mutex_lock(&mutex_plan_blocked);
         // list_add(lista_plan_blocked, pcb);
         // pthread_mutex_unlock(&mutex_plan_blocked);
-        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+        char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+        mover_proceso_a_blocked(pcb, motivo_bloqueo);
+        free(motivo_bloqueo);
 
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
@@ -546,7 +558,9 @@ void atender_cpu_io_fs_create(t_pcb* pcb, t_instruccion* instruccion)
         pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
         sem_init(&pedido->semaforo_pedido_ok,0,0);
 
-        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+        char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+        mover_proceso_a_blocked(pcb, motivo_bloqueo);
+        free(motivo_bloqueo);
 
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
@@ -586,7 +600,9 @@ void atender_cpu_io_fs_delete(t_pcb* pcb, t_instruccion* instruccion)
         pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
         sem_init(&pedido->semaforo_pedido_ok,0,0);
 
-        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+        char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+        mover_proceso_a_blocked(pcb, motivo_bloqueo);
+        free(motivo_bloqueo);
 
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
@@ -626,7 +642,9 @@ void atender_cpu_io_fs_truncate(t_pcb* pcb, t_instruccion* instruccion)
         pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
         sem_init(&pedido->semaforo_pedido_ok,0,0);
 
-        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+        char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+        mover_proceso_a_blocked(pcb, motivo_bloqueo);
+        free(motivo_bloqueo);
 
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
@@ -665,7 +683,9 @@ void atender_cpu_io_fs_read(t_pcb* pcb, t_instruccion* instruccion)
         pedido->tiempo_sleep = atoi(list_get(instruccion->parametros, 1));
         sem_init(&pedido->semaforo_pedido_ok,0,0);
 
-        mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
+        char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+        mover_proceso_a_blocked(pcb, motivo_bloqueo);
+        free(motivo_bloqueo);
 
         pthread_mutex_lock(&mutex_plan_exec);
         proceso_exec = NULL;
@@ -711,8 +731,11 @@ int atender_cpu_io_fs_wr(t_pcb* pcb, t_instruccion* instruccion){
     t_pedido_stdin2* pedido_en_espera = malloc(sizeof(t_pedido_stdin2));
     pedido_en_espera->pcb = pcb;
     sem_init(&pedido_en_espera->semaforo_pedido_ok,0,0);
-    mover_proceso_a_blocked(pcb, string_from_format("INTERFAZ %s", nombre_interfaz));
-    
+
+    char* motivo_bloqueo = string_from_format("INTERFAZ %s", nombre_interfaz);
+    mover_proceso_a_blocked(pcb, motivo_bloqueo);
+    free(motivo_bloqueo);
+
     //habilito el puerto dispatch para recibir nuevos desalojos.
     sem_post(&s_pedido_io_enviado);
     pthread_mutex_lock(&mutex_plan_exec);

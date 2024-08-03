@@ -73,7 +73,7 @@ void mover_proceso_a_blocked(t_pcb* pcb, char* motivo){
     //Log obligatorio
     log_info(logger_kernel, "Cambio de Estado: PID: %d - Estado Anterior: %s - Estado Actual: %s", pcb->pid, estado_string(pcb->estado_anterior), estado_string(pcb->estado_actual));
     // PATRICIO AGREGO FREE - Liberar la memoria del motivo
-    free(motivo);
+    // free(motivo);
     pthread_mutex_unlock(&mutex_plan_blocked);
 }
 
@@ -166,9 +166,13 @@ t_recurso* obtener_recurso(char* recurso){
 	for(int i = 0; i<list_size(lista_recursos); i++){
 		t_recurso* recurso_encontrado = list_get(lista_recursos,i);
 		if(strcmp(recurso, recurso_encontrado->nombre) == 0){
+            // log_info(logger_kernel,"recurso <%s> encontrado: <%s>", recurso, recurso_encontrado->nombre);
             pthread_mutex_unlock(&mutex_lista_recursos);
 			return recurso_encontrado;
 		}
+        // else{
+        //     log_error(logger_kernel,"recurso <%s> distinto a <%s>", recurso, recurso_encontrado->nombre);
+        // }
 	}
     pthread_mutex_unlock(&mutex_lista_recursos);
 	return NULL;
