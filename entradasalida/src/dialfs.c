@@ -275,6 +275,7 @@ static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int n
 }
 
 int truncar_archivo(char* nombre_archivo, int nuevo_tamano, int pid) {
+    log_info(logger_io,"nombre_archivo %s",nombre_archivo);
     t_fs_archivo* archivo_datos = dictionary_get(info_FS.fs_archivos, nombre_archivo);
     if (archivo_datos == NULL) {
         log_error(logger_io, "El archivo %s no existe.", nombre_archivo);

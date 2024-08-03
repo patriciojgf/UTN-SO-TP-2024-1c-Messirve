@@ -241,6 +241,7 @@ static void _atender_peticiones_kernel(){
                 log_info(logger_io, "PID: <%d> - Leer Archivo: <%s> - Tamaño a Leer: <%d> - Puntero Archivo: <%d>", solicitud_recibida_fs_rw->pid, nombre_archivo_fs_read, solicitud_recibida_fs_rw->size_solicitud, solicitud_recibida_fs_rw->puntero_archivo);
 
                 char* lo_que_leimos_de_disco = malloc(solicitud_recibida_fs_rw->size_solicitud);
+                log_info(logger_io, "PID1");
                 if(leer_archivo(nombre_archivo_fs_read, solicitud_recibida_fs_rw->puntero_archivo, solicitud_recibida_fs_rw->size_solicitud, lo_que_leimos_de_disco) == -1){
                     log_error(logger_io, "PID: <%d> - Leer Archivo: <%s> FALLO", pid, nombre_archivo_fs_read);
                     free(nombre_archivo_fs_read);
@@ -248,9 +249,13 @@ static void _atender_peticiones_kernel(){
                     exit(EXIT_FAILURE);
                 }
                 //tomo lo leido del disco y se lo mando a memoria en una solicitud
+                log_info(logger_io, "PID21");
                 t_solicitud_io* solicitud_para_memoria_fs_read = convertir_fs_a_io(solicitud_recibida_fs_rw);
+                log_info(logger_io, "PID21");
                 llenar_datos_memoria(solicitud_para_memoria_fs_read, lo_que_leimos_de_disco);
+                log_info(logger_io, "PID13");
                 enviar_solicitud_io(socket_cliente_memoria, solicitud_para_memoria_fs_read,IO_FS_READ);
+                log_info(logger_io, "PID112");
 
                 //espero handshake ok
                 int cod_fs_read = recibir_operacion(socket_cliente_memoria);
