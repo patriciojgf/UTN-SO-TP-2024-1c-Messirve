@@ -7,22 +7,22 @@ static void atender_peticiones_stdout(void *void_args);
 static void atender_peticiones_dialfs(void *void_args);
 static void identificar_conexion_y_derivar(int socket_cliente, int cod_op);
 
-static void log_hexdump2(t_log* logger, const char* tag, const void* data, size_t size) {
-    char* hexdump = malloc(size * 2 + 1); // Cada byte se representa con 2 caracteres hexadecimales y un carácter nulo al final.
-    if (hexdump == NULL) {
-        log_error(logger, "Error allocating memory for hexdump");
-        return;
-    }
+// static void log_hexdump2(t_log* logger, const char* tag, const void* data, size_t size) {
+//     char* hexdump = malloc(size * 2 + 1); // Cada byte se representa con 2 caracteres hexadecimales y un carácter nulo al final.
+//     if (hexdump == NULL) {
+//         log_error(logger, "Error allocating memory for hexdump");
+//         return;
+//     }
 
-    const unsigned char* bytes = (const unsigned char*)data;
-    for (size_t i = 0; i < size; i++) {
-        sprintf(hexdump + i * 2, "%02x", bytes[i]);
-    }
+//     const unsigned char* bytes = (const unsigned char*)data;
+//     for (size_t i = 0; i < size; i++) {
+//         sprintf(hexdump + i * 2, "%02x", bytes[i]);
+//     }
 
-    hexdump[size * 2] = '\0'; // Null-terminate the string.
-    log_info(logger, "%s <%s>", tag, hexdump);
-    free(hexdump);
-}
+//     hexdump[size * 2] = '\0'; // Null-terminate the string.
+//     log_info(logger, "%s <%s>", tag, hexdump);
+//     free(hexdump);
+// }
 
 // --------------------------------------------------------------------------//
 // ------------- CONEXIONES E HILOS -----------------------------------------//

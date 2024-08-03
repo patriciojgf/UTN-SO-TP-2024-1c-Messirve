@@ -4,12 +4,12 @@ static int obtener_offset_de_bloque(int bloque) {
     return bloque * info_FS.tamano_bloque;
 }
 
-static void fs_archivo_destroy(t_fs_archivo* archivo_datos)
-{
-    free(archivo_datos->nombre);
-    free(archivo_datos->path_nombre);
-    free(archivo_datos);
-}
+// static void fs_archivo_destroy(t_fs_archivo* archivo_datos)
+// {
+//     free(archivo_datos->nombre);
+//     free(archivo_datos->path_nombre);
+//     free(archivo_datos);
+// }
 // static int cantidad_bloques(int tamano_archivo, int tamano_bloque) {
 //     if (tamano_archivo == 0) {
 //         return 1;
@@ -17,46 +17,46 @@ static void fs_archivo_destroy(t_fs_archivo* archivo_datos)
 //     return (tamano_archivo + tamano_bloque - 1) / tamano_bloque;
 // }
 
-void listar_archivos() {
-    // Función auxiliar para imprimir la información del archivo desde la metadata
-    void imprimir_archivo_desde_metadata(t_fs_archivo* archivo) {
-        char* path_completo = malloc(strlen(PATH_BASE_DIALFS) + strlen(archivo->nombre) + 2);
-        sprintf(path_completo, "%s/%s", PATH_BASE_DIALFS, archivo->nombre);
+// void listar_archivos() {
+//     // Función auxiliar para imprimir la información del archivo desde la metadata
+//     void imprimir_archivo_desde_metadata(t_fs_archivo* archivo) {
+//         char* path_completo = malloc(strlen(PATH_BASE_DIALFS) + strlen(archivo->nombre) + 2);
+//         sprintf(path_completo, "%s/%s", PATH_BASE_DIALFS, archivo->nombre);
 
-        t_config* metadata = config_create(path_completo);
-        if (metadata != NULL) {
-            int primer_bloque = config_get_int_value(metadata, "BLOQUE_INICIAL");
-            int tamano_archivo = config_get_int_value(metadata, "TAMANIO_ARCHIVO");
-            int cant_bloques = cantidad_bloques(tamano_archivo, BLOCK_SIZE);
+//         t_config* metadata = config_create(path_completo);
+//         if (metadata != NULL) {
+//             int primer_bloque = config_get_int_value(metadata, "BLOQUE_INICIAL");
+//             int tamano_archivo = config_get_int_value(metadata, "TAMANIO_ARCHIVO");
+//             int cant_bloques = cantidad_bloques(tamano_archivo, BLOCK_SIZE);
 
-            log_info(logger_io, "Archivo: %s, Primer bloque: %d, Cantidad de bloques: %d",
-                     archivo->nombre, primer_bloque, cant_bloques);
+//             // log_info(logger_io, "Archivo: %s, Primer bloque: %d, Cantidad de bloques: %d",
+//                     //  archivo->nombre, primer_bloque, cant_bloques);
             
-            config_destroy(metadata);
-        } else {
-            log_error(logger_io, "Error al leer la metadata del archivo: %s", archivo->nombre);
-        }
+//             config_destroy(metadata);
+//         } else {
+//             log_error(logger_io, "Error al leer la metadata del archivo: %s", archivo->nombre);
+//         }
 
-        free(path_completo);
-    }
+//         free(path_completo);
+//     }
 
-    // Función auxiliar para iterar sobre el diccionario y llamar a imprimir_archivo_desde_metadata
-    void listar_archivos_aux(char* key, void* value) {
-        t_fs_archivo* archivo = (t_fs_archivo*)value;
-        imprimir_archivo_desde_metadata(archivo);
-    }
+//     // Función auxiliar para iterar sobre el diccionario y llamar a imprimir_archivo_desde_metadata
+//     void listar_archivos_aux(char* key, void* value) {
+//         t_fs_archivo* archivo = (t_fs_archivo*)value;
+//         imprimir_archivo_desde_metadata(archivo);
+//     }
 
-    // Itera sobre el diccionario info_FS.fs_archivos y llama a listar_archivos_aux para cada archivo
-    dictionary_iterator(info_FS.fs_archivos, listar_archivos_aux);
+//     // Itera sobre el diccionario info_FS.fs_archivos y llama a listar_archivos_aux para cada archivo
+//     dictionary_iterator(info_FS.fs_archivos, listar_archivos_aux);
 
-    // Imprime todos los bloques ocupados recorriendo el bitarray
-    // log_info(logger_io, "Bloques ocupados:");
-    // for (int i = 0; i < info_FS.cantidad_bloques; i++) {
-    //     if (bitarray_test_bit(info_FS.bitmap, i)) {
-    //         log_info(logger_io, "Bloque %d ocupado", i);
-    //     }
-    // }
-}
+//     // Imprime todos los bloques ocupados recorriendo el bitarray
+//     // log_info(logger_io, "Bloques ocupados:");
+//     // for (int i = 0; i < info_FS.cantidad_bloques; i++) {
+//     //     if (bitarray_test_bit(info_FS.bitmap, i)) {
+//     //         log_info(logger_io, "Bloque %d ocupado", i);
+//     //     }
+//     // }
+// }
 
 static int reservar_primer_bloque_libre() {
     int indice_bloque = 0;
@@ -149,7 +149,7 @@ int liberar_bloques_de_archivo(char* nombre_archivo) {
     free(archivo_datos->path_nombre);
     free(archivo_datos);
 
-    log_info(logger_io, "Archivo %s eliminado correctamente.", nombre_archivo);
+    // log_info(logger_io, "Archivo %s eliminado correctamente.", nombre_archivo);
     return 0; // Archivo eliminado exitosamente
 }
 
@@ -196,7 +196,7 @@ void mover_archivo_al_final(t_fs_archivo* archivo_a_mover, void* buffer, int off
 }
 
 void compactar(char* nombre_archivo_a_mover_al_final) {
-    log_info(logger_io, "Inicio de compactación para el archivo: %s", nombre_archivo_a_mover_al_final);
+    // log_info(logger_io, "Inicio de compactación para el archivo: %s", nombre_archivo_a_mover_al_final);
     usleep(RETRASO_COMPACTACION*1000);
 
     t_fs_archivo* archivo_a_mover = dictionary_get(info_FS.fs_archivos, nombre_archivo_a_mover_al_final);
@@ -205,7 +205,7 @@ void compactar(char* nombre_archivo_a_mover_al_final) {
         return;
     }
 
-    log_info(logger_io, "Archivo a mover encontrado: %s", archivo_a_mover->nombre);
+    // log_info(logger_io, "Archivo a mover encontrado: %s", archivo_a_mover->nombre);
     void* buffer = malloc(archivo_a_mover->tamano);
     if (buffer == NULL) {
         log_error(logger_io, "Error al asignar memoria para el buffer");
@@ -248,14 +248,20 @@ static int achicar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int nu
     return actualizar_tamano_archivo(archivo_datos, nuevo_tamano);
 }
 
-static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int nueva_cantidad_bloques, char* nombre_archivo) {
+static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int nueva_cantidad_bloques, char* nombre_archivo, int pid) {
     bool necesita_compactacion = false;
     for (int i = archivo_datos->puntero_inicio + archivo_datos->cantidad_bloques; i < archivo_datos->puntero_inicio + nueva_cantidad_bloques && !necesita_compactacion; i++) {
         necesita_compactacion = bitarray_test_bit(info_FS.bitmap, i);
     }
 
     if (necesita_compactacion) {
+        // log obligatoria
+        // DialFS - Inicio Compactación: “PID: <PID> - Inicio Compactación.” 
+        log_info(logger_io,"PID: <%d> - Inicio Compactación.", pid);        
         compactar(nombre_archivo);
+        // DialFS - Fin Compactación: “PID: <PID> - Fin Compactación.” 
+        log_info(logger_io,"PID: <%d> - Fin Compactación.", pid);        
+
     }
 
     for (int i = archivo_datos->puntero_inicio + archivo_datos->cantidad_bloques; i < archivo_datos->puntero_inicio + nueva_cantidad_bloques; i++) {
@@ -268,7 +274,7 @@ static int agrandar_archivo(t_fs_archivo* archivo_datos, int nuevo_tamano, int n
     return actualizar_tamano_archivo(archivo_datos, nuevo_tamano);
 }
 
-int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
+int truncar_archivo(char* nombre_archivo, int nuevo_tamano, int pid) {
     t_fs_archivo* archivo_datos = dictionary_get(info_FS.fs_archivos, nombre_archivo);
     if (archivo_datos == NULL) {
         log_error(logger_io, "El archivo %s no existe.", nombre_archivo);
@@ -282,7 +288,7 @@ int truncar_archivo(char* nombre_archivo, int nuevo_tamano) {
     if (nueva_cantidad_bloques < archivo_datos->cantidad_bloques) {
         return achicar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques);
     }
-    return agrandar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques, nombre_archivo);
+    return agrandar_archivo(archivo_datos, nuevo_tamano, nueva_cantidad_bloques, nombre_archivo, pid);
 }
 
 int leer_archivo(char* nombre_archivo, int puntero, int tamanio, char* buffer) {
@@ -306,7 +312,7 @@ int leer_archivo(char* nombre_archivo, int puntero, int tamanio, char* buffer) {
 }
 
 int escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resultado_escritura) {
-    log_info(logger_io, "Iniciando escritura en el archivo <%s> - puntero <%d> - tamaño <%d>", nombre_archivo, puntero, tamanio);
+    // log_info(logger_io, "Iniciando escritura en el archivo <%s> - puntero <%d> - tamaño <%d>", nombre_archivo, puntero, tamanio);
 
     t_fs_archivo* archivo_datos = (t_fs_archivo*)dictionary_get(info_FS.fs_archivos, nombre_archivo);
     if (archivo_datos == NULL) {
@@ -314,26 +320,26 @@ int escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resul
         return -1; // El archivo no existe
     }
 
-    log_info(logger_io, "Archivo encontrado <%s>", archivo_datos->nombre);
+    // log_info(logger_io, "Archivo encontrado <%s>", archivo_datos->nombre);
     int offset_bloques = obtener_offset_de_bloque(archivo_datos->puntero_inicio);
-    log_info(logger_io, "Offset de bloques calculado <%d>", offset_bloques);
+    // log_info(logger_io, "Offset de bloques calculado <%d>", offset_bloques);
 
     // Verifica si hay suficiente espacio para escribir
     int espacio_disponible = archivo_datos->cantidad_bloques * info_FS.tamano_bloque;
-    log_info(logger_io, "Espacio disponible <%d>", espacio_disponible);
+    // log_info(logger_io, "Espacio disponible <%d>", espacio_disponible);
     if (tamanio > espacio_disponible) {
         log_error(logger_io, "No hay suficiente espacio en el archivo %s para escribir %d bytes.", nombre_archivo, tamanio);
         return -1;
     }
 
     // Escribe los datos en la memoria mapeada
-    log_info(logger_io, "Copiando datos a la memoria mapeada");
+    // log_info(logger_io, "Copiando datos a la memoria mapeada");
     memcpy(info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, resultado_escritura, tamanio);
 
-    log_info(logger_io, "Sincronizando cambios con msync");
+    // log_info(logger_io, "Sincronizando cambios con msync");
     msync(info_FS.archivo_bloques_en_memoria + offset_bloques + puntero, tamanio, MS_SYNC);
 
 
-    log_info(logger_io, "Datos escritos en el archivo <%s> con éxito.", nombre_archivo);
+    // log_info(logger_io, "Datos escritos en el archivo <%s> con éxito.", nombre_archivo);
     return 0;
 }

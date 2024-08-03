@@ -16,6 +16,7 @@ void atender_cpu_exit(t_pcb* pcb, char* motivo_exit){
     proceso_exec = NULL;
     pthread_mutex_unlock(&mutex_plan_exec);
     //log obligatorio
+    // Fin de Proceso: “Finaliza el proceso <PID> - Motivo: <SUCCESS / INVALID_RESOURCE / INVALID_INTERFACE / OUT_OF_MEMORY / INTERRUPTED_BY_USER>
     log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->pid, motivo_exit);  
     mover_proceso_a_exit(pcb);
     sem_post(&sem_plan_exec_libre);//activo el planificador de corto plazo
@@ -38,7 +39,7 @@ void atender_cpu_int_signal(t_pcb* pcb){
 
 void atender_cpu_signal(t_pcb* pcb, t_recurso* recurso){
     int mensajeOK ;
-    log_info(logger_kernel, "[ATENDER CPU SIGNAL]");
+    // log_info(logger_kernel, "[ATENDER CPU SIGNAL]");
     // log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s>", pcb->pid, recurso->nombre);    
     if (recurso != NULL) {
         // pthread_mutex_lock(&mutex_plan_exec);
@@ -61,18 +62,18 @@ void atender_cpu_signal(t_pcb* pcb, t_recurso* recurso){
             mover_proceso_a_ready(pcb_desbloqueado);
         }
         else{
-            log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> NO DESBLOQUEANDO", pcb->pid, recurso->nombre);
+            // log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> NO DESBLOQUEANDO", pcb->pid, recurso->nombre);
         }
         pthread_mutex_unlock(&recurso->mutex_bloqueados);
 
         // Contesto que se hizo el signal
-        log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> SIGNAL OK", pcb->pid, recurso->nombre);
+        // log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> SIGNAL OK", pcb->pid, recurso->nombre);
         mensajeOK = 1;
 
         // pthread_mutex_lock(&mutex_plan_exec);
     }
     else{
-        log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso  NO ENCONTRADO", pcb->pid);  
+        // log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso  NO ENCONTRADO", pcb->pid);  
         sem_post(&sem_pcb_desalojado);
         // envio_interrupcion(pcb->pid, INT_SIGNAL);
         //sem_post(&sem_pcb_desalojado);
@@ -84,15 +85,15 @@ void atender_cpu_signal(t_pcb* pcb, t_recurso* recurso){
         enviar_paquete(paquete_a_enviar,socket_dispatch);
         eliminar_paquete(paquete_a_enviar);
         if(mensajeOK){
-            log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> SIGNAL Enviado valor <%d>", pcb->pid, recurso->nombre, mensajeOK);
+            // log_info(logger_kernel, "[ATENDER CPU SIGNAL] PID <%d> Recurso <%s> SIGNAL Enviado valor <%d>", pcb->pid, recurso->nombre, mensajeOK);
         }        
 }
 
 void atender_cpu_wait(t_pcb* pcb, t_instruccion* instruccion){
     char* nombre_recurso_wait = list_get(instruccion->parametros, 0);
-    log_info(logger_kernel, "[ATENDER CPU WAIT] PID <%d> Recurso <%s>", pcb->pid, nombre_recurso_wait);
+    // log_info(logger_kernel, "[ATENDER CPU WAIT] PID <%d> Recurso <%s>", pcb->pid, nombre_recurso_wait);
     t_recurso* recurso_encontrado = obtener_recurso(nombre_recurso_wait);
-    log_info(logger_kernel, "[ATENDER CPU WAIT] PID recurso_encontrado");
+    // log_info(logger_kernel, "[ATENDER CPU WAIT] PID recurso_encontrado");
     if(recurso_encontrado != NULL){
         recurso_encontrado->instancias--;
         if(recurso_encontrado->instancias < 0){// recurso sin instancias 
@@ -134,7 +135,7 @@ void atender_cpu_wait(t_pcb* pcb, t_instruccion* instruccion){
             proceso_exec = NULL;
             pthread_mutex_unlock(&mutex_plan_exec);
             sem_post(&sem_plan_exec_libre);
-            log_info(logger_kernel, "[ATENDER CPU WAIT] PID <%d> Recurso <%s> CON INSTANCIAS", pcb->pid, nombre_recurso_wait);
+            // log_info(logger_kernel, "[ATENDER CPU WAIT] PID <%d> Recurso <%s> CON INSTANCIAS", pcb->pid, nombre_recurso_wait);
             
         }
     }
@@ -360,7 +361,7 @@ int preparar_enviar_solicitud_io(t_pcb* pcb, t_instruccion* instruccion) {
         return -1;
     }
 
-    log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
+    // log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
 
     t_pedido_stdin2* pedido_en_espera = malloc(sizeof(t_pedido_stdin2));
     if (!pedido_en_espera) {
@@ -408,7 +409,7 @@ int preparar_enviar_solicitud_fw_rw(t_pcb* pcb, t_instruccion* instruccion) {
         log_error(logger_kernel, "No se encontró la interfaz: %s", nombre_interfaz);
         return -1;
     }
-    log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
+    // log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
     t_pedido_stdin2* pedido_en_espera = malloc(sizeof(t_pedido_stdin2));
     if (!pedido_en_espera) {
         log_error(logger_kernel, "No se pudo asignar memoria para el pedido en espera");
@@ -488,7 +489,7 @@ void atender_cpu_io_stdin_read(t_pcb* pcb, t_instruccion* instruccion){
 
 void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
     
-    log_info(logger_kernel,"[ATENDER CPU IO SLEEP]");
+    // log_info(logger_kernel,"[ATENDER CPU IO SLEEP]");
                 
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
@@ -532,7 +533,7 @@ void atender_cpu_io_gen_sleep(t_pcb* pcb, t_instruccion* instruccion){
 //TODO: continuar
 void atender_cpu_io_fs_create(t_pcb* pcb, t_instruccion* instruccion)
 {
-    log_info(logger_kernel,"[ATENDER CPU IO_FS_CREATE]");
+    // log_info(logger_kernel,"[ATENDER CPU IO_FS_CREATE]");
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
 
@@ -572,7 +573,7 @@ void atender_cpu_io_fs_create(t_pcb* pcb, t_instruccion* instruccion)
 //TODO: continuar
 void atender_cpu_io_fs_delete(t_pcb* pcb, t_instruccion* instruccion)
 {
-    log_info(logger_kernel,"[ATENDER CPU IO_FS_DELETE]");
+    // log_info(logger_kernel,"[ATENDER CPU IO_FS_DELETE]");
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
 
@@ -612,7 +613,7 @@ void atender_cpu_io_fs_delete(t_pcb* pcb, t_instruccion* instruccion)
 //TODO: continuar
 void atender_cpu_io_fs_truncate(t_pcb* pcb, t_instruccion* instruccion)
 {
-    log_info(logger_kernel,"[ATENDER CPU IO_FS_TRUNCATE]");
+    // log_info(logger_kernel,"[ATENDER CPU IO_FS_TRUNCATE]");
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
 
@@ -651,7 +652,7 @@ void atender_cpu_io_fs_truncate(t_pcb* pcb, t_instruccion* instruccion)
 //TODO: continuar
 void atender_cpu_io_fs_read(t_pcb* pcb, t_instruccion* instruccion)
 {
-    log_info(logger_kernel,"[ATENDER CPU IO_FS_READ]");
+    // log_info(logger_kernel,"[ATENDER CPU IO_FS_READ]");
     char* nombre_interfaz = list_get(instruccion->parametros, 0);
     t_interfaz* interfaz = _obtener_interfaz(nombre_interfaz);
 
@@ -705,7 +706,7 @@ int atender_cpu_io_fs_wr(t_pcb* pcb, t_instruccion* instruccion){
         return -1;
     }
 
-    log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
+    // log_info(logger_kernel, "Nombre de la interfaz: %s", nombre_interfaz);
 
     t_pedido_stdin2* pedido_en_espera = malloc(sizeof(t_pedido_stdin2));
     pedido_en_espera->pcb = pcb;

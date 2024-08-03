@@ -53,22 +53,25 @@ void planificador_cp(){
         pthread_mutex_lock(&mutex_plan_ready_vrr);
         // log_info(logger_kernel,"planificador_cp: mutex_plan_ready_vrr");
         if(!list_is_empty(lista_plan_ready) || !list_is_empty(lista_plan_ready_vrr)){   
+            // log_info(logger_kernel,"if(!list_is_empty(lista_plan_ready) || !list_is_empty(lista_plan_ready_vrr))");
             pthread_mutex_lock(&mutex_plan_exec); //bloqueo el acceso al proceso_exec hasta que quede planificado el nuevo
+            // log_info(logger_kernel,"mutex_plan_exec");
             if(proceso_exec==NULL){
+                // log_info(logger_kernel,"if(proceso_exec==NULL)");
                 t_pcb* pcb_ready = NULL;
                 //busco el proximo pcb a ejecutar
                 if(ALGORITMO_PLANIFICACION==VRR){
                     //valido si hay prioridad
                     if(!list_is_empty(lista_plan_ready_vrr)){
                         pcb_ready = list_remove(lista_plan_ready_vrr, 0); //saco el pcb de ready para pasarlo a exec
-                        log_info(logger_kernel,"VQUANTUM DISPONIBLE: PID <%d> - Q<%d>",pcb_ready->pid,pcb_ready->quantum);
+                        // log_info(logger_kernel,"VQUANTUM DISPONIBLE: PID <%d> - Q<%d>",pcb_ready->pid,pcb_ready->quantum);
                     }
                     else{
                         pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
                         if(pcb_ready->quantum == -1){
                              pcb_ready->quantum = QUANTUM;
                         }                         
-                        log_info(logger_kernel,"QUANTUM DISPONIBLE: PID <%d> - Q<%d>",pcb_ready->pid,pcb_ready->quantum);
+                        // log_info(logger_kernel,"QUANTUM DISPONIBLE: PID <%d> - Q<%d>",pcb_ready->pid,pcb_ready->quantum);
                     }
                 } else if ((ALGORITMO_PLANIFICACION==RR)||(ALGORITMO_PLANIFICACION==FIFO)){
                     pcb_ready = list_remove(lista_plan_ready, 0); //saco el pcb de ready para pasarlo a exec
@@ -90,9 +93,11 @@ void planificador_cp(){
                     enviar_contexto_dispatch(proceso_exec); //envio el pcb a CPU
                     if(ALGORITMO_PLANIFICACION==RR){
                         _esperar_liberar_quantum(proceso_exec);
+                        // log_info(logger_kernel, "ALGORITMO_PLANIFICACION==RR");
                     }
                     else if(ALGORITMO_PLANIFICACION==VRR){
                         _esperar_vrr(proceso_exec);
+                        // log_info(logger_kernel, "ALGORITMO_PLANIFICACION==_esperar_vrr");
                     }
                 }
                 else{
@@ -162,16 +167,31 @@ t_pcb* buscar_pcb_por_pid(int pid_buscado, t_list* listado_pcb){
 // }
 
 static void _quantum_wait(t_pcb* pcb){
+    // log_info(logger_kernel,"_quantum_wait");
+    if(pcb->quantum == -1){
+        pcb->quantum = QUANTUM;
+    }
+    if(ALGORITMO_PLANIFICACION==RR){
+        if(pcb->quantum != QUANTUM){
+            log_error(logger_kernel,"problema con el quantum en RR");
+            exit(EXIT_FAILURE);
+        }
+    }
+    // log_info(logger_kernel,"pcb->quantum <%d>",pcb->quantum);
     usleep(pcb->quantum*1000);
+    // log_info(logger_kernel,"envio_interrupcion");
     envio_interrupcion(pcb->pid, FIN_QUANTUM);
 }
 
 static void _esperar_liberar_quantum(t_pcb* pcb){
+    // log_info(logger_kernel,"_esperar_liberar_quantum");
     pthread_create(&hilo_esperar_quantum, NULL, (void*)_quantum_wait, pcb);
     pthread_detach(hilo_esperar_quantum);
     // log_info(logger_kernel,"_esperar_liberar_quantum");
     sem_wait(&sem_pcb_desalojado);
+    // log_info(logger_kernel,"sem_pcb_desalojado");
     pthread_cancel(hilo_esperar_quantum);
+    // log_info(logger_kernel,"hilo_esperar_quantum");
 }
 
 static void _esperar_vrr(t_pcb* pcb){

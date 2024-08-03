@@ -8,9 +8,9 @@
 
 extern t_filesystem info_FS;
 int crear_archivo(char* nombre_archivo);
-int truncar_archivo(char* nombre_archivo, int nuevo_tamano);
+int truncar_archivo(char* nombre_archivo, int nuevo_tamano, int pid);
 int liberar_bloques_de_archivo(char* nombre_archivo);
-void listar_archivos();
+// void listar_archivos();
 int escribir_archivo(char* nombre_archivo, int puntero, int tamanio, char* resultado_escritura);
 int leer_archivo(char* nombre_archivo, int puntero, int tamanio, char* buffer);
 

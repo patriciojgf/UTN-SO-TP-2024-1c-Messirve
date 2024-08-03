@@ -170,7 +170,7 @@ void atender_peticiones_dispatch(){
 	while(1){
 		// log_info(logger_kernel,"[atender_peticiones_dispatch]");
 		int cod_op = recibir_operacion(socket_dispatch);
-		log_info(logger_kernel,"[atender_peticiones_dispatch] - recibir_operacion <%d>",cod_op);
+		// log_info(logger_kernel,"[atender_peticiones_dispatch] - recibir_operacion <%d>",cod_op);
 		// //log_protegido_kernel(string_from_format("[ATENDER DISPATCH]: Recibi operacion"));
 		switch (cod_op) {
 			case CONTEXTO_EJECUCION:
@@ -197,7 +197,7 @@ void atender_peticiones_dispatch(){
 				pthread_mutex_unlock(&mutex_finalizar_proceso);		
 				// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - pthread_mutex_unlock(&mutex_finalizar_proceso)");
 				
-				log_info(logger_kernel,"[CONTEXTO_EJECUCION] - motivo <%d>",motivo);		
+				// log_info(logger_kernel,"[CONTEXTO_EJECUCION] - motivo <%d>",motivo);		
 				switch(motivo){
 					case INT_FINALIZAR_PROCESO:	
 						// log_info(logger_kernel,"[atender_peticiones_dispatch] - CONTEXTO_EJECUCION - INT_FINALIZAR_PROCESO");	
@@ -371,10 +371,10 @@ static void _atender_peticiones_io(t_interfaz *interfaz){
 					sem_post(&pedido_fs_delete->semaforo_pedido_ok);
 					break;
 				case IO_FS_TRUNCATE:
-					log_info(logger_kernel,"[_atender_peticiones_io] - IO_FS_TRUNCATE");
+					// log_info(logger_kernel,"[_atender_peticiones_io] - IO_FS_TRUNCATE");
 					size_temp =0;
 					buffer_temp = recibir_buffer(&size_temp, interfaz->socket);
-					log_info(logger_kernel,"[_atender_peticiones_io] - IO_FS_TRUNCATE2");
+					// log_info(logger_kernel,"[_atender_peticiones_io] - IO_FS_TRUNCATE2");
 					free(buffer_temp);
 					t_pedido_stdin* pedido_fs_truncate= list_get(interfaz->cola_procesos, 0);
 					sem_post(&pedido_fs_truncate->semaforo_pedido_ok);
